@@ -1,5 +1,5 @@
 use iced::widget::container;
-use iced::{Element, Event, Length, Task as Command, event};
+use iced::{Element, Event, Border,Background, Color, Length, Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
 use iced_layershell::application;
 use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
@@ -75,17 +75,27 @@ impl Launcher {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        container("")
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .style(|_theme| container::Style {
-                background: Some(iced::Background::Color(iced::Color::from_rgb(
-                    0.42, // R
-                    0.31, // G
-                    0.22, // B
-                ))),
-                ..Default::default()
-            })
-            .into()
+        container(
+            container("")
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .style(|_| container::Style {
+                    background: Some(Background::Color(Color::from_rgba(0.0, 0.0, 0.0, 0.9))), 
+                    border: Border {
+                        color: Color::from_rgb(0.4, 0.4, 0.4), 
+                        width: 1.0,
+                        radius: 0.0.into(), 
+                    },
+                    ..Default::default()
+                })
+        )
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .style(|_| container::Style {
+            background: None,
+            ..Default::default()
+        })
+        .into()
     }
+
 }
