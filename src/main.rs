@@ -15,9 +15,9 @@ fn main() -> Result<(), iced_layershell::Error> {
     .settings(Settings {
         layer_settings: LayerShellSettings {
             size: Some((480, 710)),
-            anchor: Anchor::empty(),
+            anchor: Anchor::Bottom,
             keyboard_interactivity: KeyboardInteractivity::Exclusive,
-            margin: (364, 0, 0, 760),
+            margin: (0, 0, 10, 0), //TRBL
             ..Default::default()
         },
         ..Default::default()
