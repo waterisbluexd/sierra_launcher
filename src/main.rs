@@ -1,7 +1,7 @@
 mod utils;
 mod config;
 
-use iced::widget::{container, text, stack};
+use iced::widget::{container, text, stack, row};
 use iced::{Element, Event, Border, Color, Length, Font, Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
 use iced_layershell::application;
@@ -76,6 +76,22 @@ impl Launcher {
                 foreground: Color::WHITE,
                 border: Color::from_rgb(0.5, 0.5, 0.5),
                 accent: Color::from_rgb(0.6, 0.6, 0.6),
+                color0: Color::BLACK,
+                color1: Color::from_rgb(0.8, 0.0, 0.0),
+                color2: Color::from_rgb(0.0, 0.8, 0.0),
+                color3: Color::from_rgb(0.8, 0.8, 0.0),
+                color4: Color::from_rgb(0.0, 0.0, 0.8),
+                color5: Color::from_rgb(0.8, 0.0, 0.8),
+                color6: Color::from_rgb(0.0, 0.8, 0.8),
+                color7: Color::from_rgb(0.7, 0.7, 0.7),
+                color8: Color::from_rgb(0.5, 0.5, 0.5),
+                color9: Color::from_rgb(1.0, 0.0, 0.0),
+                color10: Color::from_rgb(0.0, 1.0, 0.0),
+                color11: Color::from_rgb(1.0, 1.0, 0.0),
+                color12: Color::from_rgb(0.0, 0.0, 1.0),
+                color13: Color::from_rgb(1.0, 0.0, 1.0),
+                color14: Color::from_rgb(0.0, 1.0, 1.0),
+                color15: Color::WHITE,
             });
 
         let watcher = ColorWatcher::new().ok();
@@ -122,87 +138,102 @@ impl Launcher {
             }
         }
     }
+
     fn view(&self) -> Element<'_, Message> {
-    let bg = self.theme.background;
-    let bg_with_alpha = Color::from_rgba(bg.r, bg.g, bg.b, 0.82);
+        let bg = self.theme.background;
+        let bg_with_alpha = Color::from_rgba(bg.r, bg.g, bg.b, 1.0);
 
-    let font = match self.config.font.as_deref() {
-        Some("Monocraft") => Font::with_name("Monocraft"),
-        Some("Monospace") => Font::with_name("Monospace"),
-        _ => Font::default(),
-    };
-    let font_size = self.config.font_size.unwrap_or(22.0);
+        let font = match self.config.font.as_deref() {
+            Some("Monocraft") => Font::with_name("Monocraft"),
+            Some("Monospace") => Font::with_name("Monospace"),
+            _ => Font::default(),
+        };
 
-    let title = vertical_text(&" sierra-launcher ");
+        let font_size = self.config.font_size.unwrap_or(22.0);
+        let title = vertical_text(" sierra-launcher ");
 
-    // Main container (1)
-    container(
-        stack![
-            // Container 2 - first child of main
-            container(
-                // Container 4 - nested inside container 2
-                container(text(""))
-                    .padding(9)
-                    .height(Length::Fill)
-                    .style(move |_| container::Style {
-                        background: Some(bg_with_alpha.into()),
-                        border: Border {
-                            color: self.theme.border,
-                            width: 2.0,
-                            radius: 0.0.into(),
-                        },
-                        ..Default::default()
-                    })
-            )
-            .padding(14)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .style(move |_| container::Style {
-                background: Some(bg_with_alpha.into()),
-                ..Default::default()
-            }),
-
-            // Container 3 - second child of main
-            container(
-                // Container 5 - nested inside container 3
+        container(
+            stack![
+                // =========================
+                // Container 2
+                // =========================
                 container(
-                    // Container 6 - nested inside container 5
-                    container(
-                        text(title)
-                            .font(font)  // Apply the font here
-                            .size(font_size)  // Apply the font size here
-                    )
-                    .padding(0)
-                    .style(move |_| container::Style {
-                        background: Some(bg_with_alpha.into()),
-                        ..Default::default()
-                    })
+                    row![
+                        // Container 4 (left)
+                        container(text(""))
+                            .padding(9)
+                            .height(Length::Fill)
+                            .width(Length::Shrink)
+                            .style(move |_| container::Style {
+                                background: Some(bg_with_alpha.into()),
+                                border: Border {
+                                    color: self.theme.color3,
+                                    width: 2.0,
+                                    radius: 0.0.into(),
+                                },
+                                ..Default::default()
+                            }),
+
+                        // Container 7 (right)
+                        container(text(""))
+                            .padding(50)
+                            .height(Length::Fill)
+                            .width(Length::Fill)
+                            .style(move |_| container::Style {
+                                background: Some(bg_with_alpha.into()),
+                                border: Border {
+                                    color: self.theme.color3,
+                                    width: 2.0,
+                                    radius: 0.0.into(),
+                                },
+                                ..Default::default()
+                            }),
+                    ]
+                    .spacing(4)
                 )
-                .padding([20,10])
+                .padding(14)
+                .width(Length::Fill)
+                .height(Length::Fill)
                 .style(move |_| container::Style {
+                    background: Some(bg_with_alpha.into()),
                     ..Default::default()
-                })
-            )
-            .padding(0)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .style(move |_| container::Style {
-                ..Default::default()
-            }),
-        ]
-    )
-    .padding(2)
-    .width(Length::Fill)
-    .height(Length::Fill)
-    .style(move |_| container::Style {
-        background: Some(bg_with_alpha.into()),
-        border: Border {
-            color: self.theme.border,
-            width: 2.0,
-            radius: 0.0.into(),
-        },
-        ..Default::default()
-    })
-    .into()
-}
+                }),
+
+                // =========================
+                // Container 3 (title)
+                // =========================
+                container(
+                    container(
+                        container(
+                            text(title)
+                                .font(font)
+                                .size(font_size)
+                                .line_height(1.2)
+                        )
+                        .padding(0)
+                        .style(move |_| container::Style {
+                            background: Some(bg_with_alpha.into()),
+                            ..Default::default()
+                        })
+                    )
+                    .padding([20, 10])
+                )
+                .width(Length::Fill)
+                .height(Length::Fill)
+            ]
+        )
+        .padding(2)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .style(move |_| container::Style {
+            background: Some(bg_with_alpha.into()),
+            border: Border {
+                color: self.theme.border,
+                width: 2.0,
+                radius: 0.0.into(),
+            },
+            ..Default::default()
+        })
+        .into()
+    }
 }

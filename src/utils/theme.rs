@@ -42,6 +42,23 @@ pub struct Theme {
     pub foreground: Color,
     pub border: Color,
     pub accent: Color,
+    // Add all 16 colors from the palette
+    pub color0: Color,
+    pub color1: Color,
+    pub color2: Color,
+    pub color3: Color,
+    pub color4: Color,
+    pub color5: Color,
+    pub color6: Color,
+    pub color7: Color,
+    pub color8: Color,
+    pub color9: Color,
+    pub color10: Color,
+    pub color11: Color,
+    pub color12: Color,
+    pub color13: Color,
+    pub color14: Color,
+    pub color15: Color,
 }
 
 impl WalColors {
@@ -59,6 +76,23 @@ impl WalColors {
             foreground: hex_to_color(&self.special.foreground),
             border: hex_to_color(&self.colors.color7),
             accent: hex_to_color(&self.colors.color4),
+            // Convert all palette colors
+            color0: hex_to_color(&self.colors.color0),
+            color1: hex_to_color(&self.colors.color1),
+            color2: hex_to_color(&self.colors.color2),
+            color3: hex_to_color(&self.colors.color3),
+            color4: hex_to_color(&self.colors.color4),
+            color5: hex_to_color(&self.colors.color5),
+            color6: hex_to_color(&self.colors.color6),
+            color7: hex_to_color(&self.colors.color7),
+            color8: hex_to_color(&self.colors.color8),
+            color9: hex_to_color(&self.colors.color9),
+            color10: hex_to_color(&self.colors.color10),
+            color11: hex_to_color(&self.colors.color11),
+            color12: hex_to_color(&self.colors.color12),
+            color13: hex_to_color(&self.colors.color13),
+            color14: hex_to_color(&self.colors.color14),
+            color15: hex_to_color(&self.colors.color15),
         }
     }
 }
