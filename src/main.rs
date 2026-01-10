@@ -1,13 +1,15 @@
 mod utils;
+mod config;
 
 use iced::widget::{container, text, stack};
-use iced::{Element, Event, Border, Color, Length, Alignment,  Task as Command, event};
+use iced::{Element, Event, Border, Color, Length, Alignment, Font, Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
 use iced_layershell::application;
 use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
 use iced_layershell::settings::{LayerShellSettings, Settings};
 use crate::utils::theme::{Theme, WalColors};
 use crate::utils::watcher::ColorWatcher;
+use crate::config::Config;
 
 fn main() -> Result<(), iced_layershell::Error> {
     application(
@@ -39,6 +41,7 @@ fn main() -> Result<(), iced_layershell::Error> {
 struct Launcher {
     theme: Theme,
     watcher: Option<ColorWatcher>,
+    config: Config,
 }
 
 #[derive(Debug, Clone)]
@@ -66,8 +69,9 @@ impl Launcher {
             });
 
         let watcher = ColorWatcher::new().ok();
+        let config = Config::load();
 
-        (Self { theme, watcher }, Command::none())
+        (Self { theme, watcher, config }, Command::none())
     }
 
     fn namespace() -> String {
@@ -113,60 +117,64 @@ impl Launcher {
     }
 
     fn view(&self) -> Element<'_, Message> {
-    let bg = self.theme.background;
-    let bg_with_alpha = Color::from_rgba(bg.r, bg.g, bg.b, 0.82);
+        let bg = self.theme.background;
+        let bg_with_alpha = Color::from_rgba(bg.r, bg.g, bg.b, 0.82);
 
-    container(
-        stack![
-            // 🔹 Main content (fills entire container)
-            container(
-                container(text(""))
-                    .padding(9)
-                    .height(Length::Fill)
-                    .style(move |_| container::Style {
-                        border: Border {
-                            color: self.theme.accent,
-                            width: 2.0,
-                            radius: 0.0.into(),
-                        },
-                        ..Default::default()
-                    })
-            )
-            .width(Length::Fill)
-            .height(Length::Fill),
+        let font_name = self.config.font.as_deref().unwrap_or("Monospace");
+        let font = Font::with_name(font_name);
+        let font_size = self.config.font_size.unwrap_or(22);
 
-            // 🔹 Header overlay (does NOT take layout space)
-            container(
-                text("Sierra_Launcher").size(22)
-            )
-            .padding([6, 10])
-            .align_x(Alignment::Start)
-            .align_y(Alignment::Start)
-            .style(move |_| container::Style {
-                background: Some(bg.into()),
-                border: Border {
-                    color: self.theme.accent,
-                    width: 2.0,
-                    radius: 0.0.into(),
-                },
-                ..Default::default()
-            }),
-        ]
-    )
-    .padding([11, 17])
-    .width(Length::Fill)
-    .height(Length::Fill)
-    .style(move |_| container::Style {
-        background: Some(bg_with_alpha.into()),
-        border: Border {
-            color: self.theme.border,
-            width: 2.0,
-            radius: 0.0.into(),
-        },
-        ..Default::default()
-    })
-    .into()
-}
+        container(
+            stack![
+                // 🔹 Main content (fills entire container)
+                container(
+                    container(text(""))
+                        .padding(9)
+                        .height(Length::Fill)
+                        .style(move |_| container::Style {
+                            border: Border {
+                                color: self.theme.accent,
+                                width: 2.0,
+                                radius: 0.0.into(),
+                            },
+                            ..Default::default()
+                        })
+                )
+                .width(Length::Fill)
+                .height(Length::Fill),
 
-
+                // 🔹 Header overlay (does NOT take layout space)
+                container(
+                    text("Sierra_Launcher")
+                        .size(font_size)
+                        .font(font)
+                )
+                .padding([6, 10])
+                .align_x(Alignment::Start)
+                .align_y(Alignment::Start)
+                .style(move |_| container::Style {
+                    background: Some(bg.into()),
+                    border: Border {
+                        color: self.theme.accent,
+                        width: 2.0,
+                        radius: 0.0.into(),
+                    },
+                    ..Default::default()
+                }),
+            ]
+        )
+        .padding([11, 17])
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .style(move |_| container::Style {
+            background: Some(bg_with_alpha.into()),
+            border: Border {
+                color: self.theme.border,
+                width: 2.0,
+                radius: 0.0.into(),
+            },
+            ..Default::default()
+        })
+        .into()
+    }
 }
