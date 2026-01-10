@@ -1,5 +1,5 @@
 use iced::widget::container;
-use iced::{Element, Event, Border,Background, Color, Length, Task as Command, event};
+use iced::{Element, Event, Border, Color, Length, Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
 use iced_layershell::application;
 use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
@@ -17,22 +17,20 @@ fn main() -> Result<(), iced_layershell::Error> {
             size: Some((480, 710)),
             anchor: Anchor::Bottom,
             keyboard_interactivity: KeyboardInteractivity::Exclusive,
-            margin: (0, 0, 10, 0), //TRBL
+            margin: (0, 0, 10, 0),
             ..Default::default()
         },
         ..Default::default()
     })
+    // In iced 0.13+, the application style closure expects iced::theme::Style
+    .style(|_theme, _id| iced::theme::Style {
+        background_color: Color::TRANSPARENT,
+        text_color: Color::WHITE,
+    })
     .subscription(Launcher::subscription)
     .run()?;
-    std::thread::sleep(std::time::Duration::from_millis(1));
+    
     Ok(())
-}
-
-impl TryInto<LayershellCustomActionWithId> for Message {
-    type Error = Self;
-    fn try_into(self) -> Result<LayershellCustomActionWithId, Self::Error> {
-        Err(self)
-    }
 }
 
 struct Launcher;
@@ -40,6 +38,13 @@ struct Launcher;
 #[derive(Debug, Clone)]
 enum Message {
     IcedEvent(Event),
+}
+
+impl TryInto<LayershellCustomActionWithId> for Message {
+    type Error = Self;
+    fn try_into(self) -> Result<LayershellCustomActionWithId, Self::Error> {
+        Err(self)
+    }
 }
 
 impl Launcher {
@@ -64,7 +69,7 @@ impl Launcher {
                 if let Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) = event {
                     match key {
                         keyboard::Key::Named(Named::Escape) => {
-                            return Command::done(std::process::exit(0));
+                            std::process::exit(0);
                         }
                         _ => {}
                     }
@@ -75,27 +80,21 @@ impl Launcher {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        container(
-            container("")
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .style(|_| container::Style {
-                    background: Some(Background::Color(Color::from_rgba(0.0, 0.0, 0.0, 0.9))), 
-                    border: Border {
-                        color: Color::from_rgb(0.4, 0.4, 0.4), 
-                        width: 1.0,
-                        radius: 0.0.into(), 
-                    },
-                    ..Default::default()
-                })
-        )
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .style(|_| container::Style {
-            background: None,
-            ..Default::default()
-        })
-        .into()
+        container(iced::widget::text("Sierra Launcher").color(Color::WHITE))
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(|_theme| container::Style {
+                // This controls the actual visual box
+                background: Some(Color::from_rgba(0.1, 0.0, 0.1, 0.4).into()), 
+                border: Border {
+                    color: Color::from_rgb(0.5, 0.5, 0.5),
+                    width: 2.0,
+                    radius: 15.0.into(),
+                },
+                ..Default::default()
+            })
+            .into()
     }
-
 }
