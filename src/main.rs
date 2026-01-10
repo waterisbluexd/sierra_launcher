@@ -1,65 +1,91 @@
-use iced::widget::{button, column, container, text};
-use iced::{Element, Length, Task};
-use iced_layershell::reexport::Anchor;
+use iced::widget::container;
+use iced::{Element, Event, Length, Task as Command, event};
+use iced_layershell::actions::LayershellCustomActionWithId;
+use iced_layershell::application;
+use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
 use iced_layershell::settings::{LayerShellSettings, Settings};
 
-pub fn main() -> Result<(), iced_layershell::Error> {
-    iced_layershell::run::<SierraLauncher>(Settings {
+fn main() -> Result<(), iced_layershell::Error> {
+    application(
+        Launcher::new,
+        Launcher::namespace,
+        Launcher::update,
+        Launcher::view,
+    )
+    .settings(Settings {
         layer_settings: LayerShellSettings {
-            size: Some((400, 300)),
-            anchor: Anchor::Top | Anchor::Left,
+            size: Some((480, 710)),
+            anchor: Anchor::empty(),
+            keyboard_interactivity: KeyboardInteractivity::Exclusive,
+            margin: (364, 0, 0, 760),
             ..Default::default()
         },
         ..Default::default()
     })
+    .subscription(Launcher::subscription)
+    .run()?;
+    std::thread::sleep(std::time::Duration::from_millis(1));
+    Ok(())
 }
 
-struct SierraLauncher {
-    counter: i32,
+impl TryInto<LayershellCustomActionWithId> for Message {
+    type Error = Self;
+    fn try_into(self) -> Result<LayershellCustomActionWithId, Self::Error> {
+        Err(self)
+    }
 }
+
+struct Launcher;
 
 #[derive(Debug, Clone)]
 enum Message {
-    Increment,
-    Decrement,
+    IcedEvent(Event),
 }
 
-impl iced::Application for SierraLauncher {
-    type Message = Message;
-    type Flags = ();
-    type Theme = iced::Theme;
-    type Executor = iced::executor::Default;
-
-    fn new(_flags: ()) -> (Self, Task<Message>) {
-        (SierraLauncher { counter: 0 }, Task::none())
+impl Launcher {
+    fn new() -> (Self, Command<Message>) {
+        (Self, Command::none())
     }
 
-    fn title(&self) -> String {
-        String::from("Sierra Launcher")
+    fn namespace() -> String {
+        String::from("iced_launcher2")
     }
 
-    fn update(&mut self, message: Message) -> Task<Message> {
+    fn subscription(&self) -> iced::Subscription<Message> {
+        event::listen().map(Message::IcedEvent)
+    }
+
+    fn update(&mut self, message: Message) -> Command<Message> {
+        use iced::keyboard;
+        use keyboard::key::Named;
+        
         match message {
-            Message::Increment => self.counter += 1,
-            Message::Decrement => self.counter -= 1,
+            Message::IcedEvent(event) => {
+                if let Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) = event {
+                    match key {
+                        keyboard::Key::Named(Named::Escape) => {
+                            return Command::done(std::process::exit(0));
+                        }
+                        _ => {}
+                    }
+                }
+                Command::none()
+            }
         }
-        Task::none()
     }
 
-    fn view(&self) -> Element<Message> {
-        container(
-            column![
-                text("Sierra Launcher").size(32),
-                text(format!("Counter: {}", self.counter)),
-                button("Increment").on_press(Message::Increment),
-                button("Decrement").on_press(Message::Decrement),
-            ]
-            .spacing(20)
-            .padding(20),
-        )
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .center(Length::Fill)
-        .into()
+    fn view(&self) -> Element<'_, Message> {
+        container("")
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(|_theme| container::Style {
+                background: Some(iced::Background::Color(iced::Color::from_rgb(
+                    0.42, // R
+                    0.31, // G
+                    0.22, // B
+                ))),
+                ..Default::default()
+            })
+            .into()
     }
 }
