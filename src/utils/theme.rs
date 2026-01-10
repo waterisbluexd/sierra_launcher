@@ -57,7 +57,7 @@ impl WalColors {
         Theme {
             background: hex_to_color(&self.special.background),
             foreground: hex_to_color(&self.special.foreground),
-            border: hex_to_color(&self.colors.color8),
+            border: hex_to_color(&self.colors.color7),
             accent: hex_to_color(&self.colors.color4),
         }
     }

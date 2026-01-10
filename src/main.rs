@@ -2,7 +2,7 @@ mod utils;
 mod config;
 
 use iced::widget::{container, text, stack};
-use iced::{Element, Event, Border, Color, Length, Alignment, Font, Task as Command, event};
+use iced::{Element, Event, Border, Color, Length, Font, Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
 use iced_layershell::application;
 use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
@@ -34,8 +34,18 @@ fn main() -> Result<(), iced_layershell::Error> {
     })
     .subscription(Launcher::subscription)
     .run()?;
-    
+
     Ok(())
+}
+
+/* ================================
+   Vertical text helper
+   ================================ */
+fn vertical_text(s: &str) -> String {
+    s.chars()
+        .map(|c| c.to_string())
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 struct Launcher {
@@ -80,25 +90,22 @@ impl Launcher {
 
     fn subscription(&self) -> iced::Subscription<Message> {
         use iced::window;
-        
+
         let events = event::listen().map(Message::IcedEvent);
         let frames = window::frames().map(|_| Message::CheckColors);
-        
+
         iced::Subscription::batch(vec![events, frames])
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
         use iced::keyboard;
         use keyboard::key::Named;
-        
+
         match message {
             Message::IcedEvent(event) => {
                 if let Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) = event {
-                    match key {
-                        keyboard::Key::Named(Named::Escape) => {
-                            std::process::exit(0);
-                        }
-                        _ => {}
+                    if let keyboard::Key::Named(Named::Escape) = key {
+                        std::process::exit(0);
                     }
                 }
                 Command::none()
@@ -115,66 +122,87 @@ impl Launcher {
             }
         }
     }
-
     fn view(&self) -> Element<'_, Message> {
-        let bg = self.theme.background;
-        let bg_with_alpha = Color::from_rgba(bg.r, bg.g, bg.b, 0.82);
+    let bg = self.theme.background;
+    let bg_with_alpha = Color::from_rgba(bg.r, bg.g, bg.b, 0.82);
 
-        let font_name = self.config.font.as_deref().unwrap_or("Monospace");
-        let font = Font::with_name(font_name);
-        let font_size = self.config.font_size.unwrap_or(22);
+    let font = match self.config.font.as_deref() {
+        Some("Monocraft") => Font::with_name("Monocraft"),
+        Some("Monospace") => Font::with_name("Monospace"),
+        _ => Font::default(),
+    };
+    let font_size = self.config.font_size.unwrap_or(22.0);
 
-        container(
-            stack![
-                // 🔹 Main content (fills entire container)
+    let title = vertical_text(&" sierra-launcher ");
+
+    // Main container (1)
+    container(
+        stack![
+            // Container 2 - first child of main
+            container(
+                // Container 4 - nested inside container 2
+                container(text(""))
+                    .padding(9)
+                    .height(Length::Fill)
+                    .style(move |_| container::Style {
+                        background: Some(bg_with_alpha.into()),
+                        border: Border {
+                            color: self.theme.border,
+                            width: 2.0,
+                            radius: 0.0.into(),
+                        },
+                        ..Default::default()
+                    })
+            )
+            .padding(14)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(move |_| container::Style {
+                background: Some(bg_with_alpha.into()),
+                ..Default::default()
+            }),
+
+            // Container 3 - second child of main
+            container(
+                // Container 5 - nested inside container 3
                 container(
-                    container(text(""))
-                        .padding(9)
-                        .height(Length::Fill)
-                        .style(move |_| container::Style {
-                            border: Border {
-                                color: self.theme.accent,
-                                width: 2.0,
-                                radius: 0.0.into(),
-                            },
-                            ..Default::default()
-                        })
+                    // Container 6 - nested inside container 5
+                    container(
+                        text(title)
+                            .font(font)  // Apply the font here
+                            .size(font_size)  // Apply the font size here
+                    )
+                    .padding(0)
+                    .style(move |_| container::Style {
+                        background: Some(bg_with_alpha.into()),
+                        ..Default::default()
+                    })
                 )
-                .width(Length::Fill)
-                .height(Length::Fill),
-
-                // 🔹 Header overlay (does NOT take layout space)
-                container(
-                    text("Sierra_Launcher")
-                        .size(font_size)
-                        .font(font)
-                )
-                .padding([6, 10])
-                .align_x(Alignment::Start)
-                .align_y(Alignment::Start)
+                .padding([20,10])
                 .style(move |_| container::Style {
-                    background: Some(bg.into()),
-                    border: Border {
-                        color: self.theme.accent,
-                        width: 2.0,
-                        radius: 0.0.into(),
-                    },
                     ..Default::default()
-                }),
-            ]
-        )
-        .padding([11, 17])
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .style(move |_| container::Style {
-            background: Some(bg_with_alpha.into()),
-            border: Border {
-                color: self.theme.border,
-                width: 2.0,
-                radius: 0.0.into(),
-            },
-            ..Default::default()
-        })
-        .into()
-    }
+                })
+            )
+            .padding(0)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(move |_| container::Style {
+                ..Default::default()
+            }),
+        ]
+    )
+    .padding(2)
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .style(move |_| container::Style {
+        background: Some(bg_with_alpha.into()),
+        border: Border {
+            color: self.theme.border,
+            width: 2.0,
+            radius: 0.0.into(),
+        },
+        ..Default::default()
+    })
+    .into()
+}
 }

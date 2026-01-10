@@ -5,7 +5,7 @@ use std::path::Path;
 #[derive(Deserialize, Debug)]
 pub struct Config {
     pub font: Option<String>,
-    pub font_size: Option<u16>,
+    pub font_size: Option<f32>,
 }
 
 impl Config {
@@ -25,7 +25,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             font: Some("Monospace".to_string()),
-            font_size: Some(14),
+            font_size: Some(14.0),
         }
     }
 }
