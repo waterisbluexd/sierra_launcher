@@ -1,4 +1,4 @@
-use iced::widget::container;
+use iced::widget::{container,column,text};
 use iced::{Element, Event, Border, Color, Length, Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
 use iced_layershell::application;
@@ -14,10 +14,10 @@ fn main() -> Result<(), iced_layershell::Error> {
     )
     .settings(Settings {
         layer_settings: LayerShellSettings {
-            size: Some((480, 710)),
+            size: Some((484, 714)),
             anchor: Anchor::Bottom,
             keyboard_interactivity: KeyboardInteractivity::Exclusive,
-            margin: (0, 0, 3, 0),
+            margin: (0, 0, 4, 0),
             ..Default::default()
         },
         ..Default::default()
@@ -80,20 +80,37 @@ impl Launcher {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        container(iced::widget::text("Sierra Launcher").color(Color::WHITE))
-            .center_x(Length::Fill)
-            .center_y(Length::Fill)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .style(|_theme| container::Style {
-                background: Some(Color::from_rgba(0.1, 0.0, 0.0, 0.9).into()), 
-                border: Border {
-                    color: Color::from_rgb(0.5, 0.5, 0.5),
-                    width: 2.0,
-                    radius: 0.0.into(),
-                },
-                ..Default::default()
-            })
-            .into()
-    }
+    container(
+        column![
+            text("")
+                .color(Color::WHITE),
+
+            // Container 2 (border only)
+            container(text(""))
+                .padding(10)
+                .style(|_| container::Style {
+                    border: Border {
+                        color: Color::from_rgb(0.6, 0.6, 0.6),
+                        width: 2.0,
+                        radius: 0.0.into(),
+                    },
+                    ..Default::default()
+                })
+        ]
+        .spacing(12)
+    )
+    .padding(15)
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .style(|_| container::Style {
+        background: Some(Color::from_rgba(0.1, 0.0, 0.0, 0.6).into()),
+        border: Border {
+            color: Color::from_rgb(0.5, 0.5, 0.5),
+            width: 2.0,
+            radius: 0.0.into(),
+        },
+        ..Default::default()
+    })
+    .into()
+}
 }
