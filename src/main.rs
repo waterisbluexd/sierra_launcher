@@ -17,12 +17,12 @@ fn main() -> Result<(), iced_layershell::Error> {
             size: Some((480, 710)),
             anchor: Anchor::Bottom,
             keyboard_interactivity: KeyboardInteractivity::Exclusive,
-            margin: (0, 0, 10, 0),
+            margin: (0, 0, 3, 0),
             ..Default::default()
         },
         ..Default::default()
     })
-    // In iced 0.13+, the application style closure expects iced::theme::Style
+
     .style(|_theme, _id| iced::theme::Style {
         background_color: Color::TRANSPARENT,
         text_color: Color::WHITE,
@@ -86,12 +86,11 @@ impl Launcher {
             .width(Length::Fill)
             .height(Length::Fill)
             .style(|_theme| container::Style {
-                // This controls the actual visual box
-                background: Some(Color::from_rgba(0.1, 0.0, 0.1, 0.4).into()), 
+                background: Some(Color::from_rgba(0.1, 0.0, 0.0, 0.8).into()), 
                 border: Border {
                     color: Color::from_rgb(0.5, 0.5, 0.5),
                     width: 2.0,
-                    radius: 15.0.into(),
+                    radius: 0.0.into(),
                 },
                 ..Default::default()
             })
