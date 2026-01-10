@@ -1,8 +1,8 @@
 mod theme;
 mod watcher;
 
-use iced::widget::{container, column, text};
-use iced::{Element, Event, Border, Color, Length, Task as Command, event};
+use iced::widget::{container, column, text, stack};
+use iced::{Element, Event, Border, Color, Length, Alignment,  Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
 use iced_layershell::application;
 use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
@@ -114,11 +114,13 @@ impl Launcher {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        let bg = self.theme.background;
-        let bg_with_alpha = Color::from_rgba(bg.r, bg.g, bg.b, 0.82);
+    let bg = self.theme.background;
+    let bg_with_alpha = Color::from_rgba(bg.r, bg.g, bg.b, 0.82);
 
-        container(
-            column![
+    container(
+        stack![
+            // 🔹 Main content (fills entire container)
+            container(
                 container(text(""))
                     .padding(9)
                     .height(Length::Fill)
@@ -130,21 +132,42 @@ impl Launcher {
                         },
                         ..Default::default()
                     })
-            ]
-            .spacing(12)
-        )
-        .padding([11, 17])
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .style(move |_| container::Style {
-            background: Some(bg_with_alpha.into()),
-            border: Border {
-                color: self.theme.border,
-                width: 2.0,
-                radius: 0.0.into(),
-            },
-            ..Default::default()
-        })
-        .into()
-    }
+            )
+            .width(Length::Fill)
+            .height(Length::Fill),
+
+            // 🔹 Header overlay (does NOT take layout space)
+            container(
+                text("Sierra_Launcher").size(22)
+            )
+            .padding([6, 10])
+            .align_x(Alignment::Start)
+            .align_y(Alignment::Start)
+            .style(move |_| container::Style {
+                background: Some(bg.into()),
+                border: Border {
+                    color: self.theme.accent,
+                    width: 2.0,
+                    radius: 0.0.into(),
+                },
+                ..Default::default()
+            }),
+        ]
+    )
+    .padding([11, 17])
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .style(move |_| container::Style {
+        background: Some(bg_with_alpha.into()),
+        border: Border {
+            color: self.theme.border,
+            width: 2.0,
+            radius: 0.0.into(),
+        },
+        ..Default::default()
+    })
+    .into()
+}
+
+
 }
