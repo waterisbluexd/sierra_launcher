@@ -1,14 +1,13 @@
-mod theme;
-mod watcher;
+mod utils;
 
-use iced::widget::{container, column, text, stack};
+use iced::widget::{container, text, stack};
 use iced::{Element, Event, Border, Color, Length, Alignment,  Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
 use iced_layershell::application;
 use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
 use iced_layershell::settings::{LayerShellSettings, Settings};
-use theme::{Theme, WalColors};
-use watcher::ColorWatcher;
+use crate::utils::theme::{Theme, WalColors};
+use crate::utils::watcher::ColorWatcher;
 
 fn main() -> Result<(), iced_layershell::Error> {
     application(
