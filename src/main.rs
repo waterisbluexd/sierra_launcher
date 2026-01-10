@@ -86,7 +86,7 @@ impl Launcher {
             .width(Length::Fill)
             .height(Length::Fill)
             .style(|_theme| container::Style {
-                background: Some(Color::from_rgba(0.1, 0.0, 0.0, 0.8).into()), 
+                background: Some(Color::from_rgba(0.1, 0.0, 0.0, 0.9).into()), 
                 border: Border {
                     color: Color::from_rgb(0.5, 0.5, 0.5),
                     width: 2.0,
