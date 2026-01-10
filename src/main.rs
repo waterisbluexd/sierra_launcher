@@ -82,12 +82,9 @@ impl Launcher {
     fn view(&self) -> Element<'_, Message> {
     container(
         column![
-            text("")
-                .color(Color::WHITE),
-
-            // Container 2 (border only)
             container(text(""))
-                .padding(10)
+                .padding(9)
+                .height(Length::Fill)
                 .style(|_| container::Style {
                     border: Border {
                         color: Color::from_rgb(0.6, 0.6, 0.6),
@@ -99,11 +96,11 @@ impl Launcher {
         ]
         .spacing(12)
     )
-    .padding(15)
+    .padding([11,17])
     .width(Length::Fill)
     .height(Length::Fill)
     .style(|_| container::Style {
-        background: Some(Color::from_rgba(0.1, 0.0, 0.0, 0.6).into()),
+        background: Some(Color::from_rgba(0.15, 0.15, 0.18, 0.82).into()),
         border: Border {
             color: Color::from_rgb(0.5, 0.5, 0.5),
             width: 2.0,
