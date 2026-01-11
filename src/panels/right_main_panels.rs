@@ -2,12 +2,14 @@ use iced::widget::{container, text, column, stack, row};
 use iced::{Element, Border, Color, Length};
 use crate::utils::theme::Theme;
 use crate::Message;
+use crate::panels::search_bar::SearchBar;
 
 pub fn right_main_panels_view<'a>(
     theme: &'a Theme,
     bg_with_alpha: Color,
     font: iced::Font,
     font_size: f32,
+    search_bar: &'a SearchBar,
 ) -> Element<'a, Message> {
     container(
         column![
@@ -89,18 +91,21 @@ pub fn right_main_panels_view<'a>(
                 stack![
                     container(
                         row![
-                            container(text(""))
-                                .width(Length::FillPortion(1))
-                                .height(Length::Fixed(35.0))
-                                .style(move |_| container::Style {
-                                    background: Some(bg_with_alpha.into()),
-                                    border: Border {
-                                        color: theme.color6,
-                                        width: 2.0,
-                                        radius: 0.0.into(),
-                                    },
-                                    ..Default::default()
-                                }),
+                            // Search Bar container this container will allow user to add input like text 
+                            container(
+                                search_bar.view(theme, font, font_size).map(Message::SearchBarMessage)
+                            )
+                            .width(Length::FillPortion(1))
+                            .height(Length::Fixed(35.0))
+                            .style(move |_| container::Style {
+                                background: Some(bg_with_alpha.into()),
+                                border: Border {
+                                    color: theme.color6,
+                                    width: 2.0,
+                                    radius: 0.0.into(),
+                                },
+                                ..Default::default()
+                            }),
 
                             container(
                                 text(" ")  // POWER BUTTON HERE

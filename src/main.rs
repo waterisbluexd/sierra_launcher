@@ -11,6 +11,8 @@ use iced_layershell::settings::{LayerShellSettings, Settings};
 use crate::utils::theme::{Theme, WalColors};
 use crate::utils::watcher::ColorWatcher;
 use crate::config::Config;
+use crate::panels::search_bar::{self, SearchBar};
+use crate::panels::right_main_panels::right_main_panels_view;
 
 fn main() -> Result<(), iced_layershell::Error> {
     application(
@@ -53,12 +55,14 @@ struct Launcher {
     theme: Theme,
     watcher: Option<ColorWatcher>,
     config: Config,
+    search_bar: SearchBar,
 }
 
 #[derive(Debug, Clone)]
 enum Message {
     IcedEvent(Event),
     CheckColors,
+    SearchBarMessage(search_bar::Message),
 }
 
 impl TryInto<LayershellCustomActionWithId> for Message {
@@ -97,8 +101,9 @@ impl Launcher {
 
         let watcher = ColorWatcher::new().ok();
         let config = Config::load();
+        let search_bar = SearchBar::new();
 
-        (Self { theme, watcher, config }, Command::none())
+        (Self { theme, watcher, config, search_bar }, Command::none())
     }
 
     fn namespace() -> String {
@@ -136,6 +141,19 @@ impl Launcher {
                     }
                 }
                 Command::none()
+            }
+            Message::SearchBarMessage(search_bar_message) => {
+                match search_bar_message {
+                    search_bar::Message::InputChanged(value) => {
+                        self.search_bar.input_value = value;
+                        Command::none()
+                    }
+                    search_bar::Message::Submitted => {
+                        println!("Search submitted: {}", self.search_bar.input_value);
+                        // Here you would typically trigger a search action
+                        Command::none()
+                    }
+                }
             }
         }
     }
@@ -191,7 +209,7 @@ impl Launcher {
                             .height(Length::Fill)
                             .width(Length::Shrink),
                         // Second container: height = Fill, width = Fill
-                        container(panels::right_main_panels_view(&self.theme, bg_with_alpha, font, font_size))
+                        container(right_main_panels_view(&self.theme, bg_with_alpha, font, font_size, &self.search_bar))
                         .height(Length::Fill)
                         .width(Length::Fill),
                     ]
