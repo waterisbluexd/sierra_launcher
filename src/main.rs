@@ -191,7 +191,7 @@ impl Launcher {
                             .height(Length::Fill)
                             .width(Length::Shrink),
                         // Second container: height = Fill, width = Fill
-                        container(panels::right_main_panels_view(&self.theme, bg_with_alpha))
+                        container(panels::right_main_panels_view(&self.theme, bg_with_alpha, font, font_size))
                         .height(Length::Fill)
                         .width(Length::Fill),
                     ]

@@ -6,13 +6,15 @@ use crate::Message;
 pub fn right_main_panels_view<'a>(
     theme: &'a Theme,
     bg_with_alpha: Color,
+    font: iced::Font,
+    font_size: f32,
 ) -> Element<'a, Message> {
     container(
         column![
             // ──────────────────────────────
             // Panel 1
             // ──────────────────────────────
-            container(text("Panel 1"))
+            container(text("Panel 1").font(font).size(font_size))
                 .width(Length::Fill)
                 .height(Length::FillPortion(1))
                 .style(move |_| container::Style {
@@ -23,7 +25,7 @@ pub fn right_main_panels_view<'a>(
             // ──────────────────────────────
             // Panel 2
             // ──────────────────────────────
-            container(text("Panel 2"))
+            container(text("Panel 2").font(font).size(font_size))
                 .width(Length::Fill)
                 .height(Length::FillPortion(2))
                 .style(move |_| container::Style {
@@ -52,7 +54,7 @@ pub fn right_main_panels_view<'a>(
                                     ..Default::default()
                                 }),
                             
-                            container(text("PowerOff"))
+                            container(text("PowerOff").font(font).size(font_size))
                                 .width(Length::Fixed(35.0))
                                 .height(Length::Fill)
                                 .style(move |_| container::Style {
@@ -78,7 +80,7 @@ pub fn right_main_panels_view<'a>(
                     
                     // Foreground layer (top) - the "Input" text
                     container(
-                        container(text(" Input "))
+                        container(text(" Input ").font(font).size(font_size))
                             .padding(0)
                             .width(Length::Shrink)
                             .height(Length::Shrink)
