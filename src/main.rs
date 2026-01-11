@@ -5,13 +5,13 @@ mod panels;
 use iced::widget::{container, text, stack, row};
 use iced::{Element, Event, Border, Color, Length, Font, Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
-use iced_layershell::application;
 use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
 use iced_layershell::settings::{LayerShellSettings, Settings};
 use crate::utils::theme::{Theme, WalColors};
 use crate::utils::watcher::ColorWatcher;
 use crate::config::Config;
 use crate::panels::search_bar::{self, SearchBar};
+use crate::panels::app_list::{self, AppList};
 use crate::panels::right_main_panels::right_main_panels_view;
 
 fn main() -> Result<(), iced_layershell::Error> {
@@ -56,6 +56,7 @@ struct Launcher {
     watcher: Option<ColorWatcher>,
     config: Config,
     search_bar: SearchBar,
+    app_list: AppList,
 }
 
 #[derive(Debug, Clone)]
@@ -63,6 +64,7 @@ enum Message {
     IcedEvent(Event),
     CheckColors,
     SearchBarMessage(search_bar::Message),
+    AppListMessage(app_list::Message),
 }
 
 impl TryInto<LayershellCustomActionWithId> for Message {
@@ -102,8 +104,9 @@ impl Launcher {
         let watcher = ColorWatcher::new().ok();
         let config = Config::load();
         let search_bar = SearchBar::new();
+        let app_list = AppList::new();
 
-        (Self { theme, watcher, config, search_bar }, Command::none())
+        (Self { theme, watcher, config, search_bar, app_list }, Command::none())
     }
 
     fn namespace() -> String {
@@ -145,15 +148,19 @@ impl Launcher {
             Message::SearchBarMessage(search_bar_message) => {
                 match search_bar_message {
                     search_bar::Message::InputChanged(value) => {
-                        self.search_bar.input_value = value;
+                        self.search_bar.input_value = value.clone();
+                        self.app_list.update(app_list::Message::SearchInput(value));
                         Command::none()
                     }
                     search_bar::Message::Submitted => {
                         println!("Search submitted: {}", self.search_bar.input_value);
-                        // Here you would typically trigger a search action
                         Command::none()
                     }
                 }
+            }
+            Message::AppListMessage(app_list_message) => {
+                self.app_list.update(app_list_message);
+                Command::none()
             }
         }
     }
@@ -209,7 +216,7 @@ impl Launcher {
                             .height(Length::Fill)
                             .width(Length::Shrink),
                         // Second container: height = Fill, width = Fill
-                        container(right_main_panels_view(&self.theme, bg_with_alpha, font, font_size, &self.search_bar))
+                        container(right_main_panels_view(&self.theme, bg_with_alpha, font, font_size, &self.search_bar, &self.app_list))
                         .height(Length::Fill)
                         .width(Length::Fill),
                     ]

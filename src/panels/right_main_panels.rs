@@ -3,6 +3,7 @@ use iced::{Element, Border, Color, Length};
 use crate::utils::theme::Theme;
 use crate::Message;
 use crate::panels::search_bar::SearchBar;
+use crate::panels::app_list::{self, AppList};
 
 pub fn right_main_panels_view<'a>(
     theme: &'a Theme,
@@ -10,16 +11,15 @@ pub fn right_main_panels_view<'a>(
     font: iced::Font,
     font_size: f32,
     search_bar: &'a SearchBar,
+    app_list: &'a AppList,
 ) -> Element<'a, Message> {
     container(
         column![
             // ──────────────────────────────
-            // Panel 1
+            // Panel 1 - now AppList
             // ──────────────────────────────
             container(
-                text("Panel 1")
-                    .font(font)
-                    .size(font_size)
+                app_list.view(theme, font, font_size).map(Message::AppListMessage)
             )
             .width(Length::Fill)
             .height(Length::Fill)
