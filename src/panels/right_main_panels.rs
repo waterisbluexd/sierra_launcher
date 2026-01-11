@@ -5,6 +5,10 @@ use crate::Message;
 use crate::panels::search_bar::SearchBar;
 use crate::panels::app_list::AppList;
 use crate::panels::clock;
+use crate::panels::weather;
+
+
+use crate::Panel;
 
 pub fn right_main_panels_view<'a>(
     theme: &'a Theme,
@@ -13,13 +17,19 @@ pub fn right_main_panels_view<'a>(
     font_size: f32,
     search_bar: &'a SearchBar,
     app_list: &'a AppList,
+    current_panel: crate::Panel,
 ) -> Element<'a, Message> {
+    let current_view = match current_panel {
+        Panel::Clock => clock::clock_panel_view(theme, bg_with_alpha, font, font_size),
+        Panel::Weather => weather::weather_panel_view(theme, bg_with_alpha, font, font_size),
+    };
+    
     container(
         column![
             // ──────────────────────────────
-            // Panel 1 - Clock
+            // Panel 1 - Clock or Weather
             // ──────────────────────────────
-            clock::clock_panel_view(theme, bg_with_alpha, font, font_size),
+            current_view,
             // ──────────────────────────────
             // Panel 2 (FIXED)
             // ──────────────────────────────

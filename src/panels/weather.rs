@@ -42,7 +42,7 @@ radius: 0.0.into(),
 // Floating title label
             container(
                 container(
-                    text(" Clock ")
+                    text(" Weather ")
 .color(theme.color6)
 .font(font)
 .size(font_size)

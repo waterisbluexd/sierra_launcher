@@ -52,12 +52,19 @@ fn vertical_text(s: &str) -> String {
         .join("\n")
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Panel {
+    Clock,
+    Weather,
+}
+
 struct Launcher {
     theme: Theme,
     watcher: Option<ColorWatcher>,
     config: Config,
     search_bar: SearchBar,
     app_list: AppList,
+    current_panel: Panel,
 }
 
 #[derive(Debug, Clone)]
@@ -66,6 +73,13 @@ enum Message {
     CheckColors,
     SearchBarMessage(search_bar::Message),
     AppListMessage(app_list::Message),
+    CyclePanel(Direction),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Direction {
+    Left,
+    Right,
 }
 
 impl TryInto<LayershellCustomActionWithId> for Message {
@@ -109,7 +123,7 @@ impl Launcher {
         let search_bar = SearchBar::new();
         let app_list = AppList::new();
 
-        (Self { theme, watcher, config, search_bar, app_list }, Command::none())
+        (Self { theme, watcher, config, search_bar, app_list, current_panel: Panel::Clock }, Command::none())
     }
 
     fn namespace() -> String {
@@ -141,6 +155,12 @@ impl Launcher {
                         }
                         keyboard::Key::Named(Named::ArrowDown) => {
                             let _ = self.app_list.update(app_list::Message::ArrowDown);
+                        }
+                        keyboard::Key::Named(Named::ArrowLeft) => {
+                            return Command::perform(async {}, |_| Message::CyclePanel(Direction::Left));
+                        }
+                        keyboard::Key::Named(Named::ArrowRight) => {
+                            return Command::perform(async {}, |_| Message::CyclePanel(Direction::Right));
                         }
                         keyboard::Key::Named(Named::Enter) => {
                             let _ = self.app_list.update(app_list::Message::LaunchSelected);
@@ -179,6 +199,16 @@ impl Launcher {
             
             Message::AppListMessage(app_list_message) => {
                 let _ = self.app_list.update(app_list_message);
+                Command::none()
+            }
+
+            Message::CyclePanel(direction) => {
+                self.current_panel = match (self.current_panel, direction) {
+                    (Panel::Clock, Direction::Left) => Panel::Weather,
+                    (Panel::Clock, Direction::Right) => Panel::Weather,
+                    (Panel::Weather, Direction::Left) => Panel::Clock,
+                    (Panel::Weather, Direction::Right) => Panel::Clock,
+                };
                 Command::none()
             }
         }
@@ -235,7 +265,7 @@ impl Launcher {
                             .height(Length::Fill)
                             .width(Length::Shrink),
                         // Second container: height = Fill, width = Fill
-                        container(right_main_panels_view(&self.theme, bg_with_alpha, font, font_size, &self.search_bar, &self.app_list))
+                        container(right_main_panels_view(&self.theme, bg_with_alpha, font, font_size, &self.search_bar, &self.app_list, self.current_panel))
                         .height(Length::Fill)
                         .width(Length::Fill),
                     ]
