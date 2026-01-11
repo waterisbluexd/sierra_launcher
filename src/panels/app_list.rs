@@ -1,5 +1,5 @@
-use iced::widget::{column, container, row, scrollable, text};
-use iced::{Border, Element, Length};
+use iced::widget::{column, container, row, scrollable, text, operation};
+use iced::{Border, Element, Length, Task};
 use gio::prelude::*;
 use gio::{AppLaunchContext, DesktopAppInfo};
 
@@ -25,6 +25,7 @@ pub struct AppList {
     filtered_apps: Vec<App>,
     pub search_query: String,
     pub selected_index: usize,
+    scroll_id: iced::widget::Id,
 }
 
 impl AppList {
@@ -36,6 +37,7 @@ impl AppList {
             all_apps,
             search_query: String::new(),
             selected_index: 0,
+            scroll_id: iced::widget::Id::unique(),
         }
     }
 
@@ -87,26 +89,46 @@ impl AppList {
         }
     }
 
-    pub fn update(&mut self, message: Message) {
+    pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::SearchInput(query) => {
                 self.search_query = query;
                 self.filter_apps();
+                Task::none()
             }
             Message::ArrowUp => {
                 if self.selected_index > 0 {
                     self.selected_index -= 1;
+                    self.scroll_to_selected()
+                } else {
+                    Task::none()
                 }
             }
             Message::ArrowDown => {
                 if self.selected_index + 1 < self.filtered_apps.len() {
                     self.selected_index += 1;
+                    self.scroll_to_selected()
+                } else {
+                    Task::none()
                 }
             }
             Message::LaunchSelected => {
                 self.launch_selected();
+                Task::none()
             }
         }
+    }
+
+    fn scroll_to_selected(&self) -> Task<Message> {
+        // Calculate the approximate offset based on item height
+        // Adjust 30.0 to match your actual item height (including spacing/padding)
+        let item_height = 30.0;
+        let offset = self.selected_index as f32 * item_height;
+        
+        operation::snap_to(
+            self.scroll_id.clone(),
+            scrollable::RelativeOffset { x: 0.0, y: offset },
+        )
     }
 
     fn launch_selected(&self) {
@@ -165,6 +187,7 @@ impl AppList {
         }
 
         scrollable(items)
+            .id(self.scroll_id.clone())
             .width(Length::Fill)
             .height(Length::Fill)
             .style(|_, _| scrollable::Style {
