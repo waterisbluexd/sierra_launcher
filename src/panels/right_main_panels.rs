@@ -95,7 +95,7 @@ pub fn right_main_panels_view<'a>(
                                 .style(move |_| container::Style {
                                     background: Some(bg_with_alpha.into()),
                                     border: Border {
-                                        color: theme.color3,
+                                        color: theme.color6,
                                         width: 2.0,
                                         radius: 0.0.into(),
                                     },
@@ -103,7 +103,7 @@ pub fn right_main_panels_view<'a>(
                                 }),
 
                             container(
-                                text("PowerOff")
+                                text(" ")  // POWER BUTTON HERE
                                     .font(font)
                                     .size(font_size)
                             )
@@ -112,7 +112,7 @@ pub fn right_main_panels_view<'a>(
                             .style(move |_| container::Style {
                                 background: None,
                                 border: Border {
-                                    color: theme.color3,
+                                    color: theme.color6,
                                     width: 2.0,
                                     radius: 0.0.into(),
                                 },
