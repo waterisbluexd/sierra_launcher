@@ -19,7 +19,7 @@ pub fn right_main_panels_view<'a>(
             // Panel 1 - now AppList
             // ──────────────────────────────
             container(
-                app_list.view(theme, font, font_size).map(Message::AppListMessage)
+                text("")
             )
             .width(Length::Fill)
             .height(Length::Fill)
@@ -27,7 +27,6 @@ pub fn right_main_panels_view<'a>(
                 background: Some(Color::from_rgb(0.2, 0.3, 0.4).into()),
                 ..Default::default()
             }),
-
             // ──────────────────────────────
             // Panel 2 (FIXED)
             // ──────────────────────────────
@@ -35,8 +34,16 @@ pub fn right_main_panels_view<'a>(
                 stack![
                     container(
                         container(
-                            // THIS PANEL CONTAINS ALL THE APP IN LIST
-                            app_list.view(theme, font, font_size).map(Message::AppListMessage)
+                            container(
+                                app_list.view(theme, font, font_size).map(Message::AppListMessage)
+                            )
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                            .padding(10)
+                            .style(move |_| container::Style {
+                                background: None,
+                                ..Default::default()
+                            }),
                         )
                             .height(Length::Fill)
                             .width(Length::Fill)
