@@ -3,7 +3,7 @@ use iced::{Element, Border, Color, Length};
 use crate::utils::theme::Theme;
 use crate::Message;
 use crate::panels::search_bar::SearchBar;
-use crate::panels::app_list::{self, AppList};
+use crate::panels::app_list::AppList;
 
 pub fn right_main_panels_view<'a>(
     theme: &'a Theme,
@@ -34,7 +34,10 @@ pub fn right_main_panels_view<'a>(
             container(
                 stack![
                     container(
-                        container(text(""))
+                        container(
+                            // THIS PANEL CONTAINS ALL THE APP IN LIST
+                            app_list.view(theme, font, font_size).map(Message::AppListMessage)
+                        )
                             .height(Length::Fill)
                             .width(Length::Fill)
                             .style(move |_| container::Style {
@@ -56,7 +59,7 @@ pub fn right_main_panels_view<'a>(
                         }),
 
                     container(
-                        container(
+                        container( 
                             text(" Apps ")
                                 .color(theme.color6)
                                 .font(font)

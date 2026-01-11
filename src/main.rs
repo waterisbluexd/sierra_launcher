@@ -2,6 +2,7 @@ mod utils;
 mod config;
 mod panels;
 
+use iced_layershell::application;
 use iced::widget::{container, text, stack, row};
 use iced::{Element, Event, Border, Color, Length, Font, Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
