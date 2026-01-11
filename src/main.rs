@@ -135,13 +135,13 @@ impl Launcher {
                 std::process::exit(0);
             }
             keyboard::Key::Named(Named::ArrowUp) => {
-                self.app_list.update(app_list::Message::ArrowUp);
+                let _ = self.app_list.update(app_list::Message::ArrowUp);
             }
             keyboard::Key::Named(Named::ArrowDown) => {
-                self.app_list.update(app_list::Message::ArrowDown);
+                let _ = self.app_list.update(app_list::Message::ArrowDown);
             }
             keyboard::Key::Named(Named::Enter) => {
-                self.app_list.update(app_list::Message::LaunchSelected);
+                let _ = self.app_list.update(app_list::Message::LaunchSelected);
             }
             _ => {}
         }
@@ -164,7 +164,7 @@ impl Launcher {
                 match search_bar_message {
                     search_bar::Message::InputChanged(value) => {
                         self.search_bar.input_value = value.clone();
-                        self.app_list.update(app_list::Message::SearchInput(value));
+                        let _ = self.app_list.update(app_list::Message::SearchInput(value));
                         Command::none()
                     }
                     search_bar::Message::Submitted => {
@@ -174,7 +174,7 @@ impl Launcher {
                 }
             }
             Message::AppListMessage(app_list_message) => {
-                self.app_list.update(app_list_message);
+                let _ = self.app_list.update(app_list_message);
                 Command::none()
             }
         }

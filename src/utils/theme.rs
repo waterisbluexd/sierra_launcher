@@ -13,6 +13,7 @@ pub struct WalColors {
 pub struct SpecialColors {
     pub background: String,
     pub foreground: String,
+    #[allow(dead_code)]
     pub cursor: String,
 }
 
@@ -41,23 +42,40 @@ pub struct Theme {
     pub background: Color,
     pub foreground: Color,
     pub border: Color,
+    #[allow(dead_code)]
     pub accent: Color,
     // Add all 16 colors from the palette
+    #[allow(dead_code)]
     pub color0: Color,
+    #[allow(dead_code)]
     pub color1: Color,
+    #[allow(dead_code)]
     pub color2: Color,
+    #[allow(dead_code)]
     pub color3: Color,
+    #[allow(dead_code)]
     pub color4: Color,
+    #[allow(dead_code)]
     pub color5: Color,
+    #[allow(dead_code)]
     pub color6: Color,
+    #[allow(dead_code)]
     pub color7: Color,
+    #[allow(dead_code)]
     pub color8: Color,
+    #[allow(dead_code)]
     pub color9: Color,
+    #[allow(dead_code)]
     pub color10: Color,
+    #[allow(dead_code)]
     pub color11: Color,
+    #[allow(dead_code)]
     pub color12: Color,
+    #[allow(dead_code)]
     pub color13: Color,
+    #[allow(dead_code)]
     pub color14: Color,
+    #[allow(dead_code)]
     pub color15: Color,
 }
 
