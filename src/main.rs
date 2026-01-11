@@ -197,7 +197,7 @@ impl Launcher {
                     ]
                     .spacing(45)
                 )
-                .padding(iced::padding::bottom(15).right(15))
+                .padding(iced::padding::bottom(14).right(14))
                 .width(Length::Fill)
                 .height(Length::Fill),
                 // =========================

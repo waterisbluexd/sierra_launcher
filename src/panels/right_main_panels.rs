@@ -45,7 +45,7 @@ pub fn right_main_panels_view<'a>(
                                 .style(move |_| container::Style {
                                     background: Some(bg_with_alpha.into()),
                                     border: Border {
-                                        color: theme.border,
+                                        color: theme.color3,
                                         width: 2.0,
                                         radius: 0.0.into(),
                                     },
@@ -56,7 +56,12 @@ pub fn right_main_panels_view<'a>(
                                 .width(Length::Fixed(35.0))
                                 .height(Length::Fill)
                                 .style(move |_| container::Style {
-                                    background: Some(Color::from_rgb(0.5, 0.6, 0.7).into()),
+                                    background:None,
+                                    border: Border {
+                                        color: theme.color3,
+                                        width: 2.0,
+                                        radius: 0.0.into(),
+                                    },
                                     ..Default::default()
                                 }),
                         ]
