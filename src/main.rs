@@ -1,5 +1,6 @@
 mod utils;
 mod config;
+mod panels;
 
 use iced::widget::{container, text, stack, row};
 use iced::{Element, Event, Border, Color, Length, Font, Task as Command, event};
@@ -190,12 +191,10 @@ impl Launcher {
                             .height(Length::Fill)
                             .width(Length::Shrink),
                         // Second container: height = Fill, width = Fill
-                        container(panels.right_main_panels())
-                            .height(Length::Fill
-                                .padding([10, 10])
-                                .height(Length::Fill)
-                                .width(Length::Fill)
-                        )
+                        container(panels::right_main_panels_view(&self.theme, bg_with_alpha))
+                            .height(Length::Fill)
+                            .width(Length::Fill)
+                            .padding([30, 30])
                         .height(Length::Fill)
                         .width(Length::Fill),
                     ]
