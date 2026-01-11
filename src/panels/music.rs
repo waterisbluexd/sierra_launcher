@@ -10,7 +10,7 @@ pub fn music_panel_view<'a>(
     font: iced::Font,
     font_size: f32,
 ) -> Element<'a, Message> {
-    container(
+    container( //
         container(
             stack![
                 // Background + content container
