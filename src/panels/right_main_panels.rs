@@ -58,6 +58,7 @@ pub fn right_main_panels_view<'a>(
                     container(
                         container(
                             text(" Apps ")
+                                .color(theme.color6)
                                 .font(font)
                                 .size(font_size)
                         )
@@ -138,6 +139,7 @@ pub fn right_main_panels_view<'a>(
                     container(
                         container(
                             text(" Input ")
+                                .color(theme.color6)
                                 .font(font)
                                 .size(font_size)
                         )
