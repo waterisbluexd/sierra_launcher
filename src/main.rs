@@ -57,6 +57,7 @@ fn vertical_text(s: &str) -> String {
 pub enum Panel {
     Clock,
     Weather,
+    Music,
 }
 
 use crate::panels::weather::WeatherPanel;
@@ -136,7 +137,7 @@ impl Launcher {
             config, 
             search_bar, 
             app_list, 
-            current_panel: Panel::Clock,
+            current_panel: Panel::Music,
             weather_panel,
         }, Command::none())
     }
@@ -219,10 +220,12 @@ impl Launcher {
 
             Message::CyclePanel(direction) => {
                 self.current_panel = match (self.current_panel, direction) {
-                    (Panel::Clock, Direction::Left) => Panel::Weather,
+                    (Panel::Clock, Direction::Left) => Panel::Music,
                     (Panel::Clock, Direction::Right) => Panel::Weather,
                     (Panel::Weather, Direction::Left) => Panel::Clock,
-                    (Panel::Weather, Direction::Right) => Panel::Clock,
+                    (Panel::Weather, Direction::Right) => Panel::Music,
+                    (Panel::Music, Direction::Left) => Panel::Weather,
+                    (Panel::Music, Direction::Right) => Panel::Clock,
                 };
                 Command::none()
             }
