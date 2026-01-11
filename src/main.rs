@@ -192,14 +192,12 @@ impl Launcher {
                             .width(Length::Shrink),
                         // Second container: height = Fill, width = Fill
                         container(panels::right_main_panels_view(&self.theme, bg_with_alpha))
-                            .height(Length::Fill)
-                            .width(Length::Fill)
-                            .padding([1, 1])
                         .height(Length::Fill)
                         .width(Length::Fill),
                     ]
                     .spacing(45)
                 )
+                .padding(iced::padding::bottom(15).right(15))
                 .width(Length::Fill)
                 .height(Length::Fill),
                 // =========================
