@@ -39,7 +39,7 @@ pub fn right_main_panels_view<'a>(
                             )
                             .width(Length::Fill)
                             .height(Length::Fill)
-                            .padding(10)
+                            .padding(iced::padding::top(15).right(15).left(15))
                             .style(move |_| container::Style {
                                 background: None,
                                 ..Default::default()
