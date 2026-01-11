@@ -190,17 +190,8 @@ impl Launcher {
                             .height(Length::Fill)
                             .width(Length::Shrink),
                         // Second container: height = Fill, width = Fill
-                        container(
-                            container(text(""))
-                                .style(move |_| container::Style {
-                                    background: Some(bg_with_alpha.into()),
-                                    border: Border {
-                                        color: self.theme.border,
-                                        width: 2.0,
-                                        radius: 0.0.into(),
-                                    },
-                                    ..Default::default()
-                                })
+                        container(panels.right_main_panels())
+                            .height(Length::Fill
                                 .padding([10, 10])
                                 .height(Length::Fill)
                                 .width(Length::Fill)
