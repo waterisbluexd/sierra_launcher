@@ -1,4 +1,4 @@
-use iced::widget::{column, container, scrollable, text};
+use iced::widget::{column, container, row, scrollable, text};
 use iced::{Border, Element, Length};
 use gio::prelude::*;
 use gio::{AppLaunchContext, DesktopAppInfo};
@@ -111,59 +111,88 @@ impl AppList {
 
     fn launch_selected(&self) {
         if let Some(app) = self.filtered_apps.get(self.selected_index) {
-            if let Err(err) = app
-                .appinfo
-                .launch(&[], AppLaunchContext::NONE)
-            {
-                eprintln!("Failed to launch {}: {err}", app.name);
-            }
+            let _ = app.appinfo.launch(&[], AppLaunchContext::NONE);
         }
     }
 
     pub fn view<'a>(
-        &self,
+        &'a self,
         theme: &'a Theme,
         font: iced::Font,
         font_size: f32,
     ) -> Element<'a, Message> {
-        let mut items = column![].spacing(2);
+        let mut items = column![].spacing(1);
 
         for (idx, app) in self.filtered_apps.iter().enumerate() {
             let selected = idx == self.selected_index;
 
-            let prefix = if selected { ">> " } else { "   " };
-            let label = format!("{prefix}{}", app.name);
+            let bg = if selected {
+                Some(theme.color3.into())
+            } else {
+                None
+            };
 
-            let color = if selected {
-                theme.color6
+            let fg = if selected {
+                theme.background
             } else {
                 theme.foreground
             };
 
+            let content = if selected {
+                row![
+                    text(">>").font(font).size(font_size).color(fg),
+                    text(&app.name).font(font).size(font_size).color(fg),
+                ]
+                .spacing(4)
+            } else {
+                row![
+                    text("  ").font(font).size(font_size).color(fg),
+                    text(&app.name).font(font).size(font_size).color(fg),
+                ]
+                .spacing(4)
+            };
+
             items = items.push(
-                container(
-                    text(label)
-                        .font(font)
-                        .size(font_size)
-                        .color(color),
-                )
-                .padding([2, 8])
-                .width(Length::Fill)
-                .style(|_| container::Style {
-                    background: None,
-                    border: Border::default(),
-                    ..Default::default()
-                }),
+                container(content)
+                    .padding([2, 4])
+                    .width(Length::Fill)
+                    .style(move |_| container::Style {
+                        background: bg,
+                        border: Border::default(),
+                        ..Default::default()
+                    }),
             );
         }
 
-        scrollable(
-            container(items)
-                .width(Length::Fill)
-                .padding(5),
-        )
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+        scrollable(items)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(|_, _| scrollable::Style {
+                container: container::Style::default(),
+                vertical_rail: scrollable::Rail {
+                    background: None,
+                    border: Border::default(),
+                    scroller: scrollable::Scroller {
+                        background: iced::Background::Color(iced::Color::TRANSPARENT),
+                        border: Border::default(),
+                    },
+                },
+                horizontal_rail: scrollable::Rail {
+                    background: None,
+                    border: Border::default(),
+                    scroller: scrollable::Scroller {
+                        background: iced::Background::Color(iced::Color::TRANSPARENT),
+                        border: Border::default(),
+                    },
+                },
+                gap: None,
+                auto_scroll: scrollable::AutoScroll {
+                    background: iced::Background::Color(iced::Color::TRANSPARENT),
+                    border: Border::default(),
+                    icon: iced::Color::TRANSPARENT,
+                    shadow: iced::Shadow::default(),
+                },
+            })
+            .into()
     }
 }

@@ -129,13 +129,27 @@ impl Launcher {
 
         match message {
             Message::IcedEvent(event) => {
-                if let Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) = event {
-                    if let keyboard::Key::Named(Named::Escape) = key {
-                        std::process::exit(0);
-                    }
-                }
-                Command::none()
+    if let Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) = event {
+        match key {
+            keyboard::Key::Named(Named::Escape) => {
+                std::process::exit(0);
             }
+            keyboard::Key::Named(Named::ArrowUp) => {
+                self.app_list.update(app_list::Message::ArrowUp);
+            }
+            keyboard::Key::Named(Named::ArrowDown) => {
+                self.app_list.update(app_list::Message::ArrowDown);
+            }
+            keyboard::Key::Named(Named::Enter) => {
+                self.app_list.update(app_list::Message::LaunchSelected);
+            }
+            _ => {}
+        }
+    }
+
+    Command::none()
+}
+
             Message::CheckColors => {
                 if let Some(ref watcher) = self.watcher {
                     if watcher.check_for_changes() {
