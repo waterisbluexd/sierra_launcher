@@ -331,6 +331,7 @@ impl WeatherPanel {
             for line in art_lines {
                 art_col = art_col.push(
                     text(line)
+                    .line_height(1.0)
                         .color(Color::from_rgb(0.5, 0.8, 1.0)) // Cyan
                         .font(font)
                         .size(font_size)
@@ -343,6 +344,7 @@ impl WeatherPanel {
             // Greeting
             info_col = info_col.push(
                 text(greeting)
+                    .line_height(1.0)
                     .color(Color::from_rgb(1.0, 0.5, 0.4)) // Light red/orange
                     .font(font)
                     .size(font_size)
@@ -351,6 +353,7 @@ impl WeatherPanel {
             // Condition
             info_col = info_col.push(
                 text(condition)
+                    .line_height(1.0)
                     .color(Color::WHITE)
                     .font(font)
                     .size(font_size)
@@ -359,6 +362,7 @@ impl WeatherPanel {
             // Temperature
             info_col = info_col.push(
                 text(format!("{}°C", temp))
+                    .line_height(1.0)
                     .color(Color::from_rgb(0.7, 0.9, 1.0)) // Light cyan
                     .font(font)
                     .size(font_size * 1.2)
@@ -368,10 +372,12 @@ impl WeatherPanel {
             info_col = info_col.push(
                 row![
                     text("Wind: ")
+                        .line_height(1.0)
                         .color(Color::from_rgb(0.5, 0.5, 0.5))
                         .font(font)
                         .size(font_size),
                     text(format!("{} km/h {}", wind_speed, wind_dir))
+                        .line_height(1.0)
                         .color(Color::WHITE)
                         .font(font)
                         .size(font_size),
@@ -383,10 +389,12 @@ impl WeatherPanel {
             info_col = info_col.push(
                 row![
                     text("Humidity: ")
+                        .line_height(1.0)
                         .color(Color::from_rgb(0.5, 0.5, 0.5))
                         .font(font)
                         .size(font_size),
                     text(format!("{}%", humidity))
+                        .line_height(1.0)
                         .color(Color::WHITE)
                         .font(font)
                         .size(font_size),
@@ -407,16 +415,17 @@ impl WeatherPanel {
             // Top section: art + info
             let top_section = row![
                 container(art_col)
-                    .width(Length::Fixed(140.0))
-                    .padding(iced::Padding { top: 10.0, right: 0.0, bottom: 0.0, left: 10.0 }),
+                    .width(Length::Fixed(160.0))
+                    .padding(iced::Padding { top: 10.0, right: 0.0, bottom: 0.0, left: 45.0 }),
                 container(info_col)
-                    .width(Length::Fill)
+                    .width(Length::Fixed(200.0))
+                    .padding(iced::Padding { top: 0.0, right:0.0, bottom: 0.0, left: 45.0}),
             ]
-            .spacing(10);
+            .spacing(1);
             
             // Hourly forecast
             let forecast_lines = Self::format_hourly_forecast(&hourly);
-            let mut forecast_col = column![].spacing(2).padding(iced::Padding { top: 20.0, right: 0.0, bottom: 10.0, left: 0.0 });
+            let mut forecast_col = column![].spacing(2).padding(iced::Padding { top: 20.0, right: 30.0, bottom: 0.0, left: 0.0 });
             
             for (i, line) in forecast_lines.iter().enumerate() {
                 let color = if i == 0 {
@@ -427,6 +436,7 @@ impl WeatherPanel {
                 
                 forecast_col = forecast_col.push(
                     text(line.clone())
+                        .line_height(1.0)
                         .color(color)
                         .font(font)
                         .size(font_size * 0.9)
