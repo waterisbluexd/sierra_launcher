@@ -31,33 +31,46 @@ pub fn right_main_panels_view<'a>(
             // ──────────────────────────────
             container(
                 stack![
-                    container(text(""))
+                    container(
+                        container(text(""))
+                            .height(Length::Fill)
+                            .width(Length::Fill)
+                            .style(move |_| container::Style {
+                                background: None,
+                                border: Border {
+                                    color: theme.color3,
+                                    width: 2.0,
+                                    radius: 0.0.into(),
+                                },
+                                ..Default::default()
+                            }),
+                    )
+                    .padding(iced::padding::top(9))
                         .width(Length::Fill)
                         .height(Length::Fill)
                         .style(move |_| container::Style {
-                            background: Some(bg_with_alpha.into()),
-                            border: Border {
-                                color: theme.color3,
-                                width: 2.0,
-                                radius: 0.0.into(),
-                            },
+                            background: None,
                             ..Default::default()
                         }),
 
                     container(
-                        text(" Apps ")
-                            .font(font)
-                            .size(font_size)
+                        container(
+                            text(" Apps ")
+                                .font(font)
+                                .size(font_size)
+                        )
+                        .width(Length::Shrink)
+                        .height(Length::Shrink)
+                        .style(move |_| container::Style {
+                            background: Some(bg_with_alpha.into()),
+                            ..Default::default()
+                        }),
                     )
+                    .padding(iced::padding::left(8))
                     .width(Length::Shrink)
                     .height(Length::Shrink)
                     .style(move |_| container::Style {
-                        background: Some(bg_with_alpha.into()),
-                        border: Border {
-                            color: theme.color3,
-                            width: 2.0,
-                            radius: 0.0.into(),
-                        },
+                        background: None,
                         ..Default::default()
                     }),
                 ]
@@ -130,7 +143,7 @@ pub fn right_main_panels_view<'a>(
                             ..Default::default()
                         })
                     )
-                    .padding(iced::padding::bottom(30).left(10))
+                    .padding(iced::padding::bottom(30).left(8))
                     .width(Length::Fill)
                     .height(Length::Fill)
                 ]
