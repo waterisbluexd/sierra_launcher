@@ -194,7 +194,7 @@ impl Launcher {
                         container(panels::right_main_panels_view(&self.theme, bg_with_alpha))
                             .height(Length::Fill)
                             .width(Length::Fill)
-                            .padding([30, 30])
+                            .padding([1, 1])
                         .height(Length::Fill)
                         .width(Length::Fill),
                     ]
