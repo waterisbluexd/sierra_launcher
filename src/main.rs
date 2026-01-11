@@ -158,38 +158,20 @@ impl Launcher {
                 // Container 2
                 // =========================
                 container(
-                    row![
-                        // Container 4 (left)
-                        container(text(""))
-                            .padding(9)
-                            .height(Length::Fill)
-                            .width(Length::Shrink)
-                            .style(move |_| container::Style {
-                                background: Some(bg_with_alpha.into()),
-                                border: Border {
-                                    color: self.theme.color3,
-                                    width: 2.0,
-                                    radius: 0.0.into(),
-                                },
-                                ..Default::default()
-                            }),
-
-                        // Container 7 (right)
-                        container(text(""))
-                            .padding(50)
-                            .height(Length::Fill)
-                            .width(Length::Fill)
-                            .style(move |_| container::Style {
-                                background: Some(bg_with_alpha.into()),
-                                border: Border {
-                                    color: self.theme.color3,
-                                    width: 2.0,
-                                    radius: 0.0.into(),
-                                },
-                                ..Default::default()
-                            }),
-                    ]
-                    .spacing(4)
+                    // Container 4 (left)
+                    container(text(""))
+                        .padding(9)
+                        .height(Length::Fill)
+                        .width(Length::Shrink)
+                        .style(move |_| container::Style {
+                            background: Some(bg_with_alpha.into()),
+                            border: Border {
+                                color: self.theme.color3,
+                                width: 2.0,
+                                radius: 0.0.into(),
+                            },
+                            ..Default::default()
+                        }),
                 )
                 .padding(14)
                 .width(Length::Fill)
@@ -198,7 +180,38 @@ impl Launcher {
                     background: Some(bg_with_alpha.into()),
                     ..Default::default()
                 }),
-
+                // =========================
+                // Container 1 (right)
+                // =========================
+                container(
+                    row![
+                        // First container: height = Fill, width = Shrink
+                        container(text(""))
+                            .height(Length::Fill)
+                            .width(Length::Shrink),
+                        // Second container: height = Fill, width = Fill
+                        container(
+                            container(text(""))
+                                .style(move |_| container::Style {
+                                    background: Some(bg_with_alpha.into()),
+                                    border: Border {
+                                        color: self.theme.border,
+                                        width: 2.0,
+                                        radius: 0.0.into(),
+                                    },
+                                    ..Default::default()
+                                })
+                                .padding([10, 10])
+                                .height(Length::Fill)
+                                .width(Length::Fill)
+                        )
+                        .height(Length::Fill)
+                        .width(Length::Fill),
+                    ]
+                    .spacing(40)
+                )
+                .width(Length::Fill)
+                .height(Length::Fill),
                 // =========================
                 // Container 3 (title)
                 // =========================
