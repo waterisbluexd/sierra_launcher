@@ -6,6 +6,7 @@ use crate::panels::search_bar::SearchBar;
 use crate::panels::app_list::AppList;
 use crate::panels::clock;
 use crate::panels::weather;
+use crate::panels::music;
 
 
 use crate::Panel;
@@ -23,6 +24,7 @@ pub fn right_main_panels_view<'a>(
     let current_view = match current_panel {
         Panel::Clock => clock::clock_panel_view(theme, bg_with_alpha, font, font_size),
         Panel::Weather => weather_panel.view(theme, bg_with_alpha, font, font_size),
+        Panel::Music => music::music_panel_view(theme, bg_with_alpha, font, font_size),
     };
     
     container(
