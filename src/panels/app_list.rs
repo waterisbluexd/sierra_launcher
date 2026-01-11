@@ -26,6 +26,10 @@ pub struct AppList {
     pub search_query: String,
     pub selected_index: usize,
     scroll_id: iced::widget::Id,
+    
+    // Virtual scrolling parameters
+    window_size: usize,  // Number of items to display at once (e.g., 10)
+    window_start: usize, // Starting index of the visible window
 }
 
 impl AppList {
@@ -38,6 +42,8 @@ impl AppList {
             search_query: String::new(),
             selected_index: 0,
             scroll_id: iced::widget::Id::unique(),
+            window_size: 17,
+            window_start: 0,
         }
     }
 
@@ -87,6 +93,32 @@ impl AppList {
         if self.selected_index >= self.filtered_apps.len() {
             self.selected_index = 0;
         }
+        
+        // Reset window when filtering changes
+        self.update_window();
+    }
+
+    fn update_window(&mut self) {
+        if self.filtered_apps.is_empty() {
+            self.window_start = 0;
+            return;
+        }
+
+        // Ensure selected item is within the visible window
+        // When selection reaches the last 2 items of window, slide window down
+        if self.selected_index >= self.window_start + self.window_size - 1 {
+            self.window_start = (self.selected_index + 1).saturating_sub(self.window_size);
+        }
+        // When selection reaches the first 2 items of window, slide window up
+        else if self.selected_index < self.window_start + 1 {
+            self.window_start = self.selected_index.saturating_sub(1);
+        }
+
+        // Ensure window doesn't go past the end
+        let max_start = self.filtered_apps.len().saturating_sub(self.window_size);
+        if self.window_start > max_start {
+            self.window_start = max_start;
+        }
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
@@ -99,36 +131,22 @@ impl AppList {
             Message::ArrowUp => {
                 if self.selected_index > 0 {
                     self.selected_index -= 1;
-                    self.scroll_to_selected()
-                } else {
-                    Task::none()
+                    self.update_window();
                 }
+                Task::none()
             }
             Message::ArrowDown => {
                 if self.selected_index + 1 < self.filtered_apps.len() {
                     self.selected_index += 1;
-                    self.scroll_to_selected()
-                } else {
-                    Task::none()
+                    self.update_window();
                 }
+                Task::none()
             }
             Message::LaunchSelected => {
                 self.launch_selected();
                 Task::none()
             }
         }
-    }
-
-    fn scroll_to_selected(&self) -> Task<Message> {
-        // Calculate the approximate offset based on item height
-        // Adjust 30.0 to match your actual item height (including spacing/padding)
-        let item_height = 30.0;
-        let offset = self.selected_index as f32 * item_height;
-        
-        operation::snap_to(
-            self.scroll_id.clone(),
-            scrollable::RelativeOffset { x: 0.0, y: offset },
-        )
     }
 
     fn launch_selected(&self) {
@@ -145,7 +163,12 @@ impl AppList {
     ) -> Element<'a, Message> {
         let mut items = column![].spacing(1);
 
-        for (idx, app) in self.filtered_apps.iter().enumerate() {
+        // Calculate the visible range
+        let window_end = (self.window_start + self.window_size).min(self.filtered_apps.len());
+        
+        // Only render items within the window
+        for idx in self.window_start..window_end {
+            let app = &self.filtered_apps[idx];
             let selected = idx == self.selected_index;
 
             let bg = if selected {
@@ -185,6 +208,25 @@ impl AppList {
                     }),
             );
         }
+
+        // Indicator removed - not visible for now
+        // if !self.filtered_apps.is_empty() {
+        //     let indicator = text(format!(
+        //         "Showing {}-{} of {}",
+        //         self.window_start + 1,
+        //         window_end,
+        //         self.filtered_apps.len()
+        //     ))
+        //     .font(font)
+        //     .size(font_size * 0.8)
+        //     .color(theme.foreground);
+        //
+        //     items = items.push(
+        //         container(indicator)
+        //             .padding([4, 4])
+        //             .width(Length::Fill)
+        //     );
+        // }
 
         scrollable(items)
             .id(self.scroll_id.clone())
