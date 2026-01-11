@@ -25,7 +25,7 @@ pub fn right_main_panels_view<'a>(
                         container(
                             column![
                                 // ── CONTENT GOES HERE ──
-                                text("Panel 1 content")
+                                text("")
                                     .color(theme.color6)
                                     .font(font)
                                     .size(font_size),
@@ -44,14 +44,14 @@ pub fn right_main_panels_view<'a>(
                             ..Default::default()
                         })
                     )
-                    .padding(iced::padding::top(9))
+                    .padding(iced::padding::top(15))
                     .width(Length::Fill)
                     .height(Length::Fill),
                 
                     // Floating title label
                     container(
                         container(
-                            text(" Panel 1 ")
+                            text(" Clock ")
                                 .color(theme.color6)
                                 .font(font)
                                 .size(font_size)
@@ -63,7 +63,7 @@ pub fn right_main_panels_view<'a>(
                             ..Default::default()
                         })
                     )
-                    .padding(iced::padding::left(8))
+                    .padding(iced::padding::left(8).top(5))
                     .width(Length::Shrink)
                     .height(Length::Shrink),
                 ]
