@@ -4,6 +4,7 @@ use crate::utils::theme::Theme;
 use crate::Message;
 use crate::panels::search_bar::SearchBar;
 use crate::panels::app_list::AppList;
+use crate::panels::clock;
 
 pub fn right_main_panels_view<'a>(
     theme: &'a Theme,
@@ -16,64 +17,9 @@ pub fn right_main_panels_view<'a>(
     container(
         column![
             // ──────────────────────────────
-            // Panel 1 - now AppList
+            // Panel 1 - Clock
             // ──────────────────────────────
-            container(
-                stack![
-                    // Background + content container
-                    container(
-                        container(
-                            column![
-                                // ── CONTENT GOES HERE ──
-                                text("")
-                                    .color(theme.color6)
-                                    .font(font)
-                                    .size(font_size),
-                            ]
-                            .padding(10)
-                        )
-                        .width(Length::Fill)
-                        .height(Length::Fill)
-                        .style(move |_| container::Style {
-                            background: None,
-                            border: Border {
-                                color: theme.color3,
-                                width: 2.0,
-                                radius: 0.0.into(),
-                            },
-                            ..Default::default()
-                        })
-                    )
-                    .padding(iced::padding::top(15))
-                    .width(Length::Fill)
-                    .height(Length::Fill),
-                
-                    // Floating title label
-                    container(
-                        container(
-                            text(" Clock ")
-                                .color(theme.color6)
-                                .font(font)
-                                .size(font_size)
-                        )
-                        .width(Length::Shrink)
-                        .height(Length::Shrink)
-                        .style(move |_| container::Style {
-                            background: Some(bg_with_alpha.into()),
-                            ..Default::default()
-                        })
-                    )
-                    .padding(iced::padding::left(8).top(5))
-                    .width(Length::Shrink)
-                    .height(Length::Shrink),
-                ]
-            )
-            .width(Length::Fill)
-            .height(Length::FillPortion(1))
-            .style(move |_| container::Style {
-                background: None,
-                ..Default::default()
-            }),
+            clock::clock_panel_view(theme, bg_with_alpha, font, font_size),
             // ──────────────────────────────
             // Panel 2 (FIXED)
             // ──────────────────────────────
