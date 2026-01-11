@@ -121,7 +121,7 @@ pub fn right_main_panels_view<'a>(
                             .style(move |_| container::Style {
                                 background: None,
                                 border: Border {
-                                    color: theme.color6,
+                                    color: theme.color1,
                                     width: 2.0,
                                     radius: 0.0.into(),
                                 },
