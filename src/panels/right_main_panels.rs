@@ -24,7 +24,7 @@ pub fn right_main_panels_view<'a>(
             .width(Length::Fill)
             .height(Length::Fill)
             .style(move |_| container::Style {
-                background: Some(Color::from_rgb(0.2, 0.3, 0.4).into()),
+                background: None,
                 ..Default::default()
             }),
             // ──────────────────────────────
