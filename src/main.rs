@@ -208,7 +208,7 @@ impl Launcher {
                         .height(Length::Fill)
                         .width(Length::Fill),
                     ]
-                    .spacing(40)
+                    .spacing(45)
                 )
                 .width(Length::Fill)
                 .height(Length::Fill),
