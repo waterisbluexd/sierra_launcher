@@ -18,10 +18,11 @@ pub fn right_main_panels_view<'a>(
     search_bar: &'a SearchBar,
     app_list: &'a AppList,
     current_panel: crate::Panel,
+    weather_panel: &'a weather::WeatherPanel,
 ) -> Element<'a, Message> {
     let current_view = match current_panel {
         Panel::Clock => clock::clock_panel_view(theme, bg_with_alpha, font, font_size),
-        Panel::Weather => weather::weather_panel_view(theme, bg_with_alpha, font, font_size),
+        Panel::Weather => weather_panel.view(theme, bg_with_alpha, font, font_size),
     };
     
     container(

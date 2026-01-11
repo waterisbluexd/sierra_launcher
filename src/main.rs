@@ -15,6 +15,7 @@ use crate::panels::search_bar::{self, SearchBar};
 use crate::panels::app_list::{self, AppList};
 use crate::panels::right_main_panels::right_main_panels_view;
 
+
 fn main() -> Result<(), iced_layershell::Error> {
     application(
         Launcher::new,
@@ -58,6 +59,10 @@ pub enum Panel {
     Weather,
 }
 
+use crate::panels::weather::WeatherPanel;
+
+// ...
+
 struct Launcher {
     theme: Theme,
     watcher: Option<ColorWatcher>,
@@ -65,6 +70,7 @@ struct Launcher {
     search_bar: SearchBar,
     app_list: AppList,
     current_panel: Panel,
+    weather_panel: WeatherPanel,
 }
 
 #[derive(Debug, Clone)]
@@ -122,8 +128,17 @@ impl Launcher {
         let config = Config::load();
         let search_bar = SearchBar::new();
         let app_list = AppList::new();
+        let weather_panel = WeatherPanel::new();
 
-        (Self { theme, watcher, config, search_bar, app_list, current_panel: Panel::Clock }, Command::none())
+        (Self { 
+            theme, 
+            watcher, 
+            config, 
+            search_bar, 
+            app_list, 
+            current_panel: Panel::Clock,
+            weather_panel,
+        }, Command::none())
     }
 
     fn namespace() -> String {
@@ -265,8 +280,16 @@ impl Launcher {
                             .height(Length::Fill)
                             .width(Length::Shrink),
                         // Second container: height = Fill, width = Fill
-                        container(right_main_panels_view(&self.theme, bg_with_alpha, font, font_size, &self.search_bar, &self.app_list, self.current_panel))
-                        .height(Length::Fill)
+                                                container(right_main_panels_view(
+                                                    &self.theme,
+                                                    bg_with_alpha,
+                                                    font,
+                                                    font_size,
+                                                    &self.search_bar,
+                                                    &self.app_list,
+                                                    self.current_panel,
+                                                    &self.weather_panel
+                                                ))                        .height(Length::Fill)
                         .width(Length::Fill),
                     ]
                     .spacing(45)
