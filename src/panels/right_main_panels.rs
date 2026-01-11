@@ -19,10 +19,57 @@ pub fn right_main_panels_view<'a>(
             // Panel 1 - now AppList
             // ──────────────────────────────
             container(
-                text("")
+                stack![
+                    // Background + content container
+                    container(
+                        container(
+                            column![
+                                // ── CONTENT GOES HERE ──
+                                text("Panel 1 content")
+                                    .color(theme.color6)
+                                    .font(font)
+                                    .size(font_size),
+                            ]
+                            .padding(10)
+                        )
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .style(move |_| container::Style {
+                            background: None,
+                            border: Border {
+                                color: theme.color3,
+                                width: 2.0,
+                                radius: 0.0.into(),
+                            },
+                            ..Default::default()
+                        })
+                    )
+                    .padding(iced::padding::top(9))
+                    .width(Length::Fill)
+                    .height(Length::Fill),
+                
+                    // Floating title label
+                    container(
+                        container(
+                            text(" Panel 1 ")
+                                .color(theme.color6)
+                                .font(font)
+                                .size(font_size)
+                        )
+                        .width(Length::Shrink)
+                        .height(Length::Shrink)
+                        .style(move |_| container::Style {
+                            background: Some(bg_with_alpha.into()),
+                            ..Default::default()
+                        })
+                    )
+                    .padding(iced::padding::left(8))
+                    .width(Length::Shrink)
+                    .height(Length::Shrink),
+                ]
             )
             .width(Length::Fill)
-            .height(Length::Fill)
+            .height(Length::FillPortion(1))
             .style(move |_| container::Style {
                 background: None,
                 ..Default::default()
