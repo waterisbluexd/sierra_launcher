@@ -1,4 +1,4 @@
-use iced::widget::{column, container, row, scrollable, text, operation};
+use iced::widget::{column, container, row, scrollable, text};
 use iced::{Border, Element, Length, Task};
 use gio::prelude::*;
 use gio::{AppLaunchContext, DesktopAppInfo};

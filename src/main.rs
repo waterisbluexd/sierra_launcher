@@ -76,6 +76,8 @@ impl TryInto<LayershellCustomActionWithId> for Message {
 }
 
 impl Launcher {
+
+    
     fn new() -> (Self, Command<Message>) {
         let theme = WalColors::load()
             .map(|w| w.to_theme())
@@ -129,26 +131,26 @@ impl Launcher {
 
         match message {
             Message::IcedEvent(event) => {
-    if let Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) = event {
-        match key {
-            keyboard::Key::Named(Named::Escape) => {
-                std::process::exit(0);
-            }
-            keyboard::Key::Named(Named::ArrowUp) => {
-                let _ = self.app_list.update(app_list::Message::ArrowUp);
-            }
-            keyboard::Key::Named(Named::ArrowDown) => {
-                let _ = self.app_list.update(app_list::Message::ArrowDown);
-            }
-            keyboard::Key::Named(Named::Enter) => {
-                let _ = self.app_list.update(app_list::Message::LaunchSelected);
-            }
-            _ => {}
-        }
-    }
+                if let Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) = event {
+                    match key {
+                        keyboard::Key::Named(Named::Escape) => {
+                            std::process::exit(0);
+                        }
+                        keyboard::Key::Named(Named::ArrowUp) => {
+                            let _ = self.app_list.update(app_list::Message::ArrowUp);
+                        }
+                        keyboard::Key::Named(Named::ArrowDown) => {
+                            let _ = self.app_list.update(app_list::Message::ArrowDown);
+                        }
+                        keyboard::Key::Named(Named::Enter) => {
+                            let _ = self.app_list.update(app_list::Message::LaunchSelected);
+                        }
+                        _ => {}
+                    }
+                }
 
-    Command::none()
-}
+                Command::none()
+            }
 
             Message::CheckColors => {
                 if let Some(ref watcher) = self.watcher {
@@ -160,6 +162,7 @@ impl Launcher {
                 }
                 Command::none()
             }
+            
             Message::SearchBarMessage(search_bar_message) => {
                 match search_bar_message {
                     search_bar::Message::InputChanged(value) => {
@@ -173,6 +176,7 @@ impl Launcher {
                     }
                 }
             }
+            
             Message::AppListMessage(app_list_message) => {
                 let _ = self.app_list.update(app_list_message);
                 Command::none()
