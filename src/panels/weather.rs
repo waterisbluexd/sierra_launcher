@@ -314,9 +314,17 @@ impl WeatherPanel {
         let is_updating = *self.is_updating.lock().unwrap();
 
         let content = if let Some(weather_clone) = weather_data_guard.clone() {
+            // Extract all string data upfront to avoid lifetime issues
+            let greeting = Self::get_greeting().to_string();
+            let condition = weather_clone.condition.clone();
+            let temp = weather_clone.temp.clone();
+            let wind_speed = weather_clone.wind_speed.clone();
+            let wind_dir = weather_clone.wind_dir.clone();
+            let humidity = weather_clone.humidity.clone();
+            let hourly = weather_clone.hourly.clone();
+            
             // Build weather display
-            let greeting = Self::get_greeting();
-            let art_lines = Self::get_weather_art(&weather_clone.condition);
+            let art_lines = Self::get_weather_art(&condition);
             
             // Weather art as column
             let mut art_col = column![].spacing(0);
@@ -342,7 +350,7 @@ impl WeatherPanel {
             
             // Condition
             info_col = info_col.push(
-                text(&weather_clone.condition)
+                text(condition)
                     .color(Color::WHITE)
                     .font(font)
                     .size(font_size)
@@ -350,7 +358,7 @@ impl WeatherPanel {
             
             // Temperature
             info_col = info_col.push(
-                text(format!("{}°C", weather_clone.temp))
+                text(format!("{}°C", temp))
                     .color(Color::from_rgb(0.7, 0.9, 1.0)) // Light cyan
                     .font(font)
                     .size(font_size * 1.2)
@@ -363,7 +371,7 @@ impl WeatherPanel {
                         .color(Color::from_rgb(0.5, 0.5, 0.5))
                         .font(font)
                         .size(font_size),
-                    text(format!("{} km/h {}", weather_clone.wind_speed, weather_clone.wind_dir))
+                    text(format!("{} km/h {}", wind_speed, wind_dir))
                         .color(Color::WHITE)
                         .font(font)
                         .size(font_size),
@@ -378,7 +386,7 @@ impl WeatherPanel {
                         .color(Color::from_rgb(0.5, 0.5, 0.5))
                         .font(font)
                         .size(font_size),
-                    text(format!("{}%", weather_clone.humidity))
+                    text(format!("{}%", humidity))
                         .color(Color::WHITE)
                         .font(font)
                         .size(font_size),
@@ -407,7 +415,7 @@ impl WeatherPanel {
             .spacing(10);
             
             // Hourly forecast
-            let forecast_lines = Self::format_hourly_forecast(&weather_clone.hourly);
+            let forecast_lines = Self::format_hourly_forecast(&hourly);
             let mut forecast_col = column![].spacing(2).padding(iced::Padding { top: 20.0, right: 0.0, bottom: 10.0, left: 0.0 });
             
             for (i, line) in forecast_lines.iter().enumerate() {
