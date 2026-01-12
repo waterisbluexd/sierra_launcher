@@ -121,76 +121,90 @@ fn vertical_bar<'a>(
     theme: &'a Theme,
     font: Font,
 ) -> Element<'a, Message> {
+    // ═══════════════════════════════════════════════════════════
+    // CHANGE BAR WIDTH HERE - This value controls the width of ALL bars
+    const BAR_WIDTH: f32 = 24.0;  // ← CHANGE THIS VALUE to make bars wider/narrower
+    // ═══════════════════════════════════════════════════════════
+
     let percentage_text = text(format!("{:.0}%", value))
-       .size(12)
-       .font(font)
-       .color(Color::WHITE)
-       .width(Length::Fill)
-       .center();
+        .size(12)
+        .font(font)
+        .color(Color::WHITE)
+        .width(Length::Fill)
+        .center();
 
     let bar_height_ratio = (value / 100.0).clamp(0.0, 1.0);
     
-    // Calculate portions - these need to be at least 1 to be visible
-    let empty_portion = ((1.0 - bar_height_ratio) * 100.0).max(1.0) as u16;
-    let filled_portion = (bar_height_ratio * 100.0).max(1.0) as u16;
+    // Calculate layout portions (Total = 1000)
+    let filled_portion = (bar_height_ratio * 1000.0).round() as u16;
+    let empty_portion = (1000.0 - filled_portion as f32).round() as u16;
     
     let bar_visual = container(
         column![
-            // Empty/background portion (top)
-            container(
-                Space::new()
-                   .width(24.0)
-                   .height(Length::FillPortion(empty_portion))
-            )
-           .width(Length::Fixed(24.0))
-           .style(move |_| container::Style {
-                background: Some(Color::from_rgb(0.2, 0.2, 0.2).into()),
-                border: Border {
-                    color: Color::from_rgb(0.3, 0.3, 0.3),
-                    width: 1.0,
-                    radius: 0.0.into(),
-                },
-               ..Default::default()
-            }),
-            // Filled portion (bottom)
-            container(
-                Space::new()
-                   .width(24.0)
-                   .height(Length::FillPortion(filled_portion))
-            )
-           .width(Length::Fixed(24.0))
-           .style(move |_| container::Style {
-                background: Some(theme.color6.into()),
-                border: Border {
-                    color: theme.color6,
-                    width: 1.0,
-                    radius: 0.0.into(),
-                },
-               ..Default::default()
-            }),
+            // ═══════════════════════════════════════════════════════════
+            // BACKGROUND BAR (Top / Empty)
+            // ═══════════════════════════════════════════════════════════
+            container(Space::new()) // Space just fills the container
+                .width(Length::Fixed(BAR_WIDTH))
+                // HEIGHT IS APPLIED TO CONTAINER, NOT SPACE!
+                .height(if empty_portion > 0 { 
+                    Length::FillPortion(empty_portion) 
+                } else { 
+                    Length::Fixed(0.0) 
+                })
+                .style(move |_| container::Style {
+                    background: Some(Color::from_rgb(0.2, 0.2, 0.2).into()),  // ← Background color
+                    border: Border {
+                        color: Color::from_rgb(0.3, 0.3, 0.3),  // ← Border color
+                        width: 1.0,  // ← Border width
+                        radius: 0.0.into(),
+                    },
+                    ..Default::default()
+                }),
+
+            // ═══════════════════════════════════════════════════════════
+            // FILLED BAR (Bottom / Active)
+            // ═══════════════════════════════════════════════════════════
+            container(Space::new()) // Space just fills the container
+                .width(Length::Fixed(BAR_WIDTH))
+                // HEIGHT IS APPLIED TO CONTAINER, NOT SPACE!
+                .height(if filled_portion > 0 { 
+                    Length::FillPortion(filled_portion) 
+                } else { 
+                    Length::Fixed(0.0) 
+                })
+                .style(move |_| container::Style {
+                    background: Some(theme.color6.into()),  // ← Filled bar color
+                    border: Border {
+                        color: theme.color6,  // ← Border color
+                        width: 1.0,  // ← Border width
+                        radius: 0.0.into(),
+                    },
+                    ..Default::default()
+                }),
         ]
-       .spacing(0)
-       .width(Length::Fixed(24.0))
+        .spacing(0)
+        .width(Length::Fixed(BAR_WIDTH))
     )
-   .width(Length::Fill)
-   .height(Length::Fill)
-   .center_x(Length::Fill);
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .center_x(Length::Fill);
 
     column![
         percentage_text,
         bar_visual,
         text(label)
-           .size(12)
-           .font(font)
-           .color(theme.color3)
-           .width(Length::Fill)
-           .center()
+            .size(12)
+            .font(font)
+            .color(theme.color3)
+            .width(Length::Fill)
+            .center()
     ]
-   .spacing(4)
-   .width(Length::Fill)
-   .height(Length::Fill)
-   .align_x(Alignment::Center)
-   .into()
+    .spacing(4)
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .align_x(Alignment::Center)
+    .into()
 }
 
 pub fn system_panel_view<'a>(
@@ -217,10 +231,10 @@ pub fn system_panel_view<'a>(
            .map(|(label, value)| vertical_bar(label, value, theme, font))
            .collect::<Vec<_>>()
     )
-   .spacing(12)
-   .width(Length::Fill)
-   .height(Length::Fill)
-   .padding(8);
+    .spacing(12)  // ← Space between each bar
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .padding(8);
 
     container(
         container(
