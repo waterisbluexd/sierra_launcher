@@ -1,5 +1,5 @@
 use iced::widget::{container, text, column, row, stack, Space};
-use iced::{Element, Border, Color, Length, Alignment};
+use iced::{Element, Border, Color, Length, Alignment, Font};
 use crate::utils::theme::Theme;
 use crate::Message;
 use sysinfo::{System, Disks, Networks}; 
@@ -119,21 +119,28 @@ fn vertical_bar<'a>(
     label: &'a str,
     value: f32,
     theme: &'a Theme,
+    font: Font,
 ) -> Element<'a, Message> {
     let percentage_text = text(format!("{:.0}%", value))
-       .size(14)
+       .size(12)
+       .font(font)
        .color(Color::WHITE)
        .width(Length::Fill)
        .center();
 
     let bar_height_ratio = (value / 100.0).clamp(0.0, 1.0);
     
+    // Calculate portions - these need to be at least 1 to be visible
+    let empty_portion = ((1.0 - bar_height_ratio) * 100.0).max(1.0) as u16;
+    let filled_portion = (bar_height_ratio * 100.0).max(1.0) as u16;
+    
     let bar_visual = container(
         column![
+            // Empty/background portion (top)
             container(
                 Space::new()
                    .width(24.0)
-                   .height(Length::FillPortion(((1.0 - bar_height_ratio) * 100.0) as u16))
+                   .height(Length::FillPortion(empty_portion))
             )
            .width(Length::Fixed(24.0))
            .style(move |_| container::Style {
@@ -145,10 +152,11 @@ fn vertical_bar<'a>(
                 },
                ..Default::default()
             }),
+            // Filled portion (bottom)
             container(
                 Space::new()
                    .width(24.0)
-                   .height(Length::FillPortion((bar_height_ratio * 100.0) as u16))
+                   .height(Length::FillPortion(filled_portion))
             )
            .width(Length::Fixed(24.0))
            .style(move |_| container::Style {
@@ -173,6 +181,7 @@ fn vertical_bar<'a>(
         bar_visual,
         text(label)
            .size(12)
+           .font(font)
            .color(theme.color3)
            .width(Length::Fill)
            .center()
@@ -205,7 +214,7 @@ pub fn system_panel_view<'a>(
     let bars_row = row(
         metrics_data
            .into_iter()
-           .map(|(label, value)| vertical_bar(label, value, theme))
+           .map(|(label, value)| vertical_bar(label, value, theme, font))
            .collect::<Vec<_>>()
     )
    .spacing(12)
