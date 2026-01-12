@@ -1,5 +1,5 @@
 use iced::widget::{container, text, stack, row, column, button, slider};
-use iced::{Element, Border, Color, Length, Alignment};
+use iced::{Element, Border, Color, Length, Alignment, Background};
 use crate::utils::theme::Theme;
 use crate::Message;
 use super::mpris_player::{MusicPlayer};
@@ -34,14 +34,14 @@ pub fn music_panel_view<'a>(
                                         .font(font)
                                         .size(font_size)
                                 )
-                                .width(Length::Fill)
-                                .center_x(Length::Fill)
-                                .padding(iced::padding::bottom(8)),
+                                .width(Length::Shrink)
+                                .height(Length::Shrink)
+                                .padding(iced::padding::bottom(0)),
                                 
                                 // Song name (big)
                                 container(
                                     text(&music_state.song_name)
-                                        .color(theme.color6)
+                                        .color(theme.color1)
                                         .font(font)
                                         .size(font_size)
                                 )
@@ -73,14 +73,43 @@ pub fn music_panel_view<'a>(
                                         .font(font)
                                         .size(font_size),
                                     
-                                    // Column 2: Progress slider
+                                    // Column 2: Progress slider - STYLED LIKE IMAGE
                                     slider(
                                         0.0..=music_state.total_time.max(1.0),
                                         music_state.current_time,
                                         Message::MusicProgressChanged
                                     )
                                     .width(Length::Fill)
-                                    .step(1.0),
+                                    .step(1.0)
+                                    .style(move |theme_palette, status| {
+                                        slider::Style {
+                                            rail: slider::Rail {
+                                                backgrounds: (
+                                                    Background::Color(theme.color4),  // Filled portion
+                                                    Background::Color(Color::from_rgba(
+                                                        theme.color6.r,
+                                                        theme.color6.g,
+                                                        theme.color6.b,
+                                                        0.0
+                                                    )), // Unfilled portion
+                                                ),
+                                                width: 20.0,  // Thick rectangular bar
+                                                border: Border {
+                                                    radius: 0.0.into(),  // Sharp corners
+                                                    ..Default::default()
+                                                },
+                                            },
+                                            handle: slider::Handle {
+                                                shape: slider::HandleShape::Rectangle {
+                                                    width: 0,  // Hide the handle
+                                                    border_radius: 0.0.into(),
+                                                },
+                                                background: Background::Color(Color::TRANSPARENT),
+                                                border_width: 0.0,
+                                                border_color: Color::TRANSPARENT,
+                                            },
+                                        }
+                                    }),
                                     
                                     // Column 3: End timestamp
                                     text(MusicPlayer::format_time(music_state.total_time))
@@ -231,7 +260,6 @@ pub fn music_panel_view<'a>(
                     )
                     .width(Length::Fill)
                     .height(Length::Fill)
-                    .padding(iced::padding::top(20).bottom(15))
                     .center_x(Length::Fill)
                     .center_y(Length::Fill)
                     .style(move |_| container::Style {
