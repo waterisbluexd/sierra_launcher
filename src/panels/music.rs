@@ -36,7 +36,7 @@ pub fn music_panel_view<'a>(
                                 )
                                 .width(Length::Fill)
                                 .height(Length::Shrink)
-                                .padding(iced::padding::bottom(8).left(15)),
+                                .padding(iced::padding::top(8).left(15).bottom(25)),
                                 
                                 // Song name (big)
                                 container(
@@ -47,7 +47,7 @@ pub fn music_panel_view<'a>(
                                 )
                                 .width(Length::Fill)
                                 .center_x(Length::Fill)
-                                .padding(iced::padding::bottom(3)),
+                                .padding(iced::padding::bottom(11)),
                                 
                                 // Artist name (small)
                                 container(
@@ -63,7 +63,7 @@ pub fn music_panel_view<'a>(
                                 )
                                 .width(Length::Fill)
                                 .center_x(Length::Fill)
-                                .padding(iced::padding::bottom(12)),
+                                .padding(iced::padding::bottom(15)),
                                 
                                 // Progress bar with time stamps (3 columns)
                                 row![
@@ -120,7 +120,7 @@ pub fn music_panel_view<'a>(
                                 .width(Length::Fill)
                                 .spacing(12)
                                 .align_y(Alignment::Center)
-                                .padding(iced::padding::bottom(8).left(15).right(15)),
+                                .padding(iced::padding::top(8).left(15).right(15)),
                                 
                                 // Control buttons - REDUCED BOTTOM PADDING
                                 container(
@@ -197,12 +197,12 @@ pub fn music_panel_view<'a>(
                                             ..Default::default()
                                         }),
                                     ]
-                                    .spacing(12)
+                                    .spacing(16)
                                     .align_y(Alignment::Center)
                                 )
                                 .width(Length::Fill)
                                 .center_x(Length::Fill)
-                                .padding(iced::padding::bottom(8))
+                                .padding(iced::padding::top(12))
                             ]
                             .width(Length::Fill)
                             .align_x(Alignment::Center)
@@ -261,8 +261,6 @@ pub fn music_panel_view<'a>(
                     )
                     .width(Length::Fill)
                     .height(Length::Fill)
-                    .center_x(Length::Fill)
-                    .center_y(Length::Fill)
                     .style(move |_| container::Style {
                         background: None,
                         border: Border {
@@ -304,7 +302,7 @@ pub fn music_panel_view<'a>(
         }),
     )
     .width(Length::Fill)
-    .height(Length::FillPortion(1))
+    .height(Length::Fill)
     .style(move |_| container::Style {
         background: None,
         ..Default::default()
