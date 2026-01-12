@@ -123,7 +123,7 @@ fn vertical_bar<'a>(
 ) -> Element<'a, Message> {
     // ═══════════════════════════════════════════════════════════
     // CHANGE BAR WIDTH HERE - This value controls the width of ALL bars
-    const BAR_WIDTH: f32 = 24.0;  // ← CHANGE THIS VALUE to make bars wider/narrower
+    const BAR_WIDTH: f32 = 20.0;  // ← CHANGE THIS VALUE to make bars wider/narrower
     // ═══════════════════════════════════════════════════════════
 
     let percentage_text = text(format!("{:.0}%", value))
@@ -153,18 +153,9 @@ fn vertical_bar<'a>(
                     Length::Fixed(0.0) 
                 })
                 .style(move |_| container::Style {
-                    background: Some(Color::from_rgb(0.2, 0.2, 0.2).into()),  // ← Background color
-                    border: Border {
-                        color: Color::from_rgb(0.3, 0.3, 0.3),  // ← Border color
-                        width: 1.0,  // ← Border width
-                        radius: 0.0.into(),
-                    },
+                    background: Some(theme.color11.into()), 
                     ..Default::default()
                 }),
-
-            // ═══════════════════════════════════════════════════════════
-            // FILLED BAR (Bottom / Active)
-            // ═══════════════════════════════════════════════════════════
             container(Space::new()) // Space just fills the container
                 .width(Length::Fixed(BAR_WIDTH))
                 // HEIGHT IS APPLIED TO CONTAINER, NOT SPACE!
@@ -174,12 +165,7 @@ fn vertical_bar<'a>(
                     Length::Fixed(0.0) 
                 })
                 .style(move |_| container::Style {
-                    background: Some(theme.color6.into()),  // ← Filled bar color
-                    border: Border {
-                        color: theme.color6,  // ← Border color
-                        width: 1.0,  // ← Border width
-                        radius: 0.0.into(),
-                    },
+                    background: Some(theme.color6.into()),
                     ..Default::default()
                 }),
         ]
