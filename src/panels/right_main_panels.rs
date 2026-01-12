@@ -7,6 +7,7 @@ use crate::panels::app_list::AppList;
 use crate::panels::clock;
 use crate::panels::weather;
 use crate::panels::music;
+use crate::panels::system;
 use super::mpris_player::MusicPlayer;
 
 use crate::Panel;
@@ -26,6 +27,7 @@ pub fn right_main_panels_view<'a>(
         Panel::Clock => clock::clock_panel_view(theme, bg_with_alpha, font, font_size),
         Panel::Weather => weather_panel.view(theme, bg_with_alpha, font, font_size),
         Panel::Music => music::music_panel_view(theme, bg_with_alpha, font, font_size, music_player),
+        Panel::System => system::system_panel_view(theme, bg_with_alpha, font, font_size),
     };
     
     container(

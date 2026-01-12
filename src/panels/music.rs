@@ -79,7 +79,7 @@ pub fn music_panel_view<'a>(
                                     )
                                     .width(Length::Fill)
                                     .step(1.0)
-                                    .style(move |theme_palette, status| {
+                                    .style(move |_theme_palette, _status| {
                                         slider::Style {
                                             rail: slider::Rail {
                                                 backgrounds: (

@@ -58,6 +58,7 @@ pub enum Panel {
     Clock,
     Weather,
     Music,
+    System,
 }
 
 use crate::panels::weather::WeatherPanel;
@@ -226,12 +227,14 @@ impl Launcher {
 
             Message::CyclePanel(direction) => {
                 self.current_panel = match (self.current_panel, direction) {
-                    (Panel::Clock, Direction::Left) => Panel::Music,
                     (Panel::Clock, Direction::Right) => Panel::Weather,
-                    (Panel::Weather, Direction::Left) => Panel::Clock,
                     (Panel::Weather, Direction::Right) => Panel::Music,
+                    (Panel::Music, Direction::Right) => Panel::System,
+                    (Panel::System, Direction::Right) => Panel::Clock,
+                    (Panel::Clock, Direction::Left) => Panel::System,
+                    (Panel::System, Direction::Left) => Panel::Music,
                     (Panel::Music, Direction::Left) => Panel::Weather,
-                    (Panel::Music, Direction::Right) => Panel::Clock,
+                    (Panel::Weather, Direction::Left) => Panel::Clock,
                 };
                 Command::none()
             }
