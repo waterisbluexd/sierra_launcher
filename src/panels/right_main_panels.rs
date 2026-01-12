@@ -7,7 +7,7 @@ use crate::panels::app_list::AppList;
 use crate::panels::clock;
 use crate::panels::weather;
 use crate::panels::music;
-use crate::mpris_player::MusicPlayer;
+use super::mpris_player::MusicPlayer;
 
 use crate::Panel;
 

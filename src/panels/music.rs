@@ -2,7 +2,7 @@ use iced::widget::{container, text, stack, row, column, button, slider};
 use iced::{Element, Border, Color, Length, Alignment};
 use crate::utils::theme::Theme;
 use crate::Message;
-use crate::mpris_player::{MusicPlayer};
+use super::mpris_player::{MusicPlayer};
 
 pub fn music_panel_view<'a>(
     theme: &'a Theme,
@@ -32,22 +32,22 @@ pub fn music_panel_view<'a>(
                                             0.6
                                         ))
                                         .font(font)
-                                        .size(font_size * 0.7)
+                                        .size(font_size)
                                 )
                                 .width(Length::Fill)
                                 .center_x(Length::Fill)
-                                .padding(iced::padding::bottom(20)),
+                                .padding(iced::padding::bottom(8)),
                                 
                                 // Song name (big)
                                 container(
                                     text(&music_state.song_name)
                                         .color(theme.color6)
                                         .font(font)
-                                        .size(font_size * 1.2)
+                                        .size(font_size)
                                 )
                                 .width(Length::Fill)
                                 .center_x(Length::Fill)
-                                .padding(iced::padding::bottom(5)),
+                                .padding(iced::padding::bottom(3)),
                                 
                                 // Artist name (small)
                                 container(
@@ -59,128 +59,120 @@ pub fn music_panel_view<'a>(
                                             0.7
                                         ))
                                         .font(font)
-                                        .size(font_size * 0.8)
+                                        .size(font_size * 0.65)
                                 )
                                 .width(Length::Fill)
                                 .center_x(Length::Fill)
-                                .padding(iced::padding::bottom(30)),
+                                .padding(iced::padding::bottom(12)),
                                 
-                                // Progress bar with time stamps
-                                column![
-                                    // Time labels
-                                    row![
-                                        text(MusicPlayer::format_time(music_state.current_time))
-                                            .color(theme.color6)
-                                            .font(font)
-                                            .size(font_size * 0.7),
-                                        container(text(""))
-                                            .width(Length::Fill),
-                                        text(MusicPlayer::format_time(music_state.total_time))
-                                            .color(theme.color6)
-                                            .font(font)
-                                            .size(font_size * 0.7),
-                                    ]
-                                    .width(Length::Fill)
-                                    .padding(iced::padding::bottom(5)),
+                                // Progress bar with time stamps (3 columns)
+                                row![
+                                    // Column 1: Current timestamp
+                                    text(MusicPlayer::format_time(music_state.current_time))
+                                        .color(theme.color6)
+                                        .font(font)
+                                        .size(font_size * 0.65),
                                     
-                                    // Progress slider
+                                    // Column 2: Progress slider
                                     slider(
                                         0.0..=music_state.total_time.max(1.0),
                                         music_state.current_time,
                                         Message::MusicProgressChanged
                                     )
                                     .width(Length::Fill)
-                                    .step(1.0)
+                                    .step(1.0),
+                                    
+                                    // Column 3: End timestamp
+                                    text(MusicPlayer::format_time(music_state.total_time))
+                                        .color(theme.color6)
+                                        .font(font)
+                                        .size(font_size * 0.65),
                                 ]
                                 .width(Length::Fill)
-                                .padding(iced::padding::bottom(25).left(10).right(10)),
+                                .spacing(12)
+                                .align_y(Alignment::Center)
+                                .padding(iced::padding::bottom(12).left(15).right(15)),
                                 
                                 // Control buttons
-                                row![
-                                    // Previous button
-                                    button(
-                                        container(
-                                            text("⏮")
-                                                .color(theme.color6)
-                                                .font(font)
-                                                .size(font_size * 1.2)
+                                container(
+                                    row![
+                                        // Previous button
+                                        button(
+                                            container(
+                                                text("⏮")
+                                                    .color(theme.color6)
+                                                    .font(font)
+                                                    .size(font_size)
+                                            )
+                                            .width(Length::Fixed(55.0))
+                                            .height(Length::Fixed(40.0))
+                                            .center_x(Length::Shrink)
+                                            .center_y(Length::Shrink)
                                         )
-                                        .width(Length::Fixed(50.0))
-                                        .height(Length::Fixed(50.0))
-                                        .center_x(Length::Fill)
-                                        .center_y(Length::Fill)
-                                    )
-                                    .on_press(Message::MusicPrevious)
-                                    .style(move |_, _| button::Style {
-                                        background: Some(Color::TRANSPARENT.into()),
-                                        border: Border {
-                                            color: theme.color3,
-                                            width: 1.5,
-                                            radius: 25.0.into(),
-                                        },
-                                        ..Default::default()
-                                    }),
-                                    
-                                    // Spacer
-                                    container(text(""))
-                                        .width(Length::Fixed(30.0)),
-                                    
-                                    // Play/Pause button
-                                    button(
-                                        container(
-                                            text(play_pause_icon)
-                                                .color(theme.color6)
-                                                .font(font)
-                                                .size(font_size * 1.5)
+                                        .on_press(Message::MusicPrevious)
+                                        .style(move |_, _| button::Style {
+                                            background: Some(Color::TRANSPARENT.into()),
+                                            border: Border {
+                                                color: theme.color3,
+                                                width: 1.5,
+                                                radius: 0.0.into(),
+                                            },
+                                            ..Default::default()
+                                        }),
+                                        
+                                        // Play/Pause button
+                                        button(
+                                            container(
+                                                text(play_pause_icon)
+                                                    .color(theme.color6)
+                                                    .font(font)
+                                                    .size(font_size)
+                                            )
+                                            .width(Length::Fixed(55.0))
+                                            .height(Length::Fixed(40.0))
+                                            .center_x(Length::Shrink)
+                                            .center_y(Length::Shrink)
                                         )
-                                        .width(Length::Fixed(60.0))
-                                        .height(Length::Fixed(60.0))
-                                        .center_x(Length::Fill)
-                                        .center_y(Length::Fill)
-                                    )
-                                    .on_press(Message::MusicPlayPause)
-                                    .style(move |_, _| button::Style {
-                                        background: Some(Color::TRANSPARENT.into()),
-                                        border: Border {
-                                            color: theme.color3,
-                                            width: 2.0,
-                                            radius: 30.0.into(),
-                                        },
-                                        ..Default::default()
-                                    }),
-                                    
-                                    // Spacer
-                                    container(text(""))
-                                        .width(Length::Fixed(30.0)),
-                                    
-                                    // Next button
-                                    button(
-                                        container(
-                                            text("⏭")
-                                                .color(theme.color6)
-                                                .font(font)
-                                                .size(font_size * 1.2)
+                                        .on_press(Message::MusicPlayPause)
+                                        .style(move |_, _| button::Style {
+                                            background: Some(Color::TRANSPARENT.into()),
+                                            border: Border {
+                                                color: theme.color3,
+                                                width: 1.5,
+                                                radius: 0.0.into(),
+                                            },
+                                            ..Default::default()
+                                        }),
+                                        
+                                        // Next button
+                                        button(
+                                            container(
+                                                text("⏭")
+                                                    .color(theme.color6)
+                                                    .font(font)
+                                                    .size(font_size)
+                                            )
+                                            .width(Length::Fixed(55.0))
+                                            .height(Length::Fixed(40.0))
+                                            .center_x(Length::Shrink)
+                                            .center_y(Length::Shrink)
                                         )
-                                        .width(Length::Fixed(50.0))
-                                        .height(Length::Fixed(50.0))
-                                        .center_x(Length::Fill)
-                                        .center_y(Length::Fill)
-                                    )
-                                    .on_press(Message::MusicNext)
-                                    .style(move |_, _| button::Style {
-                                        background: Some(Color::TRANSPARENT.into()),
-                                        border: Border {
-                                            color: theme.color3,
-                                            width: 1.5,
-                                            radius: 25.0.into(),
-                                        },
-                                        ..Default::default()
-                                    }),
-                                ]
+                                        .on_press(Message::MusicNext)
+                                        .style(move |_, _| button::Style {
+                                            background: Some(Color::TRANSPARENT.into()),
+                                            border: Border {
+                                                color: theme.color3,
+                                                width: 1.5,
+                                                radius: 0.0.into(),
+                                            },
+                                            ..Default::default()
+                                        }),
+                                    ]
+                                    .spacing(12)
+                                    .align_y(Alignment::Center)
+                                )
                                 .width(Length::Fill)
-                                .align_y(Alignment::Center)
-                                .spacing(0)
-                                .padding(iced::padding::left(0).right(0))
+                                .center_x(Length::Fill)
                             ]
                             .width(Length::Fill)
                             .align_x(Alignment::Center)
@@ -239,7 +231,7 @@ pub fn music_panel_view<'a>(
                     )
                     .width(Length::Fill)
                     .height(Length::Fill)
-                    .padding(iced::padding::top(25))
+                    .padding(iced::padding::top(20).bottom(15))
                     .center_x(Length::Fill)
                     .center_y(Length::Fill)
                     .style(move |_| container::Style {

@@ -1,7 +1,6 @@
 mod utils;
 mod config;
 mod panels;
-mod mpris_player;
 
 use iced_layershell::application;
 use iced::widget::{container, text, stack, row};
@@ -15,7 +14,7 @@ use crate::config::Config;
 use crate::panels::search_bar::{self, SearchBar};
 use crate::panels::app_list::{self, AppList};
 use crate::panels::right_main_panels::right_main_panels_view;
-use crate::mpris_player::MusicPlayer;
+use crate::panels::mpris_player::MusicPlayer;
 
 fn main() -> Result<(), iced_layershell::Error> {
     application(
@@ -156,8 +155,8 @@ impl Launcher {
 
         let events = event::listen().map(Message::IcedEvent);
         let frames = window::frames().map(|_| Message::CheckColors);
-        let music_refresh = iced::time::every(std::time::Duration::from_millis(1000))
-            .map(|_| Message::MusicRefresh);
+        // Use frames for music refresh too - it updates frequently enough
+        let music_refresh = window::frames().map(|_| Message::MusicRefresh);
 
         iced::Subscription::batch(vec![events, frames, music_refresh])
     }
