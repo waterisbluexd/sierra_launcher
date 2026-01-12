@@ -20,9 +20,7 @@ pub fn music_panel_view<'a>(
                 container(
                     container(
                         if music_state.player_available {
-                            // Player is available - show music controls
                             column![
-                                // Application name at the top - LEFT ALIGNED
                                 container(
                                     text(&music_state.app_name)
                                         .color(Color::from_rgba(
@@ -129,7 +127,7 @@ pub fn music_panel_view<'a>(
                                         button(
                                             container(
                                                 text("⏮")
-                                                    .color(theme.color6)
+                                                    .color(theme.color1)
                                                     .font(font)
                                                     .size(font_size)
                                             )
@@ -142,7 +140,7 @@ pub fn music_panel_view<'a>(
                                         .style(move |_, _| button::Style {
                                             background: Some(Color::TRANSPARENT.into()),
                                             border: Border {
-                                                color: theme.color3,
+                                                color: theme.color1,
                                                 width: 1.5,
                                                 radius: 0.0.into(),
                                             },
@@ -153,7 +151,7 @@ pub fn music_panel_view<'a>(
                                         button(
                                             container(
                                                 text(play_pause_icon)
-                                                    .color(theme.color6)
+                                                    .color(theme.color2)
                                                     .font(font)
                                                     .size(font_size)
                                             )
@@ -166,7 +164,7 @@ pub fn music_panel_view<'a>(
                                         .style(move |_, _| button::Style {
                                             background: Some(Color::TRANSPARENT.into()),
                                             border: Border {
-                                                color: theme.color3,
+                                                color: theme.color2,
                                                 width: 1.5,
                                                 radius: 0.0.into(),
                                             },
@@ -177,7 +175,7 @@ pub fn music_panel_view<'a>(
                                         button(
                                             container(
                                                 text("⏭")
-                                                    .color(theme.color6)
+                                                    .color(theme.color1)
                                                     .font(font)
                                                     .size(font_size)
                                             )
@@ -190,7 +188,7 @@ pub fn music_panel_view<'a>(
                                         .style(move |_, _| button::Style {
                                             background: Some(Color::TRANSPARENT.into()),
                                             border: Border {
-                                                color: theme.color3,
+                                                color: theme.color1,
                                                 width: 1.5,
                                                 radius: 0.0.into(),
                                             },
