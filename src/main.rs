@@ -1,6 +1,7 @@
 mod utils;
 mod config;
 mod panels;
+mod mpris_player;
 
 use iced_layershell::application;
 use iced::widget::{container, text, stack, row};
@@ -14,7 +15,7 @@ use crate::config::Config;
 use crate::panels::search_bar::{self, SearchBar};
 use crate::panels::app_list::{self, AppList};
 use crate::panels::right_main_panels::right_main_panels_view;
-
+use crate::mpris_player::MusicPlayer;
 
 fn main() -> Result<(), iced_layershell::Error> {
     application(
@@ -62,8 +63,6 @@ pub enum Panel {
 
 use crate::panels::weather::WeatherPanel;
 
-// ...
-
 struct Launcher {
     theme: Theme,
     watcher: Option<ColorWatcher>,
@@ -72,6 +71,7 @@ struct Launcher {
     app_list: AppList,
     current_panel: Panel,
     weather_panel: WeatherPanel,
+    music_player: MusicPlayer,
 }
 
 #[derive(Debug, Clone)]
@@ -81,6 +81,11 @@ enum Message {
     SearchBarMessage(search_bar::Message),
     AppListMessage(app_list::Message),
     CyclePanel(Direction),
+    MusicPlayPause,
+    MusicNext,
+    MusicPrevious,
+    MusicProgressChanged(f32),
+    MusicRefresh,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -97,8 +102,6 @@ impl TryInto<LayershellCustomActionWithId> for Message {
 }
 
 impl Launcher {
-
-    
     fn new() -> (Self, Command<Message>) {
         let theme = WalColors::load()
             .map(|w| w.to_theme())
@@ -130,6 +133,7 @@ impl Launcher {
         let search_bar = SearchBar::new();
         let app_list = AppList::new();
         let weather_panel = WeatherPanel::new();
+        let music_player = MusicPlayer::new();
 
         (Self { 
             theme, 
@@ -139,6 +143,7 @@ impl Launcher {
             app_list, 
             current_panel: Panel::Music,
             weather_panel,
+            music_player,
         }, Command::none())
     }
 
@@ -151,8 +156,10 @@ impl Launcher {
 
         let events = event::listen().map(Message::IcedEvent);
         let frames = window::frames().map(|_| Message::CheckColors);
+        let music_refresh = iced::time::every(std::time::Duration::from_millis(1000))
+            .map(|_| Message::MusicRefresh);
 
-        iced::Subscription::batch(vec![events, frames])
+        iced::Subscription::batch(vec![events, frames, music_refresh])
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
@@ -229,6 +236,31 @@ impl Launcher {
                 };
                 Command::none()
             }
+
+            Message::MusicPlayPause => {
+                self.music_player.play_pause();
+                Command::none()
+            }
+
+            Message::MusicNext => {
+                self.music_player.next_track();
+                Command::none()
+            }
+
+            Message::MusicPrevious => {
+                self.music_player.previous_track();
+                Command::none()
+            }
+
+            Message::MusicProgressChanged(position) => {
+                self.music_player.seek_to(position);
+                Command::none()
+            }
+
+            Message::MusicRefresh => {
+                self.music_player.refresh_player();
+                Command::none()
+            }
         }
     }
 
@@ -283,16 +315,18 @@ impl Launcher {
                             .height(Length::Fill)
                             .width(Length::Shrink),
                         // Second container: height = Fill, width = Fill
-                                                container(right_main_panels_view(
-                                                    &self.theme,
-                                                    bg_with_alpha,
-                                                    font,
-                                                    font_size,
-                                                    &self.search_bar,
-                                                    &self.app_list,
-                                                    self.current_panel,
-                                                    &self.weather_panel
-                                                ))                        .height(Length::Fill)
+                        container(right_main_panels_view(
+                            &self.theme,
+                            bg_with_alpha,
+                            font,
+                            font_size,
+                            &self.search_bar,
+                            &self.app_list,
+                            self.current_panel,
+                            &self.weather_panel,
+                            &self.music_player,
+                        ))
+                        .height(Length::Fill)
                         .width(Length::Fill),
                     ]
                     .spacing(45)

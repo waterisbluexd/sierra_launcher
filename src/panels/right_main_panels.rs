@@ -7,7 +7,7 @@ use crate::panels::app_list::AppList;
 use crate::panels::clock;
 use crate::panels::weather;
 use crate::panels::music;
-
+use crate::mpris_player::MusicPlayer;
 
 use crate::Panel;
 
@@ -20,17 +20,18 @@ pub fn right_main_panels_view<'a>(
     app_list: &'a AppList,
     current_panel: crate::Panel,
     weather_panel: &'a weather::WeatherPanel,
+    music_player: &'a MusicPlayer,
 ) -> Element<'a, Message> {
     let current_view = match current_panel {
         Panel::Clock => clock::clock_panel_view(theme, bg_with_alpha, font, font_size),
         Panel::Weather => weather_panel.view(theme, bg_with_alpha, font, font_size),
-        Panel::Music => music::music_panel_view(theme, bg_with_alpha, font, font_size),
+        Panel::Music => music::music_panel_view(theme, bg_with_alpha, font, font_size, music_player),
     };
     
     container(
         column![
             // ──────────────────────────────
-            // Panel 1 - Clock or Weather
+            // Panel 1 - Clock, Weather, or Music
             // ──────────────────────────────
             current_view,
             // ──────────────────────────────

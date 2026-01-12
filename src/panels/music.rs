@@ -2,15 +2,16 @@ use iced::widget::{container, text, stack, row, column, button, slider};
 use iced::{Element, Border, Color, Length, Alignment};
 use crate::utils::theme::Theme;
 use crate::Message;
-use crate::mpris_player_state::MusicPlayerState;
+use crate::mpris_player::{MusicPlayer};
 
 pub fn music_panel_view<'a>(
     theme: &'a Theme,
     bg_with_alpha: Color,
     font: iced::Font,
     font_size: f32,
-    music_state: &'a MusicPlayerState,
+    music_player: &'a MusicPlayer,
 ) -> Element<'a, Message> {
+    let music_state = &music_player.state;
     let play_pause_icon = if music_state.is_playing { "⏸" } else { "▶" };
     
     container(
@@ -68,13 +69,13 @@ pub fn music_panel_view<'a>(
                                 column![
                                     // Time labels
                                     row![
-                                        text(MusicPlayerState::format_time(music_state.current_time))
+                                        text(MusicPlayer::format_time(music_state.current_time))
                                             .color(theme.color6)
                                             .font(font)
                                             .size(font_size * 0.7),
                                         container(text(""))
                                             .width(Length::Fill),
-                                        text(MusicPlayerState::format_time(music_state.total_time))
+                                        text(MusicPlayer::format_time(music_state.total_time))
                                             .color(theme.color6)
                                             .font(font)
                                             .size(font_size * 0.7),
