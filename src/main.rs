@@ -15,6 +15,7 @@ use crate::panels::search_bar::{self, SearchBar};
 use crate::panels::app_list::{self, AppList};
 use crate::panels::right_main_panels::right_main_panels_view;
 use crate::panels::mpris_player::MusicPlayer;
+use crate::panels::system::SystemPanel;
 
 fn main() -> Result<(), iced_layershell::Error> {
     application(
@@ -72,6 +73,7 @@ struct Launcher {
     current_panel: Panel,
     weather_panel: WeatherPanel,
     music_player: MusicPlayer,
+    system_panel: SystemPanel,
 }
 
 #[derive(Debug, Clone)]
@@ -134,6 +136,7 @@ impl Launcher {
         let app_list = AppList::new();
         let weather_panel = WeatherPanel::new();
         let music_player = MusicPlayer::new();
+        let system_panel = SystemPanel::new();
 
         (Self { 
             theme, 
@@ -144,6 +147,7 @@ impl Launcher {
             current_panel: Panel::Music,
             weather_panel,
             music_player,
+            system_panel,
         }, Command::none())
     }
 
@@ -327,6 +331,7 @@ impl Launcher {
                             self.current_panel,
                             &self.weather_panel,
                             &self.music_player,
+                            &self.system_panel,
                         ))
                         .height(Length::Fill)
                         .width(Length::Fill),

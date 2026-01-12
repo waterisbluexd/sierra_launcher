@@ -22,12 +22,13 @@ pub fn right_main_panels_view<'a>(
     current_panel: crate::Panel,
     weather_panel: &'a weather::WeatherPanel,
     music_player: &'a MusicPlayer,
+    system_panel: &'a system::SystemPanel,  // Add this parameter
 ) -> Element<'a, Message> {
     let current_view = match current_panel {
         Panel::Clock => clock::clock_panel_view(theme, bg_with_alpha, font, font_size),
         Panel::Weather => weather_panel.view(theme, bg_with_alpha, font, font_size),
         Panel::Music => music::music_panel_view(theme, bg_with_alpha, font, font_size, music_player),
-        Panel::System => system::system_panel_view(theme, bg_with_alpha, font, font_size),
+        Panel::System => system_panel.view(theme, bg_with_alpha, font, font_size),
     };
     
     container(
