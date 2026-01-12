@@ -22,7 +22,7 @@ pub fn music_panel_view<'a>(
                         if music_state.player_available {
                             // Player is available - show music controls
                             column![
-                                // Application name at the top
+                                // Application name at the top - LEFT ALIGNED
                                 container(
                                     text(&music_state.app_name)
                                         .color(Color::from_rgba(
@@ -34,9 +34,9 @@ pub fn music_panel_view<'a>(
                                         .font(font)
                                         .size(font_size)
                                 )
-                                .width(Length::Shrink)
+                                .width(Length::Fill)
                                 .height(Length::Shrink)
-                                .padding(iced::padding::bottom(0)),
+                                .padding(iced::padding::bottom(8).left(15)),
                                 
                                 // Song name (big)
                                 container(
@@ -120,9 +120,9 @@ pub fn music_panel_view<'a>(
                                 .width(Length::Fill)
                                 .spacing(12)
                                 .align_y(Alignment::Center)
-                                .padding(iced::padding::bottom(12).left(15).right(15)),
+                                .padding(iced::padding::bottom(8).left(15).right(15)),
                                 
-                                // Control buttons
+                                // Control buttons - REDUCED BOTTOM PADDING
                                 container(
                                     row![
                                         // Previous button
@@ -202,6 +202,7 @@ pub fn music_panel_view<'a>(
                                 )
                                 .width(Length::Fill)
                                 .center_x(Length::Fill)
+                                .padding(iced::padding::bottom(8))
                             ]
                             .width(Length::Fill)
                             .align_x(Alignment::Center)
