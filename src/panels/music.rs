@@ -71,7 +71,7 @@ pub fn music_panel_view<'a>(
                                     text(MusicPlayer::format_time(music_state.current_time))
                                         .color(theme.color6)
                                         .font(font)
-                                        .size(font_size * 0.65),
+                                        .size(font_size),
                                     
                                     // Column 2: Progress slider
                                     slider(
@@ -86,7 +86,7 @@ pub fn music_panel_view<'a>(
                                     text(MusicPlayer::format_time(music_state.total_time))
                                         .color(theme.color6)
                                         .font(font)
-                                        .size(font_size * 0.65),
+                                        .size(font_size),
                                 ]
                                 .width(Length::Fill)
                                 .spacing(12)
@@ -105,7 +105,7 @@ pub fn music_panel_view<'a>(
                                                     .size(font_size)
                                             )
                                             .width(Length::Fixed(55.0))
-                                            .height(Length::Fixed(40.0))
+                                            .height(Length::Fixed(55.0))
                                             .center_x(Length::Shrink)
                                             .center_y(Length::Shrink)
                                         )
@@ -129,7 +129,7 @@ pub fn music_panel_view<'a>(
                                                     .size(font_size)
                                             )
                                             .width(Length::Fixed(55.0))
-                                            .height(Length::Fixed(40.0))
+                                            .height(Length::Fixed(55.0))
                                             .center_x(Length::Shrink)
                                             .center_y(Length::Shrink)
                                         )
@@ -153,7 +153,7 @@ pub fn music_panel_view<'a>(
                                                     .size(font_size)
                                             )
                                             .width(Length::Fixed(55.0))
-                                            .height(Length::Fixed(40.0))
+                                            .height(Length::Fixed(55.0))
                                             .center_x(Length::Shrink)
                                             .center_y(Length::Shrink)
                                         )
