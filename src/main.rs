@@ -16,6 +16,7 @@ use crate::panels::app_list::{self, AppList};
 use crate::panels::right_main_panels::right_main_panels_view;
 use crate::panels::mpris_player::MusicPlayer;
 use crate::panels::system::SystemPanel;
+use crate::panels::services::ServicesPanel;
 
 fn main() -> Result<(), iced_layershell::Error> {
     application(
@@ -60,6 +61,7 @@ pub enum Panel {
     Weather,
     Music,
     System,
+    Services,
 }
 
 use crate::panels::weather::WeatherPanel;
@@ -74,6 +76,7 @@ struct Launcher {
     weather_panel: WeatherPanel,
     music_player: MusicPlayer,
     system_panel: SystemPanel,
+    services_panel: ServicesPanel,
 }
 
 #[derive(Debug, Clone)]
@@ -137,6 +140,7 @@ impl Launcher {
         let weather_panel = WeatherPanel::new();
         let music_player = MusicPlayer::new();
         let system_panel = SystemPanel::new();
+        let services_panel = ServicesPanel::new();
 
         (Self { 
             theme, 
@@ -144,10 +148,11 @@ impl Launcher {
             config, 
             search_bar, 
             app_list, 
-            current_panel: Panel::Music,
+            current_panel: Panel::Clock,
             weather_panel,
             music_player,
             system_panel,
+            services_panel,
         }, Command::none())
     }
 
@@ -234,8 +239,10 @@ impl Launcher {
                     (Panel::Clock, Direction::Right) => Panel::Weather,
                     (Panel::Weather, Direction::Right) => Panel::Music,
                     (Panel::Music, Direction::Right) => Panel::System,
-                    (Panel::System, Direction::Right) => Panel::Clock,
-                    (Panel::Clock, Direction::Left) => Panel::System,
+                    (Panel::System, Direction::Right) => Panel::Services,
+                    (Panel::Services, Direction::Right) => Panel::Clock,
+                    (Panel::Clock, Direction::Left) => Panel::Services,
+                    (Panel::Services, Direction::Left) => Panel::System,
                     (Panel::System, Direction::Left) => Panel::Music,
                     (Panel::Music, Direction::Left) => Panel::Weather,
                     (Panel::Weather, Direction::Left) => Panel::Clock,
@@ -332,6 +339,7 @@ impl Launcher {
                             &self.weather_panel,
                             &self.music_player,
                             &self.system_panel,
+                            &self.services_panel,
                         ))
                         .height(Length::Fill)
                         .width(Length::Fill),
