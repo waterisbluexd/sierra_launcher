@@ -1,4 +1,4 @@
-use iced::widget::{container, text, column, stack};
+use iced::widget::{container, text, column, stack, row};
 use iced::{Element, Border, Color, Length, alignment};
 use crate::utils::theme::Theme;
 use crate::Message;
@@ -17,28 +17,63 @@ impl ServicesPanel {
         font: iced::Font,
         font_size: f32,
     ) -> Element<'a, Message> {
-        let content = column![
-            text("Services Panel")
-                .color(theme.color6)
-                .font(font)
-                .size(font_size * 2.0)
-                .line_height(1.3),
-        ]
-        .spacing(20)
-        .align_x(alignment::Horizontal::Center)
-        .width(Length::Fill);
+
 
         container(
             container(
                 stack![
                     // Background + content container
                     container(
-                        container(content)
+                    /////////////////////////////////////////////////////////////////////////////
+                        container(
+                            container(
+                                row![
+                                    container(text("left")
+                                        .color(theme.color6)
+                                        .font(font)
+                                        .size(font_size)
+                                    )
+                                        .width(Length::Fill)
+                                        .height(Length::Fill)
+                                        .style(move |_| container::Style {
+                                            background: None,
+                                            border: Border {
+                                                color: theme.color3,
+                                                width: 2.0,
+                                                radius: 0.0.into(),
+                                            },
+                                            ..Default::default()
+                                        }),
+
+                                    container(text("right")
+                                        .color(theme.color6)
+                                        .font(font)
+                                        .size(font_size)
+                                    )
+                                        .width(Length::Fixed(100.0))
+                                        .height(Length::Fill)
+                                        .style(move |_| container::Style {
+                                            background: None,
+                                            border: Border {
+                                                color: theme.color3,
+                                                width: 2.0,
+                                                radius: 0.0.into(),
+                                            },
+                                            ..Default::default()
+                                        })
+                                ]
+                                .spacing(10)
+                            )
+                                .width(Length::Fill)
+                                .height(Length::Fill)
+                                .style(move |_| container::Style {
+                                    background: None,
+                                    ..Default::default()
+                                })
+                            )
+                            .padding(10)
                             .width(Length::Fill)
                             .height(Length::Fill)
-                            .padding(iced::padding::top(25))
-                            .center_x(Length::Fill)
-                            .center_y(Length::Fill)
                             .style(move |_| container::Style {
                                 background: None,
                                 border: Border {
@@ -52,6 +87,7 @@ impl ServicesPanel {
                     .padding(iced::padding::top(15))
                     .width(Length::Fill)
                     .height(Length::Fill),
+                    /////////////////////////////////////////////////////////////////////////////
                     // Floating title label
                     container(
                         container(
