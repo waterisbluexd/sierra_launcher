@@ -86,9 +86,9 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(5),
+            .padding(0),
         ]
-        .spacing(10)
+        .spacing(0)
         .align_x(iced::alignment::Horizontal::Center);
 
         // Create brightness slider column
@@ -102,7 +102,7 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(5),
+            .padding(0),
             
             // Vertical slider with custom style
             vertical_slider(
@@ -152,9 +152,9 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(5),
+            .padding(0),
         ]
-        .spacing(10)
+        .spacing(0)
         .align_x(iced::alignment::Horizontal::Center);
 
         // Combine both sliders in a row
@@ -162,7 +162,7 @@ impl ServicesPanel {
             volume_column,
             brightness_column
         ]
-        .spacing(30)
+        .spacing(0)
         .padding(10);
 
         container(
