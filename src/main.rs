@@ -91,6 +91,8 @@ enum Message {
     MusicPrevious,
     MusicProgressChanged(f32),
     MusicRefresh,
+    VolumeChanged(f32),
+    BrightnessChanged(f32),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -272,6 +274,16 @@ impl Launcher {
 
             Message::MusicRefresh => {
                 self.music_player.refresh_player();
+                Command::none()
+            }
+
+            Message::VolumeChanged(value) => {
+                self.services_panel.volume_value = value;
+                Command::none()
+            }
+
+            Message::BrightnessChanged(value) => {
+                self.services_panel.brightness_value = value;
                 Command::none()
             }
         }
