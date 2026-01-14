@@ -276,7 +276,7 @@ impl ServicesPanel {
                                 }
                             }),
                         )
-                        .width(Length::Fixed(85.0))
+                        .width(Length::Fixed(65.0))
                         .height(Length::Fill)
                     ]
                 )
