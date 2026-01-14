@@ -186,6 +186,18 @@ impl ServicesPanel {
         .padding(iced::padding::left(15).right(5))
         .align_y(iced::alignment::Vertical::Center);
 
+        // --- Determine Airplane Mode Styling Colors ---
+        let airplane_active_color = theme.color2; // Use an active accent color
+        let airplane_inactive_color = theme.color8; // Use grey for inactive
+
+        let (airplane_text_color, airplane_bg_color, airplane_border_color) = if self.is_airplane_mode_on {
+            // ACTIVE: Filled background, Dark Text, Border color matches active background
+            (theme.color0, airplane_active_color, airplane_active_color)
+        } else {
+            // INACTIVE: Transparent background, Grey Text, Grey Border
+            (airplane_inactive_color, Color::TRANSPARENT, airplane_inactive_color)
+        };
+
         // --- 3. ASSEMBLE LEFT PANEL ---
         let left_part = container(
             column![
@@ -261,8 +273,8 @@ impl ServicesPanel {
                         container(
                             button(
                                 container(
-                                    text(if self.is_airplane_mode_on { "󰛨" } else { "󰛨" }) // Icon for airplane mode
-                                        .color(theme.color1) 
+                                    text("󰀝") // Icon for airplane mode
+                                        .color(airplane_text_color)  
                                         .font(font)
                                         .size(font_size * 2.0)
                                         .center()
@@ -273,30 +285,47 @@ impl ServicesPanel {
                                 .center_y(Length::Fill) 
                             )
                             .on_press(Message::AirplaneModeToggle) // Changed to AirplaneModeToggle
-                            .style(move |_theme, status| {
-                                let border_c = if self.is_airplane_mode_on { theme.color2 } else { theme.color1 }; // Use color2 when active
-                                match status {
-                                    iced::widget::button::Status::Hovered => button::Style {
-                                        background: Some(Color::from_rgba(border_c.r, border_c.g, border_c.b, 0.1).into()),
-                                        border: Border {
-                                            color: border_c,
-                                            width: 2.0,
-                                            radius: 0.0.into(),
-                                        },
-                                        ..Default::default()
-                                    },
-                                    _ => button::Style {
-                                        background: Some(Color::TRANSPARENT.into()),
-                                        border: Border {
-                                            color: border_c, 
-                                            width: 1.5,
-                                            radius: 0.0.into(),
-                                        },
-                                        ..Default::default()
-                                    }
-                                }
-                            }),
-                        )
+                                                                                    .style(move |_theme, status| {
+                                                                                        let airplane_active_color = theme.color2; // Use an active accent color
+                                                                                        let airplane_inactive_color = theme.color8; // Use grey for inactive
+                                                        
+                                                                                        match status {
+                                                                                            iced::widget::button::Status::Hovered => button::Style {
+                                                                                                background: Some(if self.is_airplane_mode_on {
+                                                                                                    let mut c = airplane_bg_color; c.a = 0.9; c.into()
+                                                                                                } else {
+                                                                                                    let mut c = airplane_inactive_color; c.a = 0.1; c.into() // Lighter grey for inactive hover
+                                                                                                }),
+                                                                                                border: Border {
+                                                                                                    color: if self.is_airplane_mode_on { airplane_active_color } else { airplane_inactive_color }, // Border color matches active/inactive state
+                                                                                                    width: 1.5, // Consistent border width
+                                                                                                    radius: 0.0.into(),
+                                                                                                },
+                                                                                                text_color: airplane_text_color,
+                                                                                                ..Default::default()
+                                                                                            },
+                                                                                            iced::widget::button::Status::Pressed => button::Style {
+                                                                                                background: Some(airplane_active_color.into()),
+                                                                                                border: Border {
+                                                                                                    color: airplane_active_color, // Consistent border color on pressed
+                                                                                                    width: 1.5, // Consistent border width
+                                                                                                    radius: 0.0.into(),
+                                                                                                },
+                                                                                                text_color: theme.color0,
+                                                                                                ..Default::default()
+                                                                                            },
+                                                                                            _ => button::Style {
+                                                                                                background: Some(airplane_bg_color.into()),
+                                                                                                border: Border {
+                                                                                                    color: airplane_border_color, // Consistent border color
+                                                                                                    width: 1.5, // Consistent border width
+                                                                                                    radius: 0.0.into(),
+                                                                                                },
+                                                                                                text_color: airplane_text_color,
+                                                                                                ..Default::default()
+                                                                                            }
+                                                                                        }
+                                                                                    }),                        )
                         .width(Length::Fixed(65.0))
                         .height(Length::Fill)
                     ]
