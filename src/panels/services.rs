@@ -280,6 +280,7 @@ impl ServicesPanel {
                         .height(Length::Fill)
                     ]
                 )
+                .padding(10)
                 .width(Length::Fill)
                 .height(Length::FillPortion(1)), 
 
