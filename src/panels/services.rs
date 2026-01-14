@@ -24,9 +24,9 @@ impl ServicesPanel {
     }
 
     fn get_volume() -> Option<f32> {
-        let output = Command::new("amixer").arg("sget").arg("Master").output().ok()?;
+        let output = Command::new("pactl").arg("get-sink-volume").arg("@DEFAULT_SINK@").output().ok()?;
         let output_str = String::from_utf8(output.stdout).ok()?;
-        let re = Regex::new(r"\[(\d+)%\]").unwrap();
+        let re = Regex::new(r"(\d+)%").unwrap();
         let caps = re.captures(&output_str)?;
         let value_str = caps.get(1)?.as_str();
         value_str.parse::<f32>().ok()
@@ -324,10 +324,9 @@ impl ServicesPanel {
 
     pub fn set_volume(&mut self, value: f32) {
         self.volume_value = value.clamp(0.0, 100.0);
-        let _ = Command::new("amixer")
-            .arg("-q")
-            .arg("sset")
-            .arg("Master")
+        let _ = Command::new("pactl")
+            .arg("set-sink-volume")
+            .arg("@DEFAULT_SINK@")
             .arg(format!("{}%", self.volume_value as u8))
             .output();
     }
