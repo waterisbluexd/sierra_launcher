@@ -14,7 +14,7 @@ impl ServicesPanel {
         Self {
             volume_value: 50.0,
             brightness_value: 50.0,
-            slider_height: 200.0,
+            slider_height: 180.0,  // Reduced from 200.0
         }
     }
 
@@ -42,7 +42,7 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(iced::padding::bottom(5)),
+            .padding(iced::padding::bottom(3)),  // Reduced from 5
             
             // Vertical slider
             vertical_slider(
@@ -92,7 +92,7 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(iced::padding::top(5)),
+            .padding(iced::padding::top(3)),  // Reduced from 5
         ]
         .spacing(0)
         .align_x(iced::alignment::Horizontal::Center);
@@ -108,7 +108,7 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(iced::padding::bottom(5)),
+            .padding(iced::padding::bottom(3)),  // Reduced from 5
             
             // Vertical slider
             vertical_slider(
@@ -158,7 +158,7 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(iced::padding::top(5)),
+            .padding(iced::padding::top(3)),  // Reduced from 5
         ]
         .spacing(0)
         .align_x(iced::alignment::Horizontal::Center);
@@ -169,11 +169,11 @@ impl ServicesPanel {
             brightness_column
         ]
         .spacing(20)
-        .padding(10)
+        .padding(iced::padding::right(1))  // Removed top(3)
         .align_y(iced::alignment::Vertical::Center);
 
         let right_part = container(sliders_row)
-            .width(Length::Fixed(80.0))
+            .width(Length::Fixed(60.0))
             .height(Length::Fill);
 
         // Main content row with left and right parts
@@ -198,7 +198,7 @@ impl ServicesPanel {
                                 ..Default::default()
                             })
                         )
-                        .padding(5)
+                        .padding(iced::padding::top(5).right(18).bottom(8))  // Changed from bottom(25) to bottom(8)
                         .width(Length::Fill)
                         .height(Length::Fill)
                         .style(move |_| container::Style {
