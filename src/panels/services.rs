@@ -80,14 +80,39 @@ impl ServicesPanel {
                             },
                             ..Default::default()
                         }),
-                        container(text("x.2"))
+                        container(
+                            button(
+                                container(
+                                    text("󰀝")
+                                        .color(theme.color1)
+                                        .font(font)
+                                        .size(font_size * 2.0)
+                                        .center()
+                                )
+                                .width(Length::Fill)
+                                .height(Length::Fill)
+                                .center_x(Length::Fill) 
+                                .center_y(Length::Fill) 
+                            )
+                            .on_press(Message::AudioMuteToggle)
+                            .style(move |_, _| button::Style {
+                                background: Some(Color::TRANSPARENT.into()),
+                                border: Border {
+                                    color: theme.color2,
+                                    width: 1.5,
+                                    radius: 0.0.into(),
+                                },
+                                ..Default::default()
+                            }),
+                        )
+                            .padding(13)
                             .width(Length::Fixed(85.0))
                             .height(Length::Fill)
                             .style(move |_| container::Style {
                             background: None,
                             border: Border {
                                 color: theme.color3,
-                                width: 2.0,
+                                width: 0.0,
                                 radius: 0.0.into(),
                             },
                             ..Default::default()
