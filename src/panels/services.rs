@@ -65,8 +65,74 @@ impl ServicesPanel {
     ) -> Element<'a, Message> {
         // Left part - empty for now
         let left_part = container(
-            text("")
+            column![
+                container(
+                    row![
+                        container(text("x"))
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                            .style(move |_| container::Style {
+                            background: None,
+                            border: Border {
+                                color: theme.color3,
+                                width: 2.0,
+                                radius: 0.0.into(),
+                            },
+                            ..Default::default()
+                        }),
+                        container(text("x.2"))
+                            .width(Length::Fixed(85.0))
+                            .height(Length::Fill)
+                            .style(move |_| container::Style {
+                            background: None,
+                            border: Border {
+                                color: theme.color3,
+                                width: 2.0,
+                                radius: 0.0.into(),
+                            },
+                            ..Default::default()
+                        }),
+                    ]
+                    .spacing(10)
+                )
+                    .width(Length::Fill)
+                    .height(Length::Fill),
+
+                container(
+                    row![
+                        container(text("y"))
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                            .style(move |_| container::Style {
+                            background: None,
+                            border: Border {
+                                color: theme.color3,
+                                width: 2.0,
+                                radius: 0.0.into(),
+                            },
+                            ..Default::default()
+                        }),
+                        container(text("y.2"))
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                            .style(move |_| container::Style {
+                            background: None,
+                            border: Border {
+                                color: theme.color3,
+                                width: 2.0,
+                                radius: 0.0.into(),
+                            },
+                            ..Default::default()
+                        }),
+                    ]
+                    .spacing(10)
+                )
+                    .width(Length::Fill)
+                    .height(Length::Fill),
+            ]
+            .spacing(10)
         )
+        .padding(iced::padding::top(10).bottom(3).right(12).left(10))
         .width(Length::Fill)
         .height(Length::Fill);
 
@@ -282,7 +348,7 @@ impl ServicesPanel {
                                 ..Default::default()
                             })
                         )
-                        .padding(iced::padding::top(5).right(18).bottom(8))  // Changed from bottom(25) to bottom(8)
+                        .padding(iced::padding::top(5).right(25).bottom(8).left(11))  // Changed from bottom(25) to bottom(8)
                         .width(Length::Fill)
                         .height(Length::Fill)
                         .style(move |_| container::Style {
