@@ -143,7 +143,7 @@ impl ServicesPanel {
             button(
                 container(
                     text(volume_icon)
-                        .color(theme.color2)
+                        .color(theme.color1)
                         .font(font)
                         .size(font_size * 1.6)
                         .center()
@@ -223,7 +223,7 @@ impl ServicesPanel {
                 button(
                         container(
                             text(brightness_icon)
-                                .color(theme.color2)
+                                .color(theme.color1)
                                 .font(font)
                                 .size(font_size * 1.6)
                                 .center()
