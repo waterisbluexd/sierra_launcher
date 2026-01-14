@@ -45,9 +45,6 @@ fn main() -> Result<(), iced_layershell::Error> {
     Ok(())
 }
 
-/* ================================
-   Vertical text helper
-   ================================ */
 fn vertical_text(s: &str) -> String {
     s.chars()
         .map(|c| c.to_string())
@@ -95,6 +92,8 @@ enum Message {
     BrightnessChanged(f32),
     AudioMuteToggle,
     BrightnessMinToggle,
+    WifiToggle,
+    WifiRefresh,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -169,7 +168,6 @@ impl Launcher {
 
         let events = event::listen().map(Message::IcedEvent);
         let frames = window::frames().map(|_| Message::CheckColors);
-        // Use frames for music refresh too - it updates frequently enough
         let music_refresh = window::frames().map(|_| Message::MusicRefresh);
 
         iced::Subscription::batch(vec![events, frames, music_refresh])
@@ -216,6 +214,8 @@ impl Launcher {
                         }
                     }
                 }
+                // Also refresh WiFi status periodically
+                self.services_panel.refresh_wifi_status();
                 Command::none()
             }
             
@@ -288,12 +288,24 @@ impl Launcher {
                 self.services_panel.set_brightness(value);
                 Command::none()
             }
+            
             Message::AudioMuteToggle => {
                 self.services_panel.toggle_mute();
                 Command::none()
             }
+            
             Message::BrightnessMinToggle => {
                 self.services_panel.toggle_min_brightness();
+                Command::none()
+            }
+
+            Message::WifiToggle => {
+                self.services_panel.toggle_wifi();
+                Command::none()
+            }
+
+            Message::WifiRefresh => {
+                self.services_panel.refresh_wifi_status();
                 Command::none()
             }
         }
@@ -314,11 +326,7 @@ impl Launcher {
 
         container(
             stack![
-                // =========================
-                // Container 2
-                // =========================
                 container(
-                    // Container 4 (left)
                     container(text(""))
                         .padding(9)
                         .height(Length::Fill)
@@ -340,16 +348,11 @@ impl Launcher {
                     background: Some(bg_with_alpha.into()),
                     ..Default::default()
                 }),
-                // =========================
-                // Container 1 (right)
-                // =========================
                 container(
                     row![
-                        // First container: height = Fill, width = Shrink
                         container(text(""))
                             .height(Length::Fill)
                             .width(Length::Shrink),
-                        // Second container: height = Fill, width = Fill
                         container(right_main_panels_view(
                             &self.theme,
                             bg_with_alpha,
@@ -371,9 +374,6 @@ impl Launcher {
                 .padding(iced::padding::bottom(14).right(14))
                 .width(Length::Fill)
                 .height(Length::Fill),
-                // =========================
-                // Container 3 (title)
-                // =========================
                 container(
                     container(
                         container(
