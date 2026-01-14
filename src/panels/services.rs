@@ -25,7 +25,13 @@ impl ServicesPanel {
         font: iced::Font,
         font_size: f32,
     ) -> Element<'a, Message> {
-        // Create volume slider column
+        // Left part - empty for now
+        let left_part = container(
+            text("")
+        )
+        .width(Length::Fill)
+        .height(Length::Fill);
+
         let volume_column = column![
             // Percentage value
             container(
@@ -36,9 +42,9 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(5),
+            .padding(iced::padding::bottom(5)),
             
-            // Vertical slider with custom style
+            // Vertical slider
             vertical_slider(
                 0.0..=100.0,
                 self.volume_value,
@@ -51,13 +57,13 @@ impl ServicesPanel {
                 slider::Style {
                     rail: slider::Rail {
                         backgrounds: (
-                            iced::Background::Color(theme.color4), // Filled portion
+                            iced::Background::Color(theme.color4),
                             iced::Background::Color(Color::from_rgba(
                                 theme.color6.r,
                                 theme.color6.g,
                                 theme.color6.b,
-                                0.0
-                            )), // Unfilled portion
+                                0.3
+                            )),
                         ),
                         width: 20.0,
                         border: Border {
@@ -77,7 +83,7 @@ impl ServicesPanel {
                 }
             }),
             
-            // Icon/Label
+            // Icon
             container(
                 text("🔊")
                     .color(theme.color6)
@@ -86,12 +92,12 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(0),
+            .padding(iced::padding::top(5)),
         ]
         .spacing(0)
         .align_x(iced::alignment::Horizontal::Center);
 
-        // Create brightness slider column
+        // Create brightness slider column with label
         let brightness_column = column![
             // Percentage value
             container(
@@ -102,9 +108,9 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(0),
+            .padding(iced::padding::bottom(5)),
             
-            // Vertical slider with custom style
+            // Vertical slider
             vertical_slider(
                 0.0..=100.0,
                 self.brightness_value,
@@ -117,13 +123,13 @@ impl ServicesPanel {
                 slider::Style {
                     rail: slider::Rail {
                         backgrounds: (
-                            iced::Background::Color(theme.color4), // Filled portion
+                            iced::Background::Color(theme.color4),
                             iced::Background::Color(Color::from_rgba(
                                 theme.color6.r,
                                 theme.color6.g,
                                 theme.color6.b,
-                                0.0
-                            )), // Unfilled portion
+                                0.3
+                            )),
                         ),
                         width: 20.0,
                         border: Border {
@@ -143,7 +149,7 @@ impl ServicesPanel {
                 }
             }),
             
-            // Icon/Label
+            // Icon
             container(
                 text("☀")
                     .color(theme.color6)
@@ -152,18 +158,30 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(0),
+            .padding(iced::padding::top(5)),
         ]
         .spacing(0)
         .align_x(iced::alignment::Horizontal::Center);
 
-        // Combine both sliders in a row
+        // Right part - sliders row
         let sliders_row = row![
             volume_column,
             brightness_column
         ]
-        .spacing(0)
-        .padding(10);
+        .spacing(20)
+        .padding(10)
+        .align_y(iced::alignment::Vertical::Center);
+
+        let right_part = container(sliders_row)
+            .width(Length::Fixed(80.0))
+            .height(Length::Fill);
+
+        // Main content row with left and right parts
+        let main_row = row![
+            left_part,
+            right_part
+        ]
+        .spacing(0);
 
         container(
             container(
@@ -171,17 +189,16 @@ impl ServicesPanel {
                     container(
                         container(
                             container(
-                                sliders_row
+                                main_row
                             )
                             .width(Length::Fill)
                             .height(Length::Fill)
-                            .center_x(Length::Fill)
                             .style(move |_| container::Style {
                                 background: None,
                                 ..Default::default()
                             })
                         )
-                        .padding(10)
+                        .padding(5)
                         .width(Length::Fill)
                         .height(Length::Fill)
                         .style(move |_| container::Style {
