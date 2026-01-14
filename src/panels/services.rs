@@ -85,25 +85,27 @@ impl ServicesPanel {
             
             // Icon
             button(
-                    container(
-                        text("V")
-                            .color(theme.color2)
-                            .font(font)
-                            .size(font_size)
-                    )
-                    .width(Length::Fill)
-                    .height(Length::Fill)
+                container(
+                    text("")
+                        .color(theme.color2)
+                        .font(font)
+                        .size(font_size * 1.6)
+                        .center()
                 )
-                .on_press(Message::MusicPlayPause)
-                .style(move |_, _| button::Style {
-                    background: Some(Color::TRANSPARENT.into()),
-                    border: Border {
-                        color: theme.color2,
-                        width: 1.5,
-                        radius: 0.0.into(),
-                    },
-                    ..Default::default()
-                }),
+                .width(Length::Fill)
+                .height(Length::Fixed(15.0))
+                .center_x(Length::Fill) 
+            )
+            .on_press(Message::MusicPlayPause)
+            .style(move |_, _| button::Style {
+                background: Some(Color::TRANSPARENT.into()),
+                border: Border {
+                    color: theme.color2,
+                    width: 1.5,
+                    radius: 0.0.into(),
+                },
+                ..Default::default()
+            }),
         ]
         .spacing(5)
         .align_x(iced::alignment::Horizontal::Center);
@@ -164,10 +166,10 @@ impl ServicesPanel {
             container(
                 button(
                         container(
-                            text("")
+                            text("")
                                 .color(theme.color2)
                                 .font(font)
-                                .size(font_size)
+                                .size(font_size * 1.6)
                                 .center()
                         )
                         .width(Length::Fill)
