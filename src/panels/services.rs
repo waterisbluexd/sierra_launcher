@@ -284,7 +284,6 @@ impl ServicesPanel {
                 .width(Length::Fill)
                 .height(Length::FillPortion(1)), 
 
-                // Bottom Row: Placeholders (y / y.2)
                 container(
                     row![
                         container(text("y").color(theme.color3))
@@ -320,7 +319,7 @@ impl ServicesPanel {
         .height(Length::Fill);
 
         // --- RIGHT PANEL (Sliders) ---
-        let volume_icon = ""; 
+        let volume_icon = if self.is_muted {""} else if self.volume_value <= 33.0 {""} else if self.volume_value <= 66.0 {"" } else {""};
         let brightness_icon = if self.brightness_value <= 33.0 { "󰃞" } else if self.brightness_value <= 66.0 { "󰃟" } else { "󰃠" };
 
         let volume_column = column![
