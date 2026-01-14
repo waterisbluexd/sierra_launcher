@@ -14,7 +14,7 @@ impl ServicesPanel {
         Self {
             volume_value: 50.0,
             brightness_value: 50.0,
-            slider_height: 180.0,  // Reduced from 200.0
+            slider_height: 120.0,  // Reduced from 200.0
         }
     }
 
@@ -42,7 +42,7 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(iced::padding::bottom(3)),  // Reduced from 5
+            .padding(iced::padding::top(6).bottom(4)),  // Reduced from 5
             
             // Vertical slider
             vertical_slider(
@@ -85,14 +85,13 @@ impl ServicesPanel {
             
             // Icon
             container(
-                text("🔊")
+                text("")
                     .color(theme.color6)
                     .font(font)
-                    .size(font_size)
+                    .size(font_size * 1.6)
             )
             .width(Length::Fill)
-            .center_x(Length::Fill)
-            .padding(iced::padding::top(3)),  // Reduced from 5
+            .center_x(Length::Fill),
         ]
         .spacing(0)
         .align_x(iced::alignment::Horizontal::Center);
@@ -108,7 +107,7 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(iced::padding::bottom(3)),  // Reduced from 5
+            .padding(iced::padding::top(2).bottom(4)),  // Reduced from 5
             
             // Vertical slider
             vertical_slider(
@@ -158,7 +157,7 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(iced::padding::top(3)),  // Reduced from 5
+            .padding(iced::padding::top(5)),
         ]
         .spacing(0)
         .align_x(iced::alignment::Horizontal::Center);
