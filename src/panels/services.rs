@@ -1,4 +1,4 @@
-use iced::widget::{container, text, stack, row, column, vertical_slider, slider};
+use iced::widget::{container, text, stack, row, column, vertical_slider, slider, button};
 use iced::{Element, Border, Color, Length};
 use crate::utils::theme::Theme;
 use crate::Message;
@@ -84,16 +84,28 @@ impl ServicesPanel {
             }),
             
             // Icon
-            container(
-                text("")
-                    .color(theme.color6)
-                    .font(font)
-                    .size(font_size * 1.6)
-            )
-            .width(Length::Fill)
-            .center_x(Length::Fill),
+            button(
+                    container(
+                        text("V")
+                            .color(theme.color2)
+                            .font(font)
+                            .size(font_size)
+                    )
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                )
+                .on_press(Message::MusicPlayPause)
+                .style(move |_, _| button::Style {
+                    background: Some(Color::TRANSPARENT.into()),
+                    border: Border {
+                        color: theme.color2,
+                        width: 1.5,
+                        radius: 0.0.into(),
+                    },
+                    ..Default::default()
+                }),
         ]
-        .spacing(0)
+        .spacing(5)
         .align_x(iced::alignment::Horizontal::Center);
 
         // Create brightness slider column with label
@@ -107,7 +119,7 @@ impl ServicesPanel {
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding(iced::padding::top(2).bottom(4)),  // Reduced from 5
+            .padding(iced::padding::top(6).bottom(4)),  // Reduced from 5
             
             // Vertical slider
             vertical_slider(
@@ -150,16 +162,31 @@ impl ServicesPanel {
             
             // Icon
             container(
-                text("☀")
-                    .color(theme.color6)
-                    .font(font)
-                    .size(font_size)
-            )
-            .width(Length::Fill)
-            .center_x(Length::Fill)
-            .padding(iced::padding::top(5)),
+                button(
+                        container(
+                            text("")
+                                .color(theme.color2)
+                                .font(font)
+                                .size(font_size)
+                                .center()
+                        )
+                        .width(Length::Fill)
+                        .height(Length::Fixed(15.0))
+                        .center_x(Length::Fill) 
+                    )
+                    .on_press(Message::MusicPlayPause)
+                    .style(move |_, _| button::Style {
+                        background: Some(Color::TRANSPARENT.into()),
+                        border: Border {
+                            color: theme.color2,
+                            width: 1.5,
+                            radius: 0.0.into(),
+                        },
+                        ..Default::default()
+                    }),
+                )
         ]
-        .spacing(0)
+        .spacing(5)
         .align_x(iced::alignment::Horizontal::Center);
 
         // Right part - sliders row
@@ -172,7 +199,7 @@ impl ServicesPanel {
         .align_y(iced::alignment::Vertical::Center);
 
         let right_part = container(sliders_row)
-            .width(Length::Fixed(60.0))
+            .width(Length::Fixed(70.0))
             .height(Length::Fill);
 
         // Main content row with left and right parts

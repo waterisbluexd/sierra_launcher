@@ -1,4 +1,4 @@
-use iced::widget::{container, text, column, stack, row};
+use iced::widget::{container, text, column, stack, row, button};
 use iced::{Element, Border, Color, Length};
 use crate::utils::theme::Theme;
 use crate::Message;
@@ -132,9 +132,25 @@ pub fn right_main_panels_view<'a>(
                             }),
 
                             container(
-                                text(" ")  // POWER BUTTON HERE
-                                    .font(font)
-                                    .size(font_size)
+                                button(
+                                    container(
+                                        text("")
+                                            .color(theme.color2)
+                                            .font(font)
+                                            .size(font_size * 1.3)
+                                            .line_height(0.9)
+                                            .center()
+                                    )
+                                    .width(Length::Fill)
+                                    .height(Length::Fill)
+                                    .center_x(Length::Fill) 
+                                    .center_y(Length::Fill) 
+                                )
+                                .on_press(Message::MusicPlayPause)
+                                .style(move |_, _| button::Style {
+                                    background: Some(Color::TRANSPARENT.into()),
+                                    ..Default::default()
+                                }),
                             )
                             .width(Length::Fixed(35.0))
                             .height(Length::Fill)
