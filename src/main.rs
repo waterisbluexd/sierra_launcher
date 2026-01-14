@@ -90,10 +90,12 @@ enum Message {
     MusicRefresh,
     VolumeChanged(f32),
     BrightnessChanged(f32),
-    AudioMuteToggle,
+    VolumeMuteToggle, // New: for toggling volume mute
+    AirplaneModeToggle, // New: for toggling airplane mode
     BrightnessMinToggle,
     WifiToggle,
     WifiRefresh,
+    NoOp, // New: for no-operation messages
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -288,9 +290,14 @@ impl Launcher {
                 self.services_panel.set_brightness(value);
                 Command::none()
             }
-            
-            Message::AudioMuteToggle => {
+
+            Message::VolumeMuteToggle => {
                 self.services_panel.toggle_mute();
+                Command::none()
+            }
+            
+            Message::AirplaneModeToggle => {
+                self.services_panel.toggle_airplane_mode();
                 Command::none()
             }
             
@@ -308,6 +315,8 @@ impl Launcher {
                 self.services_panel.refresh_wifi_status();
                 Command::none()
             }
+
+            Message::NoOp => Command::none(), // New: No-operation message handler
         }
     }
 

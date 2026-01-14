@@ -1,5 +1,5 @@
 use iced::widget::{container, text, stack, row, column, vertical_slider, slider, button};
-use iced::{Element, Border, Color, Length, Background, Shadow};
+use iced::{Element, Border, Color, Length};
 use crate::utils::theme::Theme;
 use crate::Message;
 use std::process::Command;
@@ -15,6 +15,7 @@ pub struct ServicesPanel {
     is_min_brightness: bool,
     pub wifi_enabled: bool,
     pub wifi_name: String,
+    pub is_airplane_mode_on: bool,
 }
 
 impl ServicesPanel {
@@ -33,6 +34,7 @@ impl ServicesPanel {
             is_min_brightness: false,
             wifi_enabled,
             wifi_name,
+            is_airplane_mode_on: false,
         }
     }
 
@@ -193,41 +195,60 @@ impl ServicesPanel {
                         // WiFi Button Wrapper
                         container(
                             button(wifi_button_content)
-                                .on_press(Message::WifiToggle)
+                                .on_press(if self.is_airplane_mode_on { Message::NoOp } else { Message::WifiToggle })
                                 .width(Length::Fill)
                                 .height(Length::Fill)
                                 .style(move |_theme, status| {
-                                    match status {
-                                        iced::widget::button::Status::Hovered => button::Style {
-                                            // On hover: If active, slight transparency. If inactive, slight color fill.
-                                            background: Some(if self.wifi_enabled {
-                                                let mut c = wifi_bg_color; c.a = 0.9; c.into()
-                                            } else {
-                                                let mut c = active_accent; c.a = 0.1; c.into()
-                                            }),
+                                    let current_active_accent = if is_connected { theme.color2 } else { theme.color3 };
+                                    let (current_wifi_text_color, current_wifi_bg_color, current_wifi_border_color) = if self.wifi_enabled {
+                                        (theme.color0, current_active_accent, Color::TRANSPARENT)
+                                    } else {
+                                        (inactive_accent, Color::TRANSPARENT, inactive_accent)
+                                    };
+
+                                    if self.is_airplane_mode_on {
+                                        button::Style {
+                                            background: Some(Color::from_rgba(0.5, 0.5, 0.5, 0.1).into()), // Greyed out background
                                             border: Border {
-                                                color: active_accent,
-                                                width: 2.0,
-                                                radius: 0.0.into(),
-                                            },
-                                            text_color: wifi_text_color,
-                                            ..Default::default()
-                                        },
-                                        iced::widget::button::Status::Pressed => button::Style {
-                                            background: Some(active_accent.into()),
-                                            border: Border { color: active_accent, width: 2.0, radius: 0.0.into() },
-                                            text_color: theme.color0,
-                                            ..Default::default()
-                                        },
-                                        _ => button::Style {
-                                            background: Some(wifi_bg_color.into()),
-                                            border: Border {
-                                                color: wifi_border_color,
+                                                color: Color::from_rgb(0.5, 0.5, 0.5), // Grey border
                                                 width: 1.5,
                                                 radius: 0.0.into(),
                                             },
-                                            text_color: wifi_text_color,
+                                            text_color: Color::from_rgb(0.5, 0.5, 0.5), // Grey text
                                             ..Default::default()
+                                        }
+                                    } else {
+                                        match status {
+                                            iced::widget::button::Status::Hovered => button::Style {
+                                                background: Some(if self.wifi_enabled {
+                                                    let mut c = current_wifi_bg_color; c.a = 0.9; c.into()
+                                                } else {
+                                                    let mut c = current_active_accent; c.a = 0.1; c.into()
+                                                }),
+                                                border: Border {
+                                                    color: current_active_accent,
+                                                    width: 2.0,
+                                                    radius: 0.0.into(),
+                                                },
+                                                text_color: current_wifi_text_color,
+                                                ..Default::default()
+                                            },
+                                            iced::widget::button::Status::Pressed => button::Style {
+                                                background: Some(current_active_accent.into()),
+                                                border: Border { color: current_active_accent, width: 2.0, radius: 0.0.into() },
+                                                text_color: theme.color0,
+                                                ..Default::default()
+                                            },
+                                            _ => button::Style {
+                                                background: Some(current_wifi_bg_color.into()),
+                                                border: Border {
+                                                    color: current_wifi_border_color,
+                                                    width: 1.5,
+                                                    radius: 0.0.into(),
+                                                },
+                                                text_color: current_wifi_text_color,
+                                                ..Default::default()
+                                            }
                                         }
                                     }
                                 }),
@@ -240,7 +261,7 @@ impl ServicesPanel {
                         container(
                             button(
                                 container(
-                                    text("󰀝")
+                                    text(if self.is_airplane_mode_on { "󰛨" } else { "󰛨" }) // Icon for airplane mode
                                         .color(theme.color1) 
                                         .font(font)
                                         .size(font_size * 2.0)
@@ -251,9 +272,9 @@ impl ServicesPanel {
                                 .center_x(Length::Fill) 
                                 .center_y(Length::Fill) 
                             )
-                            .on_press(Message::AudioMuteToggle)
-                            .style(move |_, status| {
-                                let border_c = theme.color1;
+                            .on_press(Message::AirplaneModeToggle) // Changed to AirplaneModeToggle
+                            .style(move |_theme, status| {
+                                let border_c = if self.is_airplane_mode_on { theme.color2 } else { theme.color1 }; // Use color2 when active
                                 match status {
                                     iced::widget::button::Status::Hovered => button::Style {
                                         background: Some(Color::from_rgba(border_c.r, border_c.g, border_c.b, 0.1).into()),
@@ -267,7 +288,7 @@ impl ServicesPanel {
                                     _ => button::Style {
                                         background: Some(Color::TRANSPARENT.into()),
                                         border: Border {
-                                            color: theme.color2, 
+                                            color: border_c, 
                                             width: 1.5,
                                             radius: 0.0.into(),
                                         },
@@ -366,7 +387,7 @@ impl ServicesPanel {
                 .height(Length::Fixed(15.0))
                 .center_x(Length::Fill) 
             )
-            .on_press(Message::AudioMuteToggle)
+            .on_press(Message::VolumeMuteToggle)
             .style(move |_, _| button::Style {
                 background: Some(Color::TRANSPARENT.into()),
                 border: Border { color: theme.color2, width: 1.5, radius: 0.0.into() },
@@ -542,6 +563,19 @@ impl ServicesPanel {
             self.set_brightness(0.0);
         } else {
             self.set_brightness(self.previous_brightness_value);
+        }
+    }
+
+    pub fn toggle_airplane_mode(&mut self) {
+        self.is_airplane_mode_on = !self.is_airplane_mode_on;
+        if self.is_airplane_mode_on {
+            // When airplane mode is on, turn off wifi
+            if self.wifi_enabled {
+                self.toggle_wifi();
+            }
+        } else {
+            // When airplane mode is off, refresh wifi status to potentially re-enable it
+            self.refresh_wifi_status();
         }
     }
 }
