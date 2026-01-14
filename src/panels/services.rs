@@ -9,6 +9,10 @@ pub struct ServicesPanel {
     pub volume_value: f32,
     pub brightness_value: f32,
     pub slider_height: f32,
+    previous_volume_value: f32,
+    is_muted: bool,
+    previous_brightness_value: f32,
+    is_min_brightness: bool,
 }
 
 impl ServicesPanel {
@@ -19,7 +23,11 @@ impl ServicesPanel {
         Self {
             volume_value,
             brightness_value,
-            slider_height: 120.0,  // Reduced from 200.0
+            slider_height: 120.0,
+            previous_volume_value: volume_value,
+            is_muted: false,
+            previous_brightness_value: brightness_value,
+            is_min_brightness: false,
         }
     }
 
@@ -70,6 +78,14 @@ impl ServicesPanel {
             ""
         } else {
             ""
+        };
+
+        let brightness_icon = if self.brightness_value <= 33.0 {
+            "󰃞"
+        } else if self.brightness_value <= 66.0 {
+            "󰃟"
+        } else {
+            "󰃠"
         };
 
         let volume_column = column![
@@ -136,7 +152,7 @@ impl ServicesPanel {
                 .height(Length::Fixed(15.0))
                 .center_x(Length::Fill) 
             )
-            .on_press(Message::MusicPlayPause)
+            .on_press(Message::AudioMuteToggle)
             .style(move |_, _| button::Style {
                 background: Some(Color::TRANSPARENT.into()),
                 border: Border {
@@ -206,7 +222,7 @@ impl ServicesPanel {
             container(
                 button(
                         container(
-                            text("")
+                            text(brightness_icon)
                                 .color(theme.color2)
                                 .font(font)
                                 .size(font_size * 1.6)
@@ -216,7 +232,7 @@ impl ServicesPanel {
                         .height(Length::Fixed(15.0))
                         .center_x(Length::Fill) 
                     )
-                    .on_press(Message::MusicPlayPause)
+                    .on_press(Message::BrightnessMinToggle)
                     .style(move |_, _| button::Style {
                         background: Some(Color::TRANSPARENT.into()),
                         border: Border {
@@ -324,6 +340,9 @@ impl ServicesPanel {
 
     pub fn set_volume(&mut self, value: f32) {
         self.volume_value = value.clamp(0.0, 100.0);
+        if self.volume_value > 0.0 {
+            self.is_muted = false;
+        }
         let _ = Command::new("pactl")
             .arg("set-sink-volume")
             .arg("@DEFAULT_SINK@")
@@ -333,9 +352,32 @@ impl ServicesPanel {
 
     pub fn set_brightness(&mut self, value: f32) {
         self.brightness_value = value.clamp(0.0, 100.0);
+        if self.brightness_value > 0.0 {
+            self.is_min_brightness = false;
+        }
         let _ = Command::new("brightnessctl")
             .arg("s")
             .arg(format!("{}%", self.brightness_value as u8))
             .output();
+    }
+
+    pub fn toggle_mute(&mut self) {
+        self.is_muted = !self.is_muted;
+        if self.is_muted {
+            self.previous_volume_value = self.volume_value;
+            self.set_volume(0.0);
+        } else {
+            self.set_volume(self.previous_volume_value);
+        }
+    }
+
+    pub fn toggle_min_brightness(&mut self) {
+        self.is_min_brightness = !self.is_min_brightness;
+        if self.is_min_brightness {
+            self.previous_brightness_value = self.brightness_value;
+            self.set_brightness(0.0);
+        } else {
+            self.set_brightness(self.previous_brightness_value);
+        }
     }
 }

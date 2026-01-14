@@ -93,6 +93,8 @@ enum Message {
     MusicRefresh,
     VolumeChanged(f32),
     BrightnessChanged(f32),
+    AudioMuteToggle,
+    BrightnessMinToggle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -284,6 +286,14 @@ impl Launcher {
 
             Message::BrightnessChanged(value) => {
                 self.services_panel.set_brightness(value);
+                Command::none()
+            }
+            Message::AudioMuteToggle => {
+                self.services_panel.toggle_mute();
+                Command::none()
+            }
+            Message::BrightnessMinToggle => {
+                self.services_panel.toggle_min_brightness();
                 Command::none()
             }
         }
