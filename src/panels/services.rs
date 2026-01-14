@@ -2,6 +2,8 @@ use iced::widget::{container, text, stack, row, column, vertical_slider, slider,
 use iced::{Element, Border, Color, Length};
 use crate::utils::theme::Theme;
 use crate::Message;
+use std::process::Command;
+use regex::Regex;
 
 pub struct ServicesPanel {
     pub volume_value: f32,
@@ -11,10 +13,38 @@ pub struct ServicesPanel {
 
 impl ServicesPanel {
     pub fn new() -> Self {
+        let volume_value = Self::get_volume().unwrap_or(50.0);
+        let brightness_value = Self::get_brightness().unwrap_or(50.0);
+
         Self {
-            volume_value: 50.0,
-            brightness_value: 50.0,
+            volume_value,
+            brightness_value,
             slider_height: 120.0,  // Reduced from 200.0
+        }
+    }
+
+    fn get_volume() -> Option<f32> {
+        let output = Command::new("amixer").arg("sget").arg("Master").output().ok()?;
+        let output_str = String::from_utf8(output.stdout).ok()?;
+        let re = Regex::new(r"\[(\d+)%\]").unwrap();
+        let caps = re.captures(&output_str)?;
+        let value_str = caps.get(1)?.as_str();
+        value_str.parse::<f32>().ok()
+    }
+
+    fn get_brightness() -> Option<f32> {
+        let current_output = Command::new("brightnessctl").arg("g").output().ok()?;
+        let current_str = String::from_utf8(current_output.stdout).ok()?.trim().to_string();
+        let current = current_str.parse::<f32>().ok()?;
+
+        let max_output = Command::new("brightnessctl").arg("m").output().ok()?;
+        let max_str = String::from_utf8(max_output.stdout).ok()?.trim().to_string();
+        let max = max_str.parse::<f32>().ok()?;
+
+        if max > 0.0 {
+            Some((current / max) * 100.0)
+        } else {
+            None
         }
     }
 
@@ -294,9 +324,19 @@ impl ServicesPanel {
 
     pub fn set_volume(&mut self, value: f32) {
         self.volume_value = value.clamp(0.0, 100.0);
+        let _ = Command::new("amixer")
+            .arg("-q")
+            .arg("sset")
+            .arg("Master")
+            .arg(format!("{}%", self.volume_value as u8))
+            .output();
     }
 
     pub fn set_brightness(&mut self, value: f32) {
         self.brightness_value = value.clamp(0.0, 100.0);
+        let _ = Command::new("brightnessctl")
+            .arg("s")
+            .arg(format!("{}%", self.brightness_value as u8))
+            .output();
     }
 }

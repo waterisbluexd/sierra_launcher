@@ -278,12 +278,12 @@ impl Launcher {
             }
 
             Message::VolumeChanged(value) => {
-                self.services_panel.volume_value = value;
+                self.services_panel.set_volume(value);
                 Command::none()
             }
 
             Message::BrightnessChanged(value) => {
-                self.services_panel.brightness_value = value;
+                self.services_panel.set_brightness(value);
                 Command::none()
             }
         }
