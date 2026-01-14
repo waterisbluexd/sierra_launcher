@@ -32,6 +32,16 @@ impl ServicesPanel {
         .width(Length::Fill)
         .height(Length::Fill);
 
+        let volume_icon = if self.volume_value == 0.0 {
+            ""
+        } else if self.volume_value <= 33.0 {
+            ""
+        } else if self.volume_value <= 66.0 {
+            ""
+        } else {
+            ""
+        };
+
         let volume_column = column![
             // Percentage value
             container(
@@ -86,7 +96,7 @@ impl ServicesPanel {
             // Icon
             button(
                 container(
-                    text("")
+                    text(volume_icon)
                         .color(theme.color2)
                         .font(font)
                         .size(font_size * 1.6)
