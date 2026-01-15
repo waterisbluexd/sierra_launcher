@@ -264,7 +264,7 @@ impl ServicesPanel {
                                     }
                                 }),
                         )
-                        .padding(iced::padding::right(10)) 
+                         
                         .width(Length::Fill)
                         .height(Length::Fill),
 
@@ -326,18 +326,17 @@ impl ServicesPanel {
                                 }
                             }),
                         )
-                        .width(Length::Fixed(55.0))
+                        .width(Length::Fixed(45.0))
                         .height(Length::Fill)
-                    ]
+                    ].spacing(10)
                 )
-                .padding(10)
                 .width(Length::Fill)
-                .height(Length::Fixed(70.0)), /////////////////////////////////////
+                .height(Length::Fixed(45.0)), /////////////////////////////////////
 
                 // Middle Row (newly added)
                 container(
                     row![
-                        // WiFi Button Wrapper
+                        // Bluetooth Button Wrapper
                         container(
                             button(
                                 container(
@@ -435,11 +434,11 @@ impl ServicesPanel {
                                     }
                                 }),
                         )
-                        .padding(iced::padding::right(10)) 
+                         
                         .width(Length::Fill)
                         .height(Length::Fill),
 
-                        // Airplane / Mute Button
+                        // Eyecare Button
                         container(
                             button(
                                 container(
@@ -497,13 +496,74 @@ impl ServicesPanel {
                                 }
                             }),
                         )
-                        .width(Length::Fixed(55.0))
+                        .width(Length::Fixed(45.0))
+                        .height(Length::Fill),
+
+                        // Settings ?
+                        container(
+                            button(
+                                container(
+                                    text("󰀝") // Icon for airplane mode
+                                        .color(airplane_text_color)  
+                                        .font(font)
+                                        .size(font_size * 2.0)
+                                        .center()
+                                )
+                                .width(Length::Fill)
+                                .height(Length::Fill)
+                                .center_x(Length::Fill) 
+                                .center_y(Length::Fill) 
+                            )
+                            .on_press(Message::AirplaneModeToggle)
+                            .style(move |_theme, status| {
+                                let airplane_active_color = theme.color2;
+                                let airplane_inactive_color = theme.color8;
+                
+                                match status {
+                                    iced::widget::button::Status::Hovered => button::Style {
+                                        background: Some(if self.is_airplane_mode_on {
+                                            let mut c = airplane_bg_color; c.a = 0.9; c.into()
+                                        } else {
+                                            let mut c = airplane_inactive_color; c.a = 0.1; c.into()
+                                        }),
+                                        border: Border {
+                                            color: if self.is_airplane_mode_on { airplane_active_color } else { airplane_inactive_color },
+                                            width: 2.0,
+                                            radius: 0.0.into(),
+                                        },
+                                        text_color: airplane_text_color,
+                                        ..Default::default()
+                                    },
+                                    iced::widget::button::Status::Pressed => button::Style {
+                                        background: Some(airplane_active_color.into()),
+                                        border: Border {
+                                            color: airplane_active_color,
+                                            width: 2.0,
+                                            radius: 0.0.into(),
+                                        },
+                                        text_color: theme.color0,
+                                        ..Default::default()
+                                    },
+                                    _ => button::Style {
+                                        background: Some(airplane_bg_color.into()),
+                                        border: Border {
+                                            color: airplane_border_color,
+                                            width: 1.5,
+                                            radius: 0.0.into(),
+                                        },
+                                        text_color: airplane_text_color,
+                                        ..Default::default()
+                                    }
+                                }
+                            }),
+                        )
+                        .width(Length::Fixed(45.0))
                         .height(Length::Fill)
                     ]
+                    .spacing(10)
                 )
-                .padding(10)
                 .width(Length::Fill)
-                .height(Length::Fixed(70.0)),
+                .height(Length::Fixed(45.0)),
 
                 container(
                     row![
@@ -531,7 +591,7 @@ impl ServicesPanel {
                 .width(Length::Fill)
                 .height(Length::Fill), 
             ]
-            .spacing(0)
+            .spacing(10)
         )
         .padding(iced::padding::top(10).bottom(3).right(12).left(5))
         .width(Length::Fill)
