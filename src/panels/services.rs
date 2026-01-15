@@ -231,7 +231,7 @@ impl ServicesPanel {
             (inactive_accent, Color::TRANSPARENT, inactive_accent)
         };
 
-        let bt_icon_str = if bt_enabled { "" } else { "󰂲" };
+        let bt_icon_str = if bt_enabled { "" } else { "󰂲" };
 
         // --- 2. BUILD THE WIFI BUTTON CONTENT ---
         let wifi_button_content = container(
@@ -276,7 +276,7 @@ impl ServicesPanel {
                     text(bt_icon_str)
                         .color(bt_text_color)
                         .font(font)
-                        .size(font_size * 2.2)
+                        .size(font_size * 1.8)
                         .center()
                 )
                 .padding(iced::padding::right(12))
