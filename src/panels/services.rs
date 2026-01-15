@@ -367,7 +367,7 @@ impl ServicesPanel {
         .height(Length::Fill);
 
         // --- RIGHT PANEL (Sliders) ---
-        let volume_icon = if self.is_muted {""} else if self.volume_value <= 33.0 {""} else if self.volume_value <= 66.0 {"" } else {""};
+        let volume_icon = if self.is_muted {""} else if self.volume_value <= 33.0 {""} else if self.volume_value <= 66.0 {"" } else {""};
         let brightness_icon = if self.brightness_value <= 33.0 { "󰃞" } else if self.brightness_value <= 66.0 { "󰃟" } else { "󰃠" };
 
         let volume_column = column![
