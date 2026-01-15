@@ -326,13 +326,40 @@ impl ServicesPanel {
                                 }
                             }),
                         )
-                        .width(Length::Fixed(65.0))
+                        .width(Length::Fixed(55.0))
                         .height(Length::Fill)
                     ]
                 )
                 .padding(10)
                 .width(Length::Fill)
-                .height(Length::FillPortion(1)), 
+                .height(Length::Fixed(70.0)), /////////////////////////////////////
+
+                // Middle Row (newly added)
+                container(
+                    row![
+                        container(text("z").color(theme.color3))
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                            .center_x(Length::Fill)
+                            .center_y(Length::Fill)
+                            .style(move |_| container::Style {
+                                border: Border { color: theme.color3, width: 2.0, radius: 0.0.into() },
+                                ..Default::default()
+                            }),
+                        container(text("z.2").color(theme.color3))
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                            .center_x(Length::Fill)
+                            .center_y(Length::Fill)
+                            .style(move |_| container::Style {
+                                border: Border { color: theme.color3, width: 2.0, radius: 0.0.into() },
+                                ..Default::default()
+                            }),
+                    ]
+                    .spacing(10)
+                )
+                .width(Length::Fill)
+                .height(Length::Fill),
 
                 container(
                     row![
@@ -358,9 +385,9 @@ impl ServicesPanel {
                     .spacing(10)
                 )
                 .width(Length::Fill)
-                .height(Length::FillPortion(1)), 
+                .height(Length::Fill), 
             ]
-            .spacing(10)
+            .spacing(0)
         )
         .padding(iced::padding::top(10).bottom(3).right(12).left(5))
         .width(Length::Fill)
