@@ -4,6 +4,29 @@ use crate::utils::theme::Theme;
 use crate::Message;
 use std::process::Command;
 use regex::Regex;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+
+#[derive(Clone)]
+struct ServiceStatus {
+    wifi_enabled: bool,
+    wifi_name: String,
+    bluetooth_enabled: bool,
+    bluetooth_name: String,
+    last_update: Instant,
+}
+
+impl Default for ServiceStatus {
+    fn default() -> Self {
+        Self {
+            wifi_enabled: false,
+            wifi_name: "Checking...".to_string(),
+            bluetooth_enabled: false,
+            bluetooth_name: "Checking...".to_string(),
+            last_update: Instant::now() - Duration::from_secs(10), // Force initial update
+        }
+    }
+}
 
 pub struct ServicesPanel {
     pub volume_value: f32,
@@ -13,20 +36,58 @@ pub struct ServicesPanel {
     is_muted: bool,
     previous_brightness_value: f32,
     is_min_brightness: bool,
-    pub wifi_enabled: bool,
-    pub wifi_name: String,
     pub is_airplane_mode_on: bool,
-    pub bluetooth_enabled: bool,
-    pub bluetooth_name: String,
     pub eye_care_enabled: bool,
+    
+    // Cache status with Arc<Mutex> for thread-safe access
+    status_cache: Arc<Mutex<ServiceStatus>>,
+    refresh_requested: Arc<Mutex<bool>>,
 }
 
 impl ServicesPanel {
     pub fn new() -> Self {
         let volume_value = Self::get_volume().unwrap_or(50.0);
         let brightness_value = Self::get_brightness().unwrap_or(50.0);
-        let (wifi_enabled, wifi_name) = Self::get_wifi_status();
-        let (bluetooth_enabled, bluetooth_name) = Self::get_bluetooth_status();
+        
+        let status_cache = Arc::new(Mutex::new(ServiceStatus::default()));
+        let refresh_requested = Arc::new(Mutex::new(true));
+        
+        // Start background thread for status updates
+        let cache_clone = Arc::clone(&status_cache);
+        let refresh_clone = Arc::clone(&refresh_requested);
+        
+        std::thread::spawn(move || {
+            loop {
+                // Check if refresh is requested
+                let should_refresh = {
+                    let mut requested = refresh_clone.lock().unwrap();
+                    if *requested {
+                        *requested = false;
+                        true
+                    } else {
+                        false
+                    }
+                };
+                
+                if should_refresh {
+                    // Fetch status in background thread (non-blocking)
+                    let (wifi_enabled, wifi_name) = Self::fetch_wifi_status();
+                    let (bt_enabled, bt_name) = Self::fetch_bluetooth_status();
+                    
+                    // Update cache
+                    if let Ok(mut status) = cache_clone.lock() {
+                        status.wifi_enabled = wifi_enabled;
+                        status.wifi_name = wifi_name;
+                        status.bluetooth_enabled = bt_enabled;
+                        status.bluetooth_name = bt_name;
+                        status.last_update = Instant::now();
+                    }
+                }
+                
+                // Sleep to prevent busy-waiting
+                std::thread::sleep(Duration::from_millis(200));
+            }
+        });
 
         Self {
             volume_value,
@@ -36,12 +97,10 @@ impl ServicesPanel {
             is_muted: false,
             previous_brightness_value: brightness_value,
             is_min_brightness: false,
-            wifi_enabled,
-            wifi_name,
             is_airplane_mode_on: false,
-            bluetooth_enabled,
-            bluetooth_name,
             eye_care_enabled: false,
+            status_cache,
+            refresh_requested,
         }
     }
 
@@ -70,10 +129,10 @@ impl ServicesPanel {
         }
     }
 
-    fn get_wifi_status() -> (bool, String) {
-        // Try nmcli first (NetworkManager)
-        if let Ok(output) = Command::new("nmcli")
-            .args(&["-t", "-f", "ACTIVE,SSID", "dev", "wifi"])
+    fn fetch_wifi_status() -> (bool, String) {
+        // Try nmcli first (NetworkManager) with timeout
+        if let Ok(output) = Command::new("timeout")
+            .args(&["1", "nmcli", "-t", "-f", "ACTIVE,SSID", "dev", "wifi"])
             .output() {
             if let Ok(stdout) = String::from_utf8(output.stdout) {
                 for line in stdout.lines() {
@@ -85,8 +144,10 @@ impl ServicesPanel {
             }
         }
 
-        // Fallback to iwgetid
-        if let Ok(output) = Command::new("iwgetid").arg("-r").output() {
+        // Fallback to iwgetid with timeout
+        if let Ok(output) = Command::new("timeout")
+            .args(&["1", "iwgetid", "-r"])
+            .output() {
             if let Ok(ssid) = String::from_utf8(output.stdout) {
                 let ssid = ssid.trim();
                 if !ssid.is_empty() {
@@ -96,7 +157,9 @@ impl ServicesPanel {
         }
 
         // Check if WiFi is disabled
-        if let Ok(output) = Command::new("nmcli").args(&["radio", "wifi"]).output() {
+        if let Ok(output) = Command::new("timeout")
+            .args(&["1", "nmcli", "radio", "wifi"])
+            .output() {
             if let Ok(stdout) = String::from_utf8(output.stdout) {
                 if stdout.trim() == "disabled" {
                     return (false, "WiFi Off".to_string());
@@ -108,10 +171,10 @@ impl ServicesPanel {
         (true, "No Network".to_string())
     }
 
-    fn get_bluetooth_status() -> (bool, String) {
-        // Check if bluetooth is powered on using bluetoothctl
-        if let Ok(output) = Command::new("bluetoothctl")
-            .args(&["show"])
+    fn fetch_bluetooth_status() -> (bool, String) {
+        // Check if bluetooth is powered on using bluetoothctl with timeout
+        if let Ok(output) = Command::new("timeout")
+            .args(&["1", "bluetoothctl", "show"])
             .output() {
             if let Ok(stdout) = String::from_utf8(output.stdout) {
                 let powered = stdout.lines()
@@ -124,9 +187,9 @@ impl ServicesPanel {
                     return (false, "Bluetooth Off".to_string());
                 }
 
-                // Check for connected devices
-                if let Ok(devices_output) = Command::new("bluetoothctl")
-                    .args(&["devices", "Connected"])
+                // Check for connected devices with timeout
+                if let Ok(devices_output) = Command::new("timeout")
+                    .args(&["1", "bluetoothctl", "devices", "Connected"])
                     .output() {
                     if let Ok(devices_str) = String::from_utf8(devices_output.stdout) {
                         if let Some(first_device) = devices_str.lines().next() {
@@ -149,62 +212,104 @@ impl ServicesPanel {
         (false, "Bluetooth Off".to_string())
     }
 
-    pub fn toggle_wifi(&mut self) {
-        self.wifi_enabled = !self.wifi_enabled;
-        
-        if self.wifi_enabled {
-            // Enable WiFi
-            let _ = Command::new("nmcli").args(&["radio", "wifi", "on"]).output();
-            std::thread::sleep(std::time::Duration::from_millis(500));
-            self.refresh_wifi_status();
-        } else {
-            // Disable WiFi
-            let _ = Command::new("nmcli").args(&["radio", "wifi", "off"]).output();
-            self.wifi_name = "WiFi Off".to_string();
+    pub fn schedule_refresh(&self) {
+        if let Ok(mut refresh) = self.refresh_requested.lock() {
+            *refresh = true;
         }
     }
 
-    pub fn toggle_bluetooth(&mut self) {
-        self.bluetooth_enabled = !self.bluetooth_enabled;
+    pub fn toggle_wifi(&mut self) {
+        // Get current state from cache
+        let is_enabling = !self.wifi_enabled();
         
-        if self.bluetooth_enabled {
-            // Power on Bluetooth
-            let _ = Command::new("bluetoothctl").args(&["power", "on"]).output();
-            std::thread::sleep(std::time::Duration::from_millis(500));
-            self.refresh_bluetooth_status();
-        } else {
-            // Power off Bluetooth
-            let _ = Command::new("bluetoothctl").args(&["power", "off"]).output();
-            self.bluetooth_name = "Bluetooth Off".to_string();
+        std::thread::spawn(move || {
+            if is_enabling {
+                let _ = Command::new("nmcli").args(&["radio", "wifi", "on"]).output();
+            } else {
+                let _ = Command::new("nmcli").args(&["radio", "wifi", "off"]).output();
+            }
+        });
+        
+        // Update cache immediately for responsiveness
+        if let Ok(mut status) = self.status_cache.lock() {
+            status.wifi_enabled = is_enabling;
+            if !is_enabling {
+                status.wifi_name = "WiFi Off".to_string();
+            }
         }
+        
+        // Schedule refresh after a delay
+        let refresh_clone = Arc::clone(&self.refresh_requested);
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(1000));
+            if let Ok(mut refresh) = refresh_clone.lock() {
+                *refresh = true;
+            }
+        });
+    }
+
+    pub fn toggle_bluetooth(&mut self) {
+        // Get current state from cache
+        let is_enabling = !self.bluetooth_enabled();
+        
+        std::thread::spawn(move || {
+            if is_enabling {
+                let _ = Command::new("bluetoothctl").args(&["power", "on"]).output();
+            } else {
+                let _ = Command::new("bluetoothctl").args(&["power", "off"]).output();
+            }
+        });
+        
+        // Update cache immediately for responsiveness
+        if let Ok(mut status) = self.status_cache.lock() {
+            status.bluetooth_enabled = is_enabling;
+            if !is_enabling {
+                status.bluetooth_name = "Bluetooth Off".to_string();
+            }
+        }
+        
+        // Schedule refresh after a delay
+        let refresh_clone = Arc::clone(&self.refresh_requested);
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(1000));
+            if let Ok(mut refresh) = refresh_clone.lock() {
+                *refresh = true;
+            }
+        });
     }
 
     pub fn toggle_eye_care(&mut self) {
         self.eye_care_enabled = !self.eye_care_enabled;
         
-        if self.eye_care_enabled {
-            // Enable night light / redshift (3500K color temperature)
-            let _ = Command::new("redshift")
-                .args(&["-P", "-O", "3500"])
-                .output();
-        } else {
-            // Disable night light / reset color temperature
-            let _ = Command::new("redshift")
-                .args(&["-x"])
-                .output();
-        }
+        let is_enabled = self.eye_care_enabled;
+        std::thread::spawn(move || {
+            if is_enabled {
+                let _ = Command::new("redshift").args(&["-P", "-O", "3500"]).output();
+            } else {
+                let _ = Command::new("redshift").args(&["-x"]).output();
+            }
+        });
     }
 
-    pub fn refresh_wifi_status(&mut self) {
-        let (enabled, name) = Self::get_wifi_status();
-        self.wifi_enabled = enabled;
-        self.wifi_name = name;
+    // Getter methods to access cached values without blocking
+    pub fn wifi_enabled(&self) -> bool {
+        self.status_cache.lock().map(|s| s.wifi_enabled).unwrap_or(false)
     }
 
-    pub fn refresh_bluetooth_status(&mut self) {
-        let (enabled, name) = Self::get_bluetooth_status();
-        self.bluetooth_enabled = enabled;
-        self.bluetooth_name = name;
+    pub fn wifi_name(&self) -> String {
+        self.status_cache.lock()
+            .map(|s| s.wifi_name.clone())
+            .unwrap_or_else(|_| "Unknown".to_string())
+    }
+
+    pub fn bluetooth_enabled(&self) -> bool {
+        self.status_cache.lock().map(|s| s.bluetooth_enabled).unwrap_or(false)
+    }
+
+    pub fn bluetooth_name(&self) -> String {
+        self.status_cache.lock()
+            .map(|s| s.bluetooth_name.clone())
+            .unwrap_or_else(|_| "Unknown".to_string())
     }
 
     pub fn view<'a>(
@@ -215,40 +320,42 @@ impl ServicesPanel {
         font_size: f32,
     ) -> Element<'a, Message> {
         
+        // Get cached values (non-blocking)
+        let wifi_enabled = self.wifi_enabled();
+        let wifi_name = self.wifi_name();
+        let bt_enabled = self.bluetooth_enabled();
+        let bt_name = self.bluetooth_name();
+        
         // --- 1. DETERMINE WIFI STYLING COLORS ---
-        let is_connected = self.wifi_enabled && self.wifi_name != "No Network" && self.wifi_name != "WiFi Off";
+        let is_connected = wifi_enabled && wifi_name != "No Network" && wifi_name != "WiFi Off";
         
         let active_accent = if is_connected { theme.color2 } else { theme.color3 };
-        let inactive_accent = theme.color8; // Grey for disabled
+        let inactive_accent = theme.color8;
 
-        // Dynamic State: Filled vs Outline
-        let (wifi_text_color, wifi_bg_color, wifi_border_color) = if self.wifi_enabled {
-            // ACTIVE: Filled background, Dark Text, Border matches background
+        let (wifi_text_color, _wifi_bg_color, _wifi_border_color) = if wifi_enabled {
             (theme.color0, active_accent, active_accent)
         } else {
-            // INACTIVE: Transparent background, Grey Text, Grey Border
             (inactive_accent, Color::TRANSPARENT, inactive_accent)
         };
 
-        let wifi_icon_str = if self.wifi_enabled { "󰤨" } else { "󰤮" };
+        let wifi_icon_str = if wifi_enabled { "󰤨" } else { "󰤮" };
 
         // --- BLUETOOTH STYLING COLORS ---
-        let is_bt_connected = self.bluetooth_enabled && self.bluetooth_name != "No Device" && self.bluetooth_name != "Bluetooth Off";
+        let is_bt_connected = bt_enabled && bt_name != "No Device" && bt_name != "Bluetooth Off";
         
         let bt_active_accent = if is_bt_connected { theme.color2 } else { theme.color3 };
 
-        let (bt_text_color, bt_bg_color, bt_border_color) = if self.bluetooth_enabled {
+        let (bt_text_color, _bt_bg_color, _bt_border_color) = if bt_enabled {
             (theme.color0, bt_active_accent, bt_active_accent)
         } else {
             (inactive_accent, Color::TRANSPARENT, inactive_accent)
         };
 
-        let bt_icon_str = if self.bluetooth_enabled { "" } else { "󰂲" };
+        let bt_icon_str = if bt_enabled { "" } else { "󰂲" };
 
         // --- 2. BUILD THE WIFI BUTTON CONTENT ---
         let wifi_button_content = container(
             row![
-                // Icon
                 container(
                     text(wifi_icon_str)
                         .color(wifi_text_color)
@@ -259,16 +366,15 @@ impl ServicesPanel {
                 .padding(iced::padding::right(12))
                 .align_y(iced::alignment::Vertical::Center),
 
-                // Text Info
                 column![
                     text("CONNECTION")
                         .color(wifi_text_color)
                         .size(font_size * 0.65)
                         .font(font),
-                    text(if self.wifi_name.len() > 14 { 
-                        format!("{}..", &self.wifi_name[..12]) 
+                    text(if wifi_name.len() > 14 { 
+                        format!("{}..", &wifi_name[..12]) 
                     } else { 
-                        self.wifi_name.clone() 
+                        wifi_name.clone() 
                     })
                         .color(wifi_text_color)
                         .size(font_size * 0.9)
@@ -286,7 +392,6 @@ impl ServicesPanel {
         // --- BLUETOOTH BUTTON CONTENT ---
         let bt_button_content = container(
             row![
-                // Icon
                 container(
                     text(bt_icon_str)
                         .color(bt_text_color)
@@ -297,16 +402,15 @@ impl ServicesPanel {
                 .padding(iced::padding::right(12))
                 .align_y(iced::alignment::Vertical::Center),
 
-                // Text Info
                 column![
                     text("BLUETOOTH")
                         .color(bt_text_color)
                         .size(font_size * 0.65)
                         .font(font),
-                    text(if self.bluetooth_name.len() > 14 { 
-                        format!("{}..", &self.bluetooth_name[..12]) 
+                    text(if bt_name.len() > 14 { 
+                        format!("{}..", &bt_name[..12]) 
                     } else { 
-                        self.bluetooth_name.clone() 
+                        bt_name.clone() 
                     })
                         .color(bt_text_color)
                         .size(font_size * 0.9)
@@ -347,7 +451,6 @@ impl ServicesPanel {
                 // Top Row: WiFi + Airplane
                 container(
                     row![
-                        // WiFi Button Wrapper
                         container(
                             button(wifi_button_content)
                                 .on_press(if self.is_airplane_mode_on { Message::NoOp } else { Message::WifiToggle })
@@ -355,7 +458,7 @@ impl ServicesPanel {
                                 .height(Length::Fill)
                                 .style(move |_theme, status| {
                                     let current_active_accent = if is_connected { theme.color2 } else { theme.color3 };
-                                    let (current_wifi_text_color, current_wifi_bg_color, current_wifi_border_color) = if self.wifi_enabled {
+                                    let (current_wifi_text_color, current_wifi_bg_color, current_wifi_border_color) = if wifi_enabled {
                                         (theme.color0, current_active_accent, current_active_accent)
                                     } else {
                                         (inactive_accent, Color::TRANSPARENT, inactive_accent)
@@ -375,7 +478,7 @@ impl ServicesPanel {
                                     } else {
                                         match status {
                                             iced::widget::button::Status::Hovered => button::Style {
-                                                background: Some(if self.wifi_enabled {
+                                                background: Some(if wifi_enabled {
                                                     let mut c = current_wifi_bg_color; c.a = 0.9; c.into()
                                                 } else {
                                                     let mut c = current_active_accent; c.a = 0.1; c.into()
@@ -476,7 +579,6 @@ impl ServicesPanel {
                 // Middle Row: Bluetooth + Eye Care + Settings
                 container(
                     row![
-                        // Bluetooth Button Wrapper
                         container(
                             button(bt_button_content)
                                 .on_press(if self.is_airplane_mode_on { Message::NoOp } else { Message::BluetoothToggle })
@@ -484,7 +586,7 @@ impl ServicesPanel {
                                 .height(Length::Fill)
                                 .style(move |_theme, status| {
                                     let current_bt_active_accent = if is_bt_connected { theme.color2 } else { theme.color3 };
-                                    let (current_bt_text_color, current_bt_bg_color, current_bt_border_color) = if self.bluetooth_enabled {
+                                    let (current_bt_text_color, current_bt_bg_color, current_bt_border_color) = if bt_enabled {
                                         (theme.color0, current_bt_active_accent, current_bt_active_accent)
                                     } else {
                                         (inactive_accent, Color::TRANSPARENT, inactive_accent)
@@ -504,7 +606,7 @@ impl ServicesPanel {
                                     } else {
                                         match status {
                                             iced::widget::button::Status::Hovered => button::Style {
-                                                background: Some(if self.bluetooth_enabled {
+                                                background: Some(if bt_enabled {
                                                     let mut c = current_bt_bg_color; c.a = 0.9; c.into()
                                                 } else {
                                                     let mut c = current_bt_active_accent; c.a = 0.1; c.into()
@@ -613,7 +715,7 @@ impl ServicesPanel {
                                 .center_x(Length::Fill) 
                                 .center_y(Length::Fill) 
                             )
-                            .on_press(Message::NoOp) // Placeholder
+                            .on_press(Message::NoOp)
                             .style(move |_theme, status| {
                                 match status {
                                     iced::widget::button::Status::Hovered => button::Style {
@@ -683,7 +785,7 @@ impl ServicesPanel {
         .height(Length::Fill);
 
         // --- RIGHT PANEL (Sliders) ---
-        let volume_icon = if self.is_muted || self.volume_value == 0.0 { "" } else if self.volume_value <= 33.0 { "" } else if self.volume_value <= 66.0 { "" } else { "" };
+        let volume_icon = if self.is_muted || self.volume_value == 0.0 { "" } else if self.volume_value <= 33.0 { "" } else if self.volume_value <= 66.0 { "" } else { "" };
         let brightness_icon = if self.brightness_value <= 33.0 { "󰃞" } else if self.brightness_value <= 66.0 { "󰃟" } else { "󰃠" };
 
         let volume_column = column![
@@ -869,11 +971,16 @@ impl ServicesPanel {
         if self.volume_value > 0.0 {
             self.is_muted = false;
         }
-        let _ = Command::new("pactl")
-            .arg("set-sink-volume")
-            .arg("@DEFAULT_SINK@")
-            .arg(format!("{}%", self.volume_value as u8))
-            .output();
+        
+        // Spawn async to avoid blocking
+        let vol = self.volume_value as u8;
+        std::thread::spawn(move || {
+            let _ = Command::new("pactl")
+                .arg("set-sink-volume")
+                .arg("@DEFAULT_SINK@")
+                .arg(format!("{}%", vol))
+                .output();
+        });
     }
 
     pub fn set_brightness(&mut self, value: f32) {
@@ -881,10 +988,15 @@ impl ServicesPanel {
         if self.brightness_value > 0.0 {
             self.is_min_brightness = false;
         }
-        let _ = Command::new("brightnessctl")
-            .arg("s")
-            .arg(format!("{}%", self.brightness_value as u8))
-            .output();
+        
+        // Spawn async to avoid blocking
+        let bright = self.brightness_value as u8;
+        std::thread::spawn(move || {
+            let _ = Command::new("brightnessctl")
+                .arg("s")
+                .arg(format!("{}%", bright))
+                .output();
+        });
     }
 
     pub fn toggle_mute(&mut self) {
@@ -910,17 +1022,14 @@ impl ServicesPanel {
     pub fn toggle_airplane_mode(&mut self) {
         self.is_airplane_mode_on = !self.is_airplane_mode_on;
         if self.is_airplane_mode_on {
-            // When airplane mode is on, turn off wifi and bluetooth
-            if self.wifi_enabled {
+            if self.wifi_enabled() {
                 self.toggle_wifi();
             }
-            if self.bluetooth_enabled {
+            if self.bluetooth_enabled() {
                 self.toggle_bluetooth();
             }
         } else {
-            // When airplane mode is off, refresh status
-            self.refresh_wifi_status();
-            self.refresh_bluetooth_status();
+            self.schedule_refresh();
         }
     }
 }

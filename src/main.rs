@@ -17,6 +17,7 @@ use crate::panels::right_main_panels::right_main_panels_view;
 use crate::panels::mpris_player::MusicPlayer;
 use crate::panels::system::SystemPanel;
 use crate::panels::services::ServicesPanel;
+use std::time::{Duration, Instant};
 
 fn main() -> Result<(), iced_layershell::Error> {
     application(
@@ -74,6 +75,9 @@ struct Launcher {
     music_player: MusicPlayer,
     system_panel: SystemPanel,
     services_panel: ServicesPanel,
+    last_color_check: Instant,
+    last_services_refresh: Instant,
+    frame_count: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -160,6 +164,9 @@ impl Launcher {
             music_player,
             system_panel,
             services_panel,
+            last_color_check: Instant::now(),
+            last_services_refresh: Instant::now(),
+            frame_count: 0,
         }, Command::none())
     }
 
@@ -211,16 +218,32 @@ impl Launcher {
             }
 
             Message::CheckColors => {
-                if let Some(ref watcher) = self.watcher {
-                    if watcher.check_for_changes() {
-                        if let Ok(wal_colors) = WalColors::load() {
-                            self.theme = wal_colors.to_theme();
+                self.frame_count += 1;
+                
+                // Only check colors every 60 frames (~1 second at 60fps)
+                let now = Instant::now();
+                if now.duration_since(self.last_color_check) > Duration::from_secs(1) {
+                    self.last_color_check = now;
+                    
+                    if let Some(ref watcher) = self.watcher {
+                        if watcher.check_for_changes() {
+                            if let Ok(wal_colors) = WalColors::load() {
+                                self.theme = wal_colors.to_theme();
+                            }
                         }
                     }
                 }
-                // Refresh WiFi and Bluetooth status periodically
-                self.services_panel.refresh_wifi_status();
-                self.services_panel.refresh_bluetooth_status();
+                
+                // Refresh WiFi and Bluetooth status every 5 seconds only
+                if now.duration_since(self.last_services_refresh) > Duration::from_secs(5) {
+                    self.last_services_refresh = now;
+                    
+                    // Only refresh if Services panel is active
+                    if self.current_panel == Panel::Services {
+                        self.services_panel.schedule_refresh();
+                    }
+                }
+                
                 Command::none()
             }
             
@@ -256,6 +279,12 @@ impl Launcher {
                     (Panel::Music, Direction::Left) => Panel::Weather,
                     (Panel::Weather, Direction::Left) => Panel::Clock,
                 };
+                
+                // Trigger immediate refresh when switching to Services panel
+                if self.current_panel == Panel::Services {
+                    self.services_panel.schedule_refresh();
+                }
+                
                 Command::none()
             }
 
@@ -315,7 +344,7 @@ impl Launcher {
             }
 
             Message::WifiRefresh => {
-                self.services_panel.refresh_wifi_status();
+                self.services_panel.schedule_refresh();
                 Command::none()
             }
 
