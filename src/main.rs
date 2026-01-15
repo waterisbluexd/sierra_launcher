@@ -90,12 +90,14 @@ enum Message {
     MusicRefresh,
     VolumeChanged(f32),
     BrightnessChanged(f32),
-    VolumeMuteToggle, // New: for toggling volume mute
-    AirplaneModeToggle, // New: for toggling airplane mode
+    VolumeMuteToggle,
+    AirplaneModeToggle,
     BrightnessMinToggle,
     WifiToggle,
     WifiRefresh,
-    NoOp, // New: for no-operation messages
+    BluetoothToggle,
+    EyeCareToggle,
+    NoOp,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -216,8 +218,9 @@ impl Launcher {
                         }
                     }
                 }
-                // Also refresh WiFi status periodically
+                // Refresh WiFi and Bluetooth status periodically
                 self.services_panel.refresh_wifi_status();
+                self.services_panel.refresh_bluetooth_status();
                 Command::none()
             }
             
@@ -316,7 +319,17 @@ impl Launcher {
                 Command::none()
             }
 
-            Message::NoOp => Command::none(), // New: No-operation message handler
+            Message::BluetoothToggle => {
+                self.services_panel.toggle_bluetooth();
+                Command::none()
+            }
+
+            Message::EyeCareToggle => {
+                self.services_panel.toggle_eye_care();
+                Command::none()
+            }
+
+            Message::NoOp => Command::none(),
         }
     }
 

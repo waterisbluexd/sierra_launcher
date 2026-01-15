@@ -16,6 +16,9 @@ pub struct ServicesPanel {
     pub wifi_enabled: bool,
     pub wifi_name: String,
     pub is_airplane_mode_on: bool,
+    pub bluetooth_enabled: bool,
+    pub bluetooth_name: String,
+    pub eye_care_enabled: bool,
 }
 
 impl ServicesPanel {
@@ -23,6 +26,7 @@ impl ServicesPanel {
         let volume_value = Self::get_volume().unwrap_or(50.0);
         let brightness_value = Self::get_brightness().unwrap_or(50.0);
         let (wifi_enabled, wifi_name) = Self::get_wifi_status();
+        let (bluetooth_enabled, bluetooth_name) = Self::get_bluetooth_status();
 
         Self {
             volume_value,
@@ -35,6 +39,9 @@ impl ServicesPanel {
             wifi_enabled,
             wifi_name,
             is_airplane_mode_on: false,
+            bluetooth_enabled,
+            bluetooth_name,
+            eye_care_enabled: false,
         }
     }
 
@@ -101,6 +108,47 @@ impl ServicesPanel {
         (true, "No Network".to_string())
     }
 
+    fn get_bluetooth_status() -> (bool, String) {
+        // Check if bluetooth is powered on using bluetoothctl
+        if let Ok(output) = Command::new("bluetoothctl")
+            .args(&["show"])
+            .output() {
+            if let Ok(stdout) = String::from_utf8(output.stdout) {
+                let powered = stdout.lines()
+                    .find(|line| line.contains("Powered:"))
+                    .and_then(|line| line.split(':').nth(1))
+                    .map(|s| s.trim() == "yes")
+                    .unwrap_or(false);
+
+                if !powered {
+                    return (false, "Bluetooth Off".to_string());
+                }
+
+                // Check for connected devices
+                if let Ok(devices_output) = Command::new("bluetoothctl")
+                    .args(&["devices", "Connected"])
+                    .output() {
+                    if let Ok(devices_str) = String::from_utf8(devices_output.stdout) {
+                        if let Some(first_device) = devices_str.lines().next() {
+                            // Extract device name (format: "Device MAC_ADDRESS Name")
+                            let parts: Vec<&str> = first_device.split_whitespace().collect();
+                            if parts.len() >= 3 {
+                                let name = parts[2..].join(" ");
+                                return (true, name);
+                            }
+                        }
+                    }
+                }
+
+                // Bluetooth is on but no device connected
+                return (true, "No Device".to_string());
+            }
+        }
+
+        // Fallback - assume bluetooth is available but off
+        (false, "Bluetooth Off".to_string())
+    }
+
     pub fn toggle_wifi(&mut self) {
         self.wifi_enabled = !self.wifi_enabled;
         
@@ -116,10 +164,47 @@ impl ServicesPanel {
         }
     }
 
+    pub fn toggle_bluetooth(&mut self) {
+        self.bluetooth_enabled = !self.bluetooth_enabled;
+        
+        if self.bluetooth_enabled {
+            // Power on Bluetooth
+            let _ = Command::new("bluetoothctl").args(&["power", "on"]).output();
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            self.refresh_bluetooth_status();
+        } else {
+            // Power off Bluetooth
+            let _ = Command::new("bluetoothctl").args(&["power", "off"]).output();
+            self.bluetooth_name = "Bluetooth Off".to_string();
+        }
+    }
+
+    pub fn toggle_eye_care(&mut self) {
+        self.eye_care_enabled = !self.eye_care_enabled;
+        
+        if self.eye_care_enabled {
+            // Enable night light / redshift (3500K color temperature)
+            let _ = Command::new("redshift")
+                .args(&["-P", "-O", "3500"])
+                .output();
+        } else {
+            // Disable night light / reset color temperature
+            let _ = Command::new("redshift")
+                .args(&["-x"])
+                .output();
+        }
+    }
+
     pub fn refresh_wifi_status(&mut self) {
         let (enabled, name) = Self::get_wifi_status();
         self.wifi_enabled = enabled;
         self.wifi_name = name;
+    }
+
+    pub fn refresh_bluetooth_status(&mut self) {
+        let (enabled, name) = Self::get_bluetooth_status();
+        self.bluetooth_enabled = enabled;
+        self.bluetooth_name = name;
     }
 
     pub fn view<'a>(
@@ -146,6 +231,19 @@ impl ServicesPanel {
         };
 
         let wifi_icon_str = if self.wifi_enabled { "󰤨" } else { "󰤮" };
+
+        // --- BLUETOOTH STYLING COLORS ---
+        let is_bt_connected = self.bluetooth_enabled && self.bluetooth_name != "No Device" && self.bluetooth_name != "Bluetooth Off";
+        
+        let bt_active_accent = if is_bt_connected { theme.color2 } else { theme.color3 };
+
+        let (bt_text_color, bt_bg_color, bt_border_color) = if self.bluetooth_enabled {
+            (theme.color0, bt_active_accent, bt_active_accent)
+        } else {
+            (inactive_accent, Color::TRANSPARENT, inactive_accent)
+        };
+
+        let bt_icon_str = if self.bluetooth_enabled { "" } else { "󰂲" };
 
         // --- 2. BUILD THE WIFI BUTTON CONTENT ---
         let wifi_button_content = container(
@@ -185,22 +283,68 @@ impl ServicesPanel {
         .padding(iced::padding::left(15).right(5))
         .align_y(iced::alignment::Vertical::Center);
 
+        // --- BLUETOOTH BUTTON CONTENT ---
+        let bt_button_content = container(
+            row![
+                // Icon
+                container(
+                    text(bt_icon_str)
+                        .color(bt_text_color)
+                        .font(font)
+                        .size(font_size * 2.2)
+                        .center()
+                )
+                .padding(iced::padding::right(12))
+                .align_y(iced::alignment::Vertical::Center),
+
+                // Text Info
+                column![
+                    text("BLUETOOTH")
+                        .color(bt_text_color)
+                        .size(font_size * 0.65)
+                        .font(font),
+                    text(if self.bluetooth_name.len() > 14 { 
+                        format!("{}..", &self.bluetooth_name[..12]) 
+                    } else { 
+                        self.bluetooth_name.clone() 
+                    })
+                        .color(bt_text_color)
+                        .size(font_size * 0.9)
+                        .font(font),
+                ]
+                .spacing(2)
+                .align_x(iced::alignment::Horizontal::Left)
+            ]
+        )
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .padding(iced::padding::left(15).right(5))
+        .align_y(iced::alignment::Vertical::Center);
+
         // --- Determine Airplane Mode Styling Colors ---
-        let airplane_active_color = theme.color2; // Use an active accent color
-        let airplane_inactive_color = theme.color8; // Use grey for inactive
+        let airplane_active_color = theme.color2;
+        let airplane_inactive_color = theme.color8;
 
         let (airplane_text_color, airplane_bg_color, airplane_border_color) = if self.is_airplane_mode_on {
-            // ACTIVE: Filled background, Dark Text, Border color matches active background
             (theme.color0, airplane_active_color, airplane_active_color)
         } else {
-            // INACTIVE: Transparent background, Grey Text, Grey Border
             (airplane_inactive_color, Color::TRANSPARENT, airplane_inactive_color)
+        };
+
+        // --- Eye Care Styling Colors ---
+        let eye_care_active_color = theme.color2;
+        let eye_care_inactive_color = theme.color8;
+
+        let (eye_care_text_color, eye_care_bg_color, eye_care_border_color) = if self.eye_care_enabled {
+            (theme.color0, eye_care_active_color, eye_care_active_color)
+        } else {
+            (eye_care_inactive_color, Color::TRANSPARENT, eye_care_inactive_color)
         };
 
         // --- 3. ASSEMBLE LEFT PANEL ---
         let left_part = container(
             column![
-                // Top Row: WiFi + Airplane/Mute
+                // Top Row: WiFi + Airplane
                 container(
                     row![
                         // WiFi Button Wrapper
@@ -264,15 +408,14 @@ impl ServicesPanel {
                                     }
                                 }),
                         )
-                         
                         .width(Length::Fill)
                         .height(Length::Fill),
 
-                        // Airplane / Mute Button
+                        // Airplane Button
                         container(
                             button(
                                 container(
-                                    text("󰀝") // Icon for airplane mode
+                                    text("󰀝")
                                         .color(airplane_text_color)  
                                         .font(font)
                                         .size(font_size * 2.0)
@@ -285,9 +428,6 @@ impl ServicesPanel {
                             )
                             .on_press(Message::AirplaneModeToggle)
                             .style(move |_theme, status| {
-                                let airplane_active_color = theme.color2;
-                                let airplane_inactive_color = theme.color8;
-                
                                 match status {
                                     iced::widget::button::Status::Hovered => button::Style {
                                         background: Some(if self.is_airplane_mode_on {
@@ -331,58 +471,21 @@ impl ServicesPanel {
                     ].spacing(10)
                 )
                 .width(Length::Fill)
-                .height(Length::Fixed(45.0)), /////////////////////////////////////
+                .height(Length::Fixed(45.0)),
 
-                // Middle Row (newly added)
+                // Middle Row: Bluetooth + Eye Care + Settings
                 container(
                     row![
                         // Bluetooth Button Wrapper
                         container(
-                            button(
-                                container(
-                                    row![
-                                        // Icon
-                                        container(
-                                            text(if self.wifi_enabled { "" } else { "󰂲" })
-                                                .color(wifi_text_color)
-                                                .font(font)
-                                                .size(font_size * 2.2)
-                                                .center()
-                                        )
-                                        .padding(iced::padding::right(12))
-                                        .align_y(iced::alignment::Vertical::Center),
-                                
-                                        // Text Info
-                                        column![
-                                            text("CONNECTION")
-                                                .color(wifi_text_color)
-                                                .size(font_size * 0.65)
-                                                .font(font),
-                                            text(if self.wifi_name.len() > 14 { 
-                                                format!("{}..", &self.wifi_name[..12]) 
-                                            } else { 
-                                                self.wifi_name.clone() 
-                                            })
-                                                .color(wifi_text_color)
-                                                .size(font_size * 0.9)
-                                                .font(font),
-                                        ]
-                                        .spacing(2)
-                                        .align_x(iced::alignment::Horizontal::Left)
-                                    ]
-                                )
-                                .width(Length::Fill)
-                                .height(Length::Fill)
-                                .padding(iced::padding::left(15).right(5))
-                                .align_y(iced::alignment::Vertical::Center)
-                            )
-                                .on_press(if self.is_airplane_mode_on { Message::NoOp } else { Message::WifiToggle })
+                            button(bt_button_content)
+                                .on_press(if self.is_airplane_mode_on { Message::NoOp } else { Message::BluetoothToggle })
                                 .width(Length::Fill)
                                 .height(Length::Fill)
                                 .style(move |_theme, status| {
-                                    let current_active_accent = if is_connected { theme.color2 } else { theme.color3 };
-                                    let (current_wifi_text_color, current_wifi_bg_color, current_wifi_border_color) = if self.wifi_enabled {
-                                        (theme.color0, current_active_accent, current_active_accent)
+                                    let current_bt_active_accent = if is_bt_connected { theme.color2 } else { theme.color3 };
+                                    let (current_bt_text_color, current_bt_bg_color, current_bt_border_color) = if self.bluetooth_enabled {
+                                        (theme.color0, current_bt_active_accent, current_bt_active_accent)
                                     } else {
                                         (inactive_accent, Color::TRANSPARENT, inactive_accent)
                                     };
@@ -401,49 +504,48 @@ impl ServicesPanel {
                                     } else {
                                         match status {
                                             iced::widget::button::Status::Hovered => button::Style {
-                                                background: Some(if self.wifi_enabled {
-                                                    let mut c = current_wifi_bg_color; c.a = 0.9; c.into()
+                                                background: Some(if self.bluetooth_enabled {
+                                                    let mut c = current_bt_bg_color; c.a = 0.9; c.into()
                                                 } else {
-                                                    let mut c = current_active_accent; c.a = 0.1; c.into()
+                                                    let mut c = current_bt_active_accent; c.a = 0.1; c.into()
                                                 }),
                                                 border: Border {
-                                                    color: current_active_accent,
+                                                    color: current_bt_active_accent,
                                                     width: 2.0,
                                                     radius: 0.0.into(),
                                                 },
-                                                text_color: current_wifi_text_color,
+                                                text_color: current_bt_text_color,
                                                 ..Default::default()
                                             },
                                             iced::widget::button::Status::Pressed => button::Style {
-                                                background: Some(current_active_accent.into()),
-                                                border: Border { color: current_active_accent, width: 2.0, radius: 0.0.into() },
+                                                background: Some(current_bt_active_accent.into()),
+                                                border: Border { color: current_bt_active_accent, width: 2.0, radius: 0.0.into() },
                                                 text_color: theme.color0,
                                                 ..Default::default()
                                             },
                                             _ => button::Style {
-                                                background: Some(current_wifi_bg_color.into()),
+                                                background: Some(current_bt_bg_color.into()),
                                                 border: Border {
-                                                    color: current_wifi_border_color,
+                                                    color: current_bt_border_color,
                                                     width: 1.5,
                                                     radius: 0.0.into(),
                                                 },
-                                                text_color: current_wifi_text_color,
+                                                text_color: current_bt_text_color,
                                                 ..Default::default()
                                             }
                                         }
                                     }
                                 }),
                         )
-                         
                         .width(Length::Fill)
                         .height(Length::Fill),
 
-                        // Eyecare Button
+                        // Eye Care Button
                         container(
                             button(
                                 container(
-                                    text("󰈈") // Icon for airplane mode
-                                        .color(airplane_text_color)  
+                                    text("󰈈")
+                                        .color(eye_care_text_color)  
                                         .font(font)
                                         .size(font_size * 1.6)
                                         .center()
@@ -453,30 +555,27 @@ impl ServicesPanel {
                                 .center_x(Length::Fill) 
                                 .center_y(Length::Fill) 
                             )
-                            .on_press(Message::AirplaneModeToggle)
+                            .on_press(Message::EyeCareToggle)
                             .style(move |_theme, status| {
-                                let airplane_active_color = theme.color2;
-                                let airplane_inactive_color = theme.color8;
-                
                                 match status {
                                     iced::widget::button::Status::Hovered => button::Style {
-                                        background: Some(if self.is_airplane_mode_on {
-                                            let mut c = airplane_bg_color; c.a = 0.9; c.into()
+                                        background: Some(if self.eye_care_enabled {
+                                            let mut c = eye_care_bg_color; c.a = 0.9; c.into()
                                         } else {
-                                            let mut c = airplane_inactive_color; c.a = 0.1; c.into()
+                                            let mut c = eye_care_inactive_color; c.a = 0.1; c.into()
                                         }),
                                         border: Border {
-                                            color: if self.is_airplane_mode_on { airplane_active_color } else { airplane_inactive_color },
+                                            color: if self.eye_care_enabled { eye_care_active_color } else { eye_care_inactive_color },
                                             width: 2.0,
                                             radius: 0.0.into(),
                                         },
-                                        text_color: airplane_text_color,
+                                        text_color: eye_care_text_color,
                                         ..Default::default()
                                     },
                                     iced::widget::button::Status::Pressed => button::Style {
-                                        background: Some(airplane_active_color.into()),
+                                        background: Some(eye_care_active_color.into()),
                                         border: Border {
-                                            color: airplane_active_color,
+                                            color: eye_care_active_color,
                                             width: 2.0,
                                             radius: 0.0.into(),
                                         },
@@ -484,13 +583,13 @@ impl ServicesPanel {
                                         ..Default::default()
                                     },
                                     _ => button::Style {
-                                        background: Some(airplane_bg_color.into()),
+                                        background: Some(eye_care_bg_color.into()),
                                         border: Border {
-                                            color: airplane_border_color,
+                                            color: eye_care_border_color,
                                             width: 1.5,
                                             radius: 0.0.into(),
                                         },
-                                        text_color: airplane_text_color,
+                                        text_color: eye_care_text_color,
                                         ..Default::default()
                                     }
                                 }
@@ -499,11 +598,11 @@ impl ServicesPanel {
                         .width(Length::Fixed(45.0))
                         .height(Length::Fill),
 
-                        // Settings ?
+                        // Settings Button (placeholder)
                         container(
                             button(
                                 container(
-                                    text("󰩮") // Icon for airplane mode
+                                    text("󰩮")
                                         .color(airplane_text_color)  
                                         .font(font)
                                         .size(font_size * 1.6)
@@ -514,40 +613,25 @@ impl ServicesPanel {
                                 .center_x(Length::Fill) 
                                 .center_y(Length::Fill) 
                             )
-                            .on_press(Message::AirplaneModeToggle)
+                            .on_press(Message::NoOp) // Placeholder
                             .style(move |_theme, status| {
-                                let airplane_active_color = theme.color2;
-                                let airplane_inactive_color = theme.color8;
-                
                                 match status {
                                     iced::widget::button::Status::Hovered => button::Style {
-                                        background: Some(if self.is_airplane_mode_on {
-                                            let mut c = airplane_bg_color; c.a = 0.9; c.into()
-                                        } else {
+                                        background: Some({
                                             let mut c = airplane_inactive_color; c.a = 0.1; c.into()
                                         }),
                                         border: Border {
-                                            color: if self.is_airplane_mode_on { airplane_active_color } else { airplane_inactive_color },
+                                            color: airplane_inactive_color,
                                             width: 2.0,
                                             radius: 0.0.into(),
                                         },
                                         text_color: airplane_text_color,
                                         ..Default::default()
                                     },
-                                    iced::widget::button::Status::Pressed => button::Style {
-                                        background: Some(airplane_active_color.into()),
-                                        border: Border {
-                                            color: airplane_active_color,
-                                            width: 2.0,
-                                            radius: 0.0.into(),
-                                        },
-                                        text_color: theme.color0,
-                                        ..Default::default()
-                                    },
                                     _ => button::Style {
-                                        background: Some(airplane_bg_color.into()),
+                                        background: Some(Color::TRANSPARENT.into()),
                                         border: Border {
-                                            color: airplane_border_color,
+                                            color: airplane_inactive_color,
                                             width: 1.5,
                                             radius: 0.0.into(),
                                         },
@@ -565,6 +649,7 @@ impl ServicesPanel {
                 .width(Length::Fill)
                 .height(Length::Fixed(45.0)),
 
+                // Bottom Row (placeholder)
                 container(
                     row![
                         container(text("y").color(theme.color3))
@@ -598,7 +683,7 @@ impl ServicesPanel {
         .height(Length::Fill);
 
         // --- RIGHT PANEL (Sliders) ---
-        let volume_icon = if self.is_muted {""} else if self.volume_value <= 33.0 {""} else if self.volume_value <= 66.0 {"" } else {""};
+        let volume_icon = if self.is_muted || self.volume_value == 0.0 { "" } else if self.volume_value <= 33.0 { "" } else if self.volume_value <= 66.0 { "" } else { "" };
         let brightness_icon = if self.brightness_value <= 33.0 { "󰃞" } else if self.brightness_value <= 66.0 { "󰃟" } else { "󰃠" };
 
         let volume_column = column![
@@ -825,13 +910,17 @@ impl ServicesPanel {
     pub fn toggle_airplane_mode(&mut self) {
         self.is_airplane_mode_on = !self.is_airplane_mode_on;
         if self.is_airplane_mode_on {
-            // When airplane mode is on, turn off wifi
+            // When airplane mode is on, turn off wifi and bluetooth
             if self.wifi_enabled {
                 self.toggle_wifi();
             }
+            if self.bluetooth_enabled {
+                self.toggle_bluetooth();
+            }
         } else {
-            // When airplane mode is off, refresh wifi status to potentially re-enable it
+            // When airplane mode is off, refresh status
             self.refresh_wifi_status();
+            self.refresh_bluetooth_status();
         }
     }
 }
