@@ -362,7 +362,7 @@ impl ServicesPanel {
             ]
             .spacing(10)
         )
-        .padding(iced::padding::top(10).bottom(3).right(12).left(10))
+        .padding(iced::padding::top(10).bottom(3).right(12).left(5))
         .width(Length::Fill)
         .height(Length::Fill);
 
@@ -502,7 +502,7 @@ impl ServicesPanel {
                             .height(Length::Fill)
                             .style(move |_| container::Style { background: None, ..Default::default() })
                         )
-                        .padding(iced::padding::top(5).right(25).bottom(8).left(11))
+                        .padding(iced::padding::top(5).right(25).bottom(8).left(5))
                         .width(Length::Fill)
                         .height(Length::Fill)
                         .style(move |_| container::Style {
