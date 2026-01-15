@@ -138,8 +138,8 @@ impl ServicesPanel {
 
         // Dynamic State: Filled vs Outline
         let (wifi_text_color, wifi_bg_color, wifi_border_color) = if self.wifi_enabled {
-            // ACTIVE: Filled background, Dark Text
-            (theme.color0, active_accent, Color::TRANSPARENT)
+            // ACTIVE: Filled background, Dark Text, Border matches background
+            (theme.color0, active_accent, active_accent)
         } else {
             // INACTIVE: Transparent background, Grey Text, Grey Border
             (inactive_accent, Color::TRANSPARENT, inactive_accent)
@@ -178,7 +178,6 @@ impl ServicesPanel {
                 ]
                 .spacing(2)
                 .align_x(iced::alignment::Horizontal::Left)
-                // Removed .justify_y() as it does not exist in Column
             ]
         )
         .width(Length::Fill)
@@ -213,20 +212,20 @@ impl ServicesPanel {
                                 .style(move |_theme, status| {
                                     let current_active_accent = if is_connected { theme.color2 } else { theme.color3 };
                                     let (current_wifi_text_color, current_wifi_bg_color, current_wifi_border_color) = if self.wifi_enabled {
-                                        (theme.color0, current_active_accent, Color::TRANSPARENT)
+                                        (theme.color0, current_active_accent, current_active_accent)
                                     } else {
                                         (inactive_accent, Color::TRANSPARENT, inactive_accent)
                                     };
 
                                     if self.is_airplane_mode_on {
                                         button::Style {
-                                            background: Some(Color::from_rgba(0.5, 0.5, 0.5, 0.1).into()), // Greyed out background
+                                            background: Some(Color::from_rgba(0.5, 0.5, 0.5, 0.1).into()),
                                             border: Border {
-                                                color: Color::from_rgb(0.5, 0.5, 0.5), // Grey border
+                                                color: Color::from_rgb(0.5, 0.5, 0.5),
                                                 width: 1.5,
                                                 radius: 0.0.into(),
                                             },
-                                            text_color: Color::from_rgb(0.5, 0.5, 0.5), // Grey text
+                                            text_color: Color::from_rgb(0.5, 0.5, 0.5),
                                             ..Default::default()
                                         }
                                     } else {
@@ -284,48 +283,49 @@ impl ServicesPanel {
                                 .center_x(Length::Fill) 
                                 .center_y(Length::Fill) 
                             )
-                            .on_press(Message::AirplaneModeToggle) // Changed to AirplaneModeToggle
-                                                                                    .style(move |_theme, status| {
-                                                                                        let airplane_active_color = theme.color2; // Use an active accent color
-                                                                                        let airplane_inactive_color = theme.color8; // Use grey for inactive
-                                                        
-                                                                                        match status {
-                                                                                            iced::widget::button::Status::Hovered => button::Style {
-                                                                                                background: Some(if self.is_airplane_mode_on {
-                                                                                                    let mut c = airplane_bg_color; c.a = 0.9; c.into()
-                                                                                                } else {
-                                                                                                    let mut c = airplane_inactive_color; c.a = 0.1; c.into() // Lighter grey for inactive hover
-                                                                                                }),
-                                                                                                border: Border {
-                                                                                                    color: if self.is_airplane_mode_on { airplane_active_color } else { airplane_inactive_color }, // Border color matches active/inactive state
-                                                                                                    width: 1.5, // Consistent border width
-                                                                                                    radius: 0.0.into(),
-                                                                                                },
-                                                                                                text_color: airplane_text_color,
-                                                                                                ..Default::default()
-                                                                                            },
-                                                                                            iced::widget::button::Status::Pressed => button::Style {
-                                                                                                background: Some(airplane_active_color.into()),
-                                                                                                border: Border {
-                                                                                                    color: airplane_active_color, // Consistent border color on pressed
-                                                                                                    width: 1.5, // Consistent border width
-                                                                                                    radius: 0.0.into(),
-                                                                                                },
-                                                                                                text_color: theme.color0,
-                                                                                                ..Default::default()
-                                                                                            },
-                                                                                            _ => button::Style {
-                                                                                                background: Some(airplane_bg_color.into()),
-                                                                                                border: Border {
-                                                                                                    color: airplane_border_color, // Consistent border color
-                                                                                                    width: 1.5, // Consistent border width
-                                                                                                    radius: 0.0.into(),
-                                                                                                },
-                                                                                                text_color: airplane_text_color,
-                                                                                                ..Default::default()
-                                                                                            }
-                                                                                        }
-                                                                                    }),                        )
+                            .on_press(Message::AirplaneModeToggle)
+                            .style(move |_theme, status| {
+                                let airplane_active_color = theme.color2;
+                                let airplane_inactive_color = theme.color8;
+                
+                                match status {
+                                    iced::widget::button::Status::Hovered => button::Style {
+                                        background: Some(if self.is_airplane_mode_on {
+                                            let mut c = airplane_bg_color; c.a = 0.9; c.into()
+                                        } else {
+                                            let mut c = airplane_inactive_color; c.a = 0.1; c.into()
+                                        }),
+                                        border: Border {
+                                            color: if self.is_airplane_mode_on { airplane_active_color } else { airplane_inactive_color },
+                                            width: 2.0,
+                                            radius: 0.0.into(),
+                                        },
+                                        text_color: airplane_text_color,
+                                        ..Default::default()
+                                    },
+                                    iced::widget::button::Status::Pressed => button::Style {
+                                        background: Some(airplane_active_color.into()),
+                                        border: Border {
+                                            color: airplane_active_color,
+                                            width: 2.0,
+                                            radius: 0.0.into(),
+                                        },
+                                        text_color: theme.color0,
+                                        ..Default::default()
+                                    },
+                                    _ => button::Style {
+                                        background: Some(airplane_bg_color.into()),
+                                        border: Border {
+                                            color: airplane_border_color,
+                                            width: 1.5,
+                                            radius: 0.0.into(),
+                                        },
+                                        text_color: airplane_text_color,
+                                        ..Default::default()
+                                    }
+                                }
+                            }),
+                        )
                         .width(Length::Fixed(65.0))
                         .height(Length::Fill)
                     ]
@@ -341,7 +341,6 @@ impl ServicesPanel {
                             .height(Length::Fill)
                             .center_x(Length::Fill)
                             .center_y(Length::Fill)
-                            // FIX: Changed |_,_| to |_| as container style takes 1 arg
                             .style(move |_| container::Style {
                                 border: Border { color: theme.color3, width: 2.0, radius: 0.0.into() },
                                 ..Default::default()
@@ -351,7 +350,6 @@ impl ServicesPanel {
                             .height(Length::Fill)
                             .center_x(Length::Fill)
                             .center_y(Length::Fill)
-                            // FIX: Changed |_,_| to |_| as container style takes 1 arg
                             .style(move |_| container::Style {
                                 border: Border { color: theme.color3, width: 2.0, radius: 0.0.into() },
                                 ..Default::default()
@@ -369,7 +367,7 @@ impl ServicesPanel {
         .height(Length::Fill);
 
         // --- RIGHT PANEL (Sliders) ---
-        let volume_icon = if self.is_muted {""} else if self.volume_value <= 33.0 {""} else if self.volume_value <= 66.0 {"" } else {""};
+        let volume_icon = if self.is_muted {""} else if self.volume_value <= 33.0 {""} else if self.volume_value <= 66.0 {"" } else {""};
         let brightness_icon = if self.brightness_value <= 33.0 { "󰃞" } else if self.brightness_value <= 66.0 { "󰃟" } else { "󰃠" };
 
         let volume_column = column![
@@ -507,7 +505,6 @@ impl ServicesPanel {
                         .padding(iced::padding::top(5).right(25).bottom(8).left(11))
                         .width(Length::Fill)
                         .height(Length::Fill)
-                        // FIX: Changed |_,_| to |_|
                         .style(move |_| container::Style {
                             background: None,
                             border: Border { color: theme.color3, width: 2.0, radius: 0.0.into() },
@@ -527,7 +524,6 @@ impl ServicesPanel {
                         )
                         .width(Length::Shrink)
                         .height(Length::Shrink)
-                        // FIX: Changed |_,_| to |_|
                         .style(move |_| container::Style {
                             background: Some(bg_with_alpha.into()),
                             ..Default::default()
