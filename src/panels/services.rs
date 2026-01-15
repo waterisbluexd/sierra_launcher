@@ -343,7 +343,7 @@ impl ServicesPanel {
                                     row![
                                         // Icon
                                         container(
-                                            text(if self.wifi_enabled { "󰤨" } else { "󰤮" })
+                                            text(if self.wifi_enabled { "" } else { "󰂲" })
                                                 .color(wifi_text_color)
                                                 .font(font)
                                                 .size(font_size * 2.2)
@@ -442,10 +442,10 @@ impl ServicesPanel {
                         container(
                             button(
                                 container(
-                                    text("󰀝") // Icon for airplane mode
+                                    text("󰈈") // Icon for airplane mode
                                         .color(airplane_text_color)  
                                         .font(font)
-                                        .size(font_size * 2.0)
+                                        .size(font_size * 1.6)
                                         .center()
                                 )
                                 .width(Length::Fill)
@@ -503,10 +503,10 @@ impl ServicesPanel {
                         container(
                             button(
                                 container(
-                                    text("󰀝") // Icon for airplane mode
+                                    text("󰩮") // Icon for airplane mode
                                         .color(airplane_text_color)  
                                         .font(font)
-                                        .size(font_size * 2.0)
+                                        .size(font_size * 1.6)
                                         .center()
                                 )
                                 .width(Length::Fill)
