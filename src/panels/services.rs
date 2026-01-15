@@ -2,10 +2,10 @@ use iced::widget::{container, text, stack, row, column, vertical_slider, slider,
 use iced::{Element, Border, Color, Length};
 use crate::utils::theme::Theme;
 use crate::Message;
-use std::process::Command;
-use regex::Regex;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+
+use super::system_services;
 
 #[derive(Clone)]
 struct ServiceStatus {
@@ -46,8 +46,8 @@ pub struct ServicesPanel {
 
 impl ServicesPanel {
     pub fn new() -> Self {
-        let volume_value = Self::get_volume().unwrap_or(50.0);
-        let brightness_value = Self::get_brightness().unwrap_or(50.0);
+        let volume_value = system_services::get_volume().unwrap_or(50.0);
+        let brightness_value = system_services::get_brightness().unwrap_or(50.0);
         
         let status_cache = Arc::new(Mutex::new(ServiceStatus::default()));
         let refresh_requested = Arc::new(Mutex::new(true));
@@ -71,8 +71,8 @@ impl ServicesPanel {
                 
                 if should_refresh {
                     // Fetch status in background thread (non-blocking)
-                    let (wifi_enabled, wifi_name) = Self::fetch_wifi_status();
-                    let (bt_enabled, bt_name) = Self::fetch_bluetooth_status();
+                    let (wifi_enabled, wifi_name) = system_services::fetch_wifi_status();
+                    let (bt_enabled, bt_name) = system_services::fetch_bluetooth_status();
                     
                     // Update cache
                     if let Ok(mut status) = cache_clone.lock() {
@@ -104,114 +104,6 @@ impl ServicesPanel {
         }
     }
 
-    fn get_volume() -> Option<f32> {
-        let output = Command::new("pactl").arg("get-sink-volume").arg("@DEFAULT_SINK@").output().ok()?;
-        let output_str = String::from_utf8(output.stdout).ok()?;
-        let re = Regex::new(r"(\d+)%").unwrap();
-        let caps = re.captures(&output_str)?;
-        let value_str = caps.get(1)?.as_str();
-        value_str.parse::<f32>().ok()
-    }
-
-    fn get_brightness() -> Option<f32> {
-        let current_output = Command::new("brightnessctl").arg("g").output().ok()?;
-        let current_str = String::from_utf8(current_output.stdout).ok()?.trim().to_string();
-        let current = current_str.parse::<f32>().ok()?;
-
-        let max_output = Command::new("brightnessctl").arg("m").output().ok()?;
-        let max_str = String::from_utf8(max_output.stdout).ok()?.trim().to_string();
-        let max = max_str.parse::<f32>().ok()?;
-
-        if max > 0.0 {
-            Some((current / max) * 100.0)
-        } else {
-            None
-        }
-    }
-
-    fn fetch_wifi_status() -> (bool, String) {
-        // Try nmcli first (NetworkManager) with timeout
-        if let Ok(output) = Command::new("timeout")
-            .args(&["1", "nmcli", "-t", "-f", "ACTIVE,SSID", "dev", "wifi"])
-            .output() {
-            if let Ok(stdout) = String::from_utf8(output.stdout) {
-                for line in stdout.lines() {
-                    if line.starts_with("yes:") {
-                        let ssid = line.strip_prefix("yes:").unwrap_or("Connected");
-                        return (true, ssid.to_string());
-                    }
-                }
-            }
-        }
-
-        // Fallback to iwgetid with timeout
-        if let Ok(output) = Command::new("timeout")
-            .args(&["1", "iwgetid", "-r"])
-            .output() {
-            if let Ok(ssid) = String::from_utf8(output.stdout) {
-                let ssid = ssid.trim();
-                if !ssid.is_empty() {
-                    return (true, ssid.to_string());
-                }
-            }
-        }
-
-        // Check if WiFi is disabled
-        if let Ok(output) = Command::new("timeout")
-            .args(&["1", "nmcli", "radio", "wifi"])
-            .output() {
-            if let Ok(stdout) = String::from_utf8(output.stdout) {
-                if stdout.trim() == "disabled" {
-                    return (false, "WiFi Off".to_string());
-                }
-            }
-        }
-
-        // WiFi is on but not connected
-        (true, "No Network".to_string())
-    }
-
-    fn fetch_bluetooth_status() -> (bool, String) {
-        // Check if bluetooth is powered on using bluetoothctl with timeout
-        if let Ok(output) = Command::new("timeout")
-            .args(&["1", "bluetoothctl", "show"])
-            .output() {
-            if let Ok(stdout) = String::from_utf8(output.stdout) {
-                let powered = stdout.lines()
-                    .find(|line| line.contains("Powered:"))
-                    .and_then(|line| line.split(':').nth(1))
-                    .map(|s| s.trim() == "yes")
-                    .unwrap_or(false);
-
-                if !powered {
-                    return (false, "Bluetooth Off".to_string());
-                }
-
-                // Check for connected devices with timeout
-                if let Ok(devices_output) = Command::new("timeout")
-                    .args(&["1", "bluetoothctl", "devices", "Connected"])
-                    .output() {
-                    if let Ok(devices_str) = String::from_utf8(devices_output.stdout) {
-                        if let Some(first_device) = devices_str.lines().next() {
-                            // Extract device name (format: "Device MAC_ADDRESS Name")
-                            let parts: Vec<&str> = first_device.split_whitespace().collect();
-                            if parts.len() >= 3 {
-                                let name = parts[2..].join(" ");
-                                return (true, name);
-                            }
-                        }
-                    }
-                }
-
-                // Bluetooth is on but no device connected
-                return (true, "No Device".to_string());
-            }
-        }
-
-        // Fallback - assume bluetooth is available but off
-        (false, "Bluetooth Off".to_string())
-    }
-
     pub fn schedule_refresh(&self) {
         if let Ok(mut refresh) = self.refresh_requested.lock() {
             *refresh = true;
@@ -223,11 +115,7 @@ impl ServicesPanel {
         let is_enabling = !self.wifi_enabled();
         
         std::thread::spawn(move || {
-            if is_enabling {
-                let _ = Command::new("nmcli").args(&["radio", "wifi", "on"]).output();
-            } else {
-                let _ = Command::new("nmcli").args(&["radio", "wifi", "off"]).output();
-            }
+            system_services::toggle_wifi_cmd(is_enabling);
         });
         
         // Update cache immediately for responsiveness
@@ -253,11 +141,7 @@ impl ServicesPanel {
         let is_enabling = !self.bluetooth_enabled();
         
         std::thread::spawn(move || {
-            if is_enabling {
-                let _ = Command::new("bluetoothctl").args(&["power", "on"]).output();
-            } else {
-                let _ = Command::new("bluetoothctl").args(&["power", "off"]).output();
-            }
+            system_services::toggle_bluetooth_cmd(is_enabling);
         });
         
         // Update cache immediately for responsiveness
@@ -283,11 +167,7 @@ impl ServicesPanel {
         
         let is_enabled = self.eye_care_enabled;
         std::thread::spawn(move || {
-            if is_enabled {
-                let _ = Command::new("redshift").args(&["-P", "-O", "3500"]).output();
-            } else {
-                let _ = Command::new("redshift").args(&["-x"]).output();
-            }
+            system_services::toggle_eye_care_cmd(is_enabled);
         });
     }
 
@@ -785,7 +665,7 @@ impl ServicesPanel {
         .height(Length::Fill);
 
         // --- RIGHT PANEL (Sliders) ---
-        let volume_icon = if self.is_muted || self.volume_value == 0.0 { "" } else if self.volume_value <= 33.0 { "" } else if self.volume_value <= 66.0 { "" } else { "" };
+        let volume_icon = if self.is_muted || self.volume_value == 0.0 { "" } else if self.volume_value <= 30.0 { "" } else if self.volume_value <= 60.0 { "" }  else { "" };
         let brightness_icon = if self.brightness_value <= 33.0 { "󰃞" } else if self.brightness_value <= 66.0 { "󰃟" } else { "󰃠" };
 
         let volume_column = column![
@@ -975,11 +855,7 @@ impl ServicesPanel {
         // Spawn async to avoid blocking
         let vol = self.volume_value as u8;
         std::thread::spawn(move || {
-            let _ = Command::new("pactl")
-                .arg("set-sink-volume")
-                .arg("@DEFAULT_SINK@")
-                .arg(format!("{}%", vol))
-                .output();
+            system_services::set_volume_cmd(vol);
         });
     }
 
@@ -992,10 +868,7 @@ impl ServicesPanel {
         // Spawn async to avoid blocking
         let bright = self.brightness_value as u8;
         std::thread::spawn(move || {
-            let _ = Command::new("brightnessctl")
-                .arg("s")
-                .arg(format!("{}%", bright))
-                .output();
+            system_services::set_brightness_cmd(bright);
         });
     }
 

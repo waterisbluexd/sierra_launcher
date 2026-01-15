@@ -7,3 +7,4 @@ pub mod music;
 pub mod mpris_player;
 pub mod system;
 pub mod services;
+pub mod system_services;
