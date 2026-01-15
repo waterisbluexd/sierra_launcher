@@ -213,7 +213,7 @@ impl ServicesPanel {
         let inactive_accent = theme.color8;
 
         let (wifi_text_color, _wifi_bg_color, _wifi_border_color) = if wifi_enabled {
-            (theme.color0, active_accent, active_accent)
+            (theme.color0, theme.color2, theme.color2)
         } else {
             (inactive_accent, Color::TRANSPARENT, inactive_accent)
         };
@@ -226,7 +226,7 @@ impl ServicesPanel {
         let bt_active_accent = if is_bt_connected { theme.color2 } else { theme.color3 };
 
         let (bt_text_color, _bt_bg_color, _bt_border_color) = if bt_enabled {
-            (theme.color0, bt_active_accent, bt_active_accent)
+            (theme.color0, theme.color2, theme.color2)
         } else {
             (inactive_accent, Color::TRANSPARENT, inactive_accent)
         };
@@ -339,7 +339,7 @@ impl ServicesPanel {
                                 .style(move |_theme, status| {
                                     let current_active_accent = if is_connected { theme.color2 } else { theme.color3 };
                                     let (current_wifi_text_color, current_wifi_bg_color, current_wifi_border_color) = if wifi_enabled {
-                                        (theme.color0, current_active_accent, current_active_accent)
+                                        (theme.color0, theme.color2, theme.color2)
                                     } else {
                                         (inactive_accent, Color::TRANSPARENT, inactive_accent)
                                     };
@@ -467,7 +467,7 @@ impl ServicesPanel {
                                 .style(move |_theme, status| {
                                     let current_bt_active_accent = if is_bt_connected { theme.color2 } else { theme.color3 };
                                     let (current_bt_text_color, current_bt_bg_color, current_bt_border_color) = if bt_enabled {
-                                        (theme.color0, current_bt_active_accent, current_bt_active_accent)
+                                        (theme.color0, theme.color2, theme.color2)
                                     } else {
                                         (inactive_accent, Color::TRANSPARENT, inactive_accent)
                                     };
@@ -485,21 +485,20 @@ impl ServicesPanel {
                                         }
                                     } else {
                                         match status {
-                                            iced::widget::button::Status::Hovered => button::Style {
-                                                background: Some(if bt_enabled {
-                                                    let mut c = current_bt_bg_color; c.a = 0.9; c.into()
-                                                } else {
-                                                    let mut c = current_bt_active_accent; c.a = 0.1; c.into()
-                                                }),
-                                                border: Border {
-                                                    color: current_bt_active_accent,
-                                                    width: 2.0,
-                                                    radius: 0.0.into(),
-                                                },
-                                                text_color: current_bt_text_color,
-                                                ..Default::default()
-                                            },
-                                            iced::widget::button::Status::Pressed => button::Style {
+                                                                                        iced::widget::button::Status::Hovered => button::Style {
+                                                                                             background: Some(if bt_enabled {
+                                                                                                 let mut c = current_bt_bg_color; c.a = 0.9; c.into()
+                                                                                             } else {
+                                                                                                 let mut c = active_accent; c.a = 0.1; c.into()
+                                                                                             }),
+                                                                                             border: Border {
+                                                                                                 color: active_accent,
+                                                                                                 width: 2.0,
+                                                                                                 radius: 0.0.into(),
+                                                                                             },
+                                                                                             text_color: current_bt_text_color,
+                                                                                             ..Default::default()
+                                                                                         },                                            iced::widget::button::Status::Pressed => button::Style {
                                                 background: Some(current_bt_active_accent.into()),
                                                 border: Border { color: current_bt_active_accent, width: 2.0, radius: 0.0.into() },
                                                 text_color: theme.color0,
