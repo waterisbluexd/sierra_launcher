@@ -630,114 +630,20 @@ impl ServicesPanel {
                 .height(Length::Fixed(45.0)),
                 // Bottom Row (copy of Middle Row)
                 container(
-                    row![
-                        // Battery
-                        container(
-                            button(
-                                container(
-                                    text("󰈈")
-                                        .color(eye_care_text_color)
-                                        .font(font)
-                                        .size(font_size * 1.6)
-                                        .center()
-                                )
-                                .width(Length::Fill)
-                                .height(Length::Fill)
-                                .center_x(Length::Fill)
-                                .center_y(Length::Fill)
-                            )
-                            .on_press(Message::NoOp) // Changed from EyeCareToggle to NoOp
-                            .style(move |_theme, status| {
-                                match status {
-                                    iced::widget::button::Status::Hovered => button::Style {
-                                        background: Some(if self.eye_care_enabled {
-                                            let mut c = eye_care_bg_color; c.a = 0.9; c.into()
-                                        } else {
-                                            let mut c = eye_care_inactive_color; c.a = 0.1; c.into()
-                                        }),
-                                        border: Border {
-                                            color: if self.eye_care_enabled { eye_care_active_color } else { eye_care_inactive_color },
-                                            width: 2.0,
-                                            radius: 0.0.into(),
-                                        },
-                                        text_color: eye_care_text_color,
-                                        ..Default::default()
-                                    },
-                                    iced::widget::button::Status::Pressed => button::Style {
-                                        background: Some(eye_care_active_color.into()),
-                                        border: Border {
-                                            color: eye_care_active_color,
-                                            width: 2.0,
-                                            radius: 0.0.into(),
-                                        },
-                                        text_color: theme.color0,
-                                        ..Default::default()
-                                    },
-                                    _ => button::Style {
-                                        background: Some(eye_care_bg_color.into()),
-                                        border: Border {
-                                            color: eye_care_border_color,
-                                            width: 1.5,
-                                            radius: 0.0.into(),
-                                        },
-                                        text_color: eye_care_text_color,
-                                        ..Default::default()
-                                    }
-                                }
-                            }),
-                        )
-                        .width(Length::Fill)
-                        .height(Length::Fill),
-
-                        // Settings Button (placeholder) - keep the NoOp as it already is
-                        container(
-                            button(
-                                container(
-                                    text("󰩮")
-                                        .color(airplane_text_color)
-                                        .font(font)
-                                        .size(font_size * 1.6)
-                                        .center()
-                                )
-                                .width(Length::Fill)
-                                .height(Length::Fill)
-                                .center_x(Length::Fill)
-                                .center_y(Length::Fill)
-                            )
-                            .on_press(Message::NoOp)
-                            .style(move |_theme, status| {
-                                match status {
-                                    iced::widget::button::Status::Hovered => button::Style {
-                                        background: Some({
-                                            let mut c = airplane_inactive_color; c.a = 0.1; c.into()
-                                        }),
-                                        border: Border {
-                                            color: airplane_inactive_color,                                            width: 2.0,
-                                            radius: 0.0.into(),
-                                        },
-                                        text_color: airplane_text_color,
-                                        ..Default::default()
-                                    },
-                                    _ => button::Style {
-                                        background: Some(Color::TRANSPARENT.into()),
-                                        border: Border {
-                                            color: airplane_inactive_color,
-                                            width: 1.5,
-                                            radius: 0.0.into(),
-                                        },
-                                        text_color: airplane_text_color,
-                                        ..Default::default()
-                                    }
-                                }
-                            }),
-                        )
-                        .width(Length::Fill)
-                        .height(Length::Fill)
-                    ]
-                    .spacing(10)
+                    container(text("hey")
+                .font(font))
+                .style(move |_| container::Style {
+                    background: Some(bg_with_alpha.into()),
+                    border: Border {
+                        color: Color::from_rgb(0.5, 0.5, 0.5),
+                        width: 1.5,
+                        radius: 0.0.into(),
+                    },
+                    ..Default::default()
+                })
                 )
                 .width(Length::Fill)
-                .height(Length::Fixed(45.0)), 
+                .height(Length::Fill), 
             ]
             .spacing(10)
         )
