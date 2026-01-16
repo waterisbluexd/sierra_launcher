@@ -227,7 +227,7 @@ fn fan_widget<'a>(
                 .size(font_size * 1.7)
                 .color(icon_color),
             column![
-                text("FAN SPEED")
+                text("FAN")
                     .font(font)
                     .size(font_size * 0.6)
                     .color(theme.color6),
