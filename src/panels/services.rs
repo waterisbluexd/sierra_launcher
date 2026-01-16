@@ -93,7 +93,7 @@ impl ServicesPanel {
         Self {
             volume_value,
             brightness_value,
-            slider_height: 102.0,
+            slider_height: 107.0,
             previous_volume_value: volume_value,
             is_muted: false,
             previous_brightness_value: brightness_value,
