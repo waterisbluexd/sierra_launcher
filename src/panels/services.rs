@@ -1,4 +1,4 @@
-use iced::widget::{container, text, stack, row, column, vertical_slider, slider, button};
+use iced::widget::{container, text, stack, row, column, vertical_slider, slider, button, Space};
 use iced::{Element, Border, Color, Length};
 use crate::utils::theme::Theme;
 use crate::Message;
@@ -630,17 +630,40 @@ impl ServicesPanel {
                 .height(Length::Fixed(45.0)),
                 // Bottom Row (copy of Middle Row)
                 container(
-                    container(text("hey")
-                .font(font))
-                .style(move |_| container::Style {
-                    background: Some(bg_with_alpha.into()),
-                    border: Border {
-                        color: Color::from_rgb(0.5, 0.5, 0.5),
-                        width: 1.5,
-                        radius: 0.0.into(),
-                    },
-                    ..Default::default()
-                })
+                    column![
+                        container(
+                            Space::new()
+                                .width(Length::Fill)
+                                .height(Length::Fixed(1.0)),
+                        )
+                        .style(move |_| container::Style {
+                            background: Some(bg_with_alpha.into()),
+                            border: Border {
+                                color: Color::from_rgb(0.5, 0.5, 0.5),
+                                width: 1.5,
+                                radius: 0.0.into(),
+                            },
+                            ..Default::default()
+                        })
+                        .width(Length::Fill),
+                    
+                        container(
+                            text("󰁹")
+                        )
+                        .style(move |_| container::Style {
+                            background: Some(bg_with_alpha.into()),
+                            border: Border {
+                                color: Color::from_rgb(0.5, 0.5, 0.5),
+                                width: 1.5,
+                                radius: 0.0.into(),
+                            },
+                            ..Default::default()
+                        })
+                        .width(Length::Fill)
+                    ]
+                    .spacing(5)
+                    .width(Length::Fill)
+                    .height(Length::Fill)
                 )
                 .width(Length::Fill)
                 .height(Length::Fill), 
