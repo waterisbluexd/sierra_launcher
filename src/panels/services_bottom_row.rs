@@ -1,5 +1,5 @@
 use iced::widget::{container, text, row, column, Space};
-use iced::{Element, Border, Color, Length};
+use iced::{Element, Border, Length};
 use crate::utils::theme::Theme;
 use crate::Message;
 use std::process::Command;

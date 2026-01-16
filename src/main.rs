@@ -1,9 +1,10 @@
 mod utils;
 mod config;
 mod panels;
+use crate::panels::title_color::{TitleAnimator, AnimationMode};
 
 use iced_layershell::application;
-use iced::widget::{container, text, stack, row};
+use iced::widget::{container, text, stack, row, column};
 use iced::{Element, Event, Border, Color, Length, Font, Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
 use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
@@ -17,6 +18,7 @@ use crate::panels::right_main_panels::right_main_panels_view;
 use crate::panels::mpris_player::MusicPlayer;
 use crate::panels::system::SystemPanel;
 use crate::panels::services::ServicesPanel;
+
 use std::time::{Duration, Instant};
 
 fn main() -> Result<(), iced_layershell::Error> {
@@ -46,13 +48,6 @@ fn main() -> Result<(), iced_layershell::Error> {
     Ok(())
 }
 
-fn vertical_text(s: &str) -> String {
-    s.chars()
-        .map(|c| c.to_string())
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Panel {
     Clock,
@@ -78,6 +73,7 @@ struct Launcher {
     last_color_check: Instant,
     last_services_refresh: Instant,
     frame_count: u32,
+    title_animator: TitleAnimator,
 }
 
 #[derive(Debug, Clone)]
@@ -153,6 +149,16 @@ impl Launcher {
         let system_panel = SystemPanel::new();
         let services_panel = ServicesPanel::new();
 
+        // AnimationMode::Rainbow
+        // AnimationMode::Wave
+        // AnimationMode::In_Out_Wave
+        // AnimationMode::Pulse
+        // AnimationMode::Sparkle
+        // AnimationMode::Gradient
+        let title_animator = TitleAnimator::new()
+            .with_mode(AnimationMode::Wave)
+            .with_speed(80);
+
         (Self { 
             theme, 
             watcher, 
@@ -167,6 +173,7 @@ impl Launcher {
             last_color_check: Instant::now(),
             last_services_refresh: Instant::now(),
             frame_count: 0,
+            title_animator,
         }, Command::none())
     }
 
@@ -219,6 +226,9 @@ impl Launcher {
 
             Message::CheckColors => {
                 self.frame_count += 1;
+                
+                // Update title animation
+                self.title_animator.update();
                 
                 // Only check colors every 60 frames (~1 second at 60fps)
                 let now = Instant::now();
@@ -373,7 +383,21 @@ impl Launcher {
         };
 
         let font_size = self.config.font_size.unwrap_or(22.0);
-        let title = vertical_text(" sierra-launcher ");
+        
+        // Create animated vertical text with individual character colors
+        let title_text = " sierra-launcher ";
+        let total_chars = title_text.chars().count();
+        let mut title_column = column![].spacing(0);
+        
+        for (i, ch) in title_text.chars().enumerate() {
+            let char_color = self.title_animator.get_color_for_char(&self.theme, i, total_chars);
+            title_column = title_column.push(
+                text(ch.to_string())
+                    .font(font)
+                    .size(font_size)
+                    .color(char_color)
+            );
+        }
 
         container(
             stack![
@@ -427,12 +451,7 @@ impl Launcher {
                 .height(Length::Fill),
                 container(
                     container(
-                        container(
-                            text(title)
-                                .font(font)
-                                .size(font_size)
-                                .line_height(1.2)
-                        )
+                        container(title_column)
                         .padding(0)
                         .style(move |_| container::Style {
                             background: Some(bg_with_alpha.into()),

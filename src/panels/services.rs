@@ -1,4 +1,4 @@
-use iced::widget::{container, text, stack, row, column, vertical_slider, slider, button, Space};
+use iced::widget::{container, text, stack, row, column, vertical_slider, slider, button};
 use iced::{Element, Border, Color, Length};
 use crate::utils::theme::Theme;
 use crate::Message;
@@ -224,7 +224,6 @@ impl ServicesPanel {
         // --- BLUETOOTH STYLING COLORS ---
         let is_bt_connected = bt_enabled && bt_name != "No Device" && bt_name != "Bluetooth Off";
         
-        let bt_active_accent = if is_bt_connected { theme.color2 } else { theme.color3 };
 
         let (bt_text_color, _bt_bg_color, _bt_border_color) = if bt_enabled {
             (theme.color0, theme.color2, theme.color2)
