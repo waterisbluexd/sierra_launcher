@@ -174,10 +174,12 @@ fn battery_widget<'a>(
         row![
             text(symbol)
                 .font(font)
-                .size(font_size * 1.7)
+                .center()
+                .size(font_size * 1.6)
                 .color(icon_color),
             column![
                 text("BATTERY")
+                    .center()
                     .font(font)
                     .size(font_size * 0.6)
                     .color(theme.color6),
@@ -190,7 +192,7 @@ fn battery_widget<'a>(
         ]
         .spacing(6)
         .align_y(iced::Alignment::Center)
-        .padding(iced::padding::top(4).left(8).right(6))
+        .padding(iced::padding::left(8).right(6))
     )
     .style(move |_| container::Style {
         background: None,
@@ -203,6 +205,7 @@ fn battery_widget<'a>(
     })
     .width(Length::Fill)
     .height(Length::Fixed(45.0))
+    .align_y(iced::Alignment::Center)
     .into()
 }
 
@@ -227,11 +230,11 @@ fn fan_widget<'a>(
                 .size(font_size * 1.7)
                 .color(icon_color),
             column![
-                text("FAN")
+                text("FAN RPM")
                     .font(font)
                     .size(font_size * 0.6)
                     .color(theme.color6),
-                text(format!("{} RPM", rpm))
+                text(format!("{}", rpm))
                     .font(font)
                     .size(font_size * 0.85)
                     .color(theme.color6),
@@ -240,7 +243,7 @@ fn fan_widget<'a>(
         ]
         .spacing(6)
         .align_y(iced::Alignment::Center)
-        .padding(iced::padding::top(4).left(8).right(6))
+        .padding(iced::padding::left(8).right(6))
     )
     .style(move |_| container::Style {
         background: None,
@@ -253,6 +256,7 @@ fn fan_widget<'a>(
     })
     .width(Length::Fill)
     .height(Length::Fixed(45.0))
+    .align_y(iced::Alignment::Center)
     .into()
 }
 
@@ -290,7 +294,7 @@ fn cpu_temp_widget<'a>(
         ]
         .spacing(6)
         .align_y(iced::Alignment::Center)
-        .padding(iced::padding::top(4).left(8).right(6))
+        .padding(iced::padding::left(8).right(6))
     )
     .style(move |_| container::Style {
         background: None,
@@ -303,6 +307,7 @@ fn cpu_temp_widget<'a>(
     })
     .width(Length::Fill)
     .height(Length::Fixed(45.0))
+    .align_y(iced::Alignment::Center)
     .into()
 }
 
