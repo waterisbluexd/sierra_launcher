@@ -174,23 +174,23 @@ fn battery_widget<'a>(
         row![
             text(symbol)
                 .font(font)
-                .size(font_size * 1.8)
+                .size(font_size * 1.7)
                 .color(icon_color),
             column![
                 text("BATTERY")
                     .font(font)
-                    .size(font_size * 0.65)
+                    .size(font_size * 0.6)
                     .color(theme.color6),
                 text(format!("{}%", percentage))
                     .font(font)
-                    .size(font_size * 0.9)
+                    .size(font_size * 0.85)
                     .color(theme.color6),
             ]
-            .spacing(2)
+            .spacing(1)
         ]
-        .spacing(8)
+        .spacing(6)
         .align_y(iced::Alignment::Center)
-        .padding(iced::padding::left(12).right(8))
+        .padding(iced::padding::top(4).left(8).right(6))
     )
     .style(move |_| container::Style {
         background: None,
@@ -224,23 +224,23 @@ fn fan_widget<'a>(
         row![
             text(FAN_SYMBOL)
                 .font(font)
-                .size(font_size * 1.8)
+                .size(font_size * 1.7)
                 .color(icon_color),
             column![
                 text("FAN SPEED")
                     .font(font)
-                    .size(font_size * 0.65)
+                    .size(font_size * 0.6)
                     .color(theme.color6),
                 text(format!("{} RPM", rpm))
                     .font(font)
-                    .size(font_size * 0.9)
+                    .size(font_size * 0.85)
                     .color(theme.color6),
             ]
-            .spacing(2)
+            .spacing(1)
         ]
-        .spacing(8)
+        .spacing(6)
         .align_y(iced::Alignment::Center)
-        .padding(iced::padding::left(12).right(8))
+        .padding(iced::padding::top(4).left(8).right(6))
     )
     .style(move |_| container::Style {
         background: None,
@@ -274,23 +274,23 @@ fn cpu_temp_widget<'a>(
         row![
             text(TEMP_SYMBOL)
                 .font(font)
-                .size(font_size * 1.8)
+                .size(font_size * 1.7)
                 .color(icon_color),
             column![
                 text("CPU TEMP")
                     .font(font)
-                    .size(font_size * 0.65)
+                    .size(font_size * 0.6)
                     .color(theme.color6),
                 text(format!("{}°C", temp))
                     .font(font)
-                    .size(font_size * 0.9)
+                    .size(font_size * 0.85)
                     .color(theme.color6),
             ]
-            .spacing(2)
+            .spacing(1)
         ]
-        .spacing(8)
+        .spacing(6)
         .align_y(iced::Alignment::Center)
-        .padding(iced::padding::left(12).right(8))
+        .padding(iced::padding::top(4).left(8).right(6))
     )
     .style(move |_| container::Style {
         background: None,
@@ -339,7 +339,7 @@ pub fn view_bottom_row<'a>(
                 fan_widget(fan_rpm, theme, font, font_size),
                 cpu_temp_widget(cpu_temp, theme, font, font_size),
             ]
-            .spacing(10)
+            .spacing(8)
         ]
         .spacing(5)
         .width(Length::Fill)
