@@ -304,43 +304,6 @@ impl ServicesPanel {
         .height(Length::Fill)
         .padding(iced::padding::left(15).right(5))
         .align_y(iced::alignment::Vertical::Center);
-
-        // --- BLUETOOTH BUTTON CONTENT FOR BOTTOM PANEL (Duplicate) ---
-        let bt_button_content_bottom_panel = container(
-            row![
-                container(
-                    text(bt_icon_str)
-                        .color(bt_text_color)
-                        .font(font)
-                        .size(font_size * 1.8)
-                        .center()
-                )
-                .padding(iced::padding::right(12))
-                .align_y(iced::alignment::Vertical::Center),
-
-                column![
-                    text("BLUETOOTH")
-                        .color(bt_text_color)
-                        .size(font_size * 0.65)
-                        .font(font),
-                    text(if bt_name.len() > 14 { 
-                        format!("{}..", &bt_name[..12]) 
-                    } else { 
-                        bt_name.clone() 
-                    })
-                        .color(bt_text_color)
-                        .size(font_size * 0.9)
-                        .font(font),
-                ]
-                .spacing(2)
-                .align_x(iced::alignment::Horizontal::Left)
-            ]
-        )
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .padding(iced::padding::left(15).right(5))
-        .align_y(iced::alignment::Vertical::Center);
-
         // --- Determine Airplane Mode Styling Colors ---
         let airplane_active_color = theme.color2;
         let airplane_inactive_color = theme.color8;
@@ -665,302 +628,91 @@ impl ServicesPanel {
                 )
                 .width(Length::Fill)
                 .height(Length::Fixed(45.0)),
-
-                                                // Bottom Row (copy of Middle Row)
-
-                                                container(
-
-                                                    row![
-
-                                                        container(
-
-                                                            button(bt_button_content_bottom_panel)
-
-                                                                .on_press(Message::NoOp) // Changed from conditional to NoOp
-
-                                                                .width(Length::Fill)
-
-                                                                .height(Length::Fill)
-
-                                                                .style(move |_theme, status| {
-
-                                                                    let current_bt_active_accent = if is_bt_connected { theme.color2 } else { theme.color3 };
-
-                                                                    let (current_bt_text_color, current_bt_bg_color, current_bt_border_color) = if bt_enabled {
-
-                                                                        (theme.color0, theme.color2, theme.color2)
-
-                                                                    } else {
-
-                                                                        (inactive_accent, Color::TRANSPARENT, inactive_accent)
-
-                                                                    };
-
-                                
-
-                                                                    if self.is_airplane_mode_on {
-
-                                                                        button::Style {
-
-                                                                            background: Some(Color::from_rgba(0.5, 0.5, 0.5, 0.1).into()),
-
-                                                                            border: Border {
-
-                                                                                color: Color::from_rgb(0.5, 0.5, 0.5),
-
-                                                                                width: 1.5,
-
-                                                                                radius: 0.0.into(),
-
-                                                                            },
-
-                                                                            text_color: Color::from_rgb(0.5, 0.5, 0.5),
-
-                                                                            ..Default::default()
-
-                                                                        }
-
-                                                                    } else {
-
-                                                                        match status {
-
-                                                                            iced::widget::button::Status::Hovered => button::Style {
-
-                                                                                background: Some(if bt_enabled {
-
-                                                                                    let mut c = current_bt_bg_color; c.a = 0.9; c.into()
-
-                                                                                } else {
-
-                                                                                    let mut c = active_accent; c.a = 0.1; c.into()
-
-                                                                                }),
-
-                                                                                border: Border {
-
-                                                                                    color: active_accent,
-
-                                                                                    width: 2.0,
-
-                                                                                    radius: 0.0.into(),
-
-                                                                                },
-
-                                                                                text_color: current_bt_text_color,
-
-                                                                                ..Default::default()
-
-                                                                            },
-
-                                                                            iced::widget::button::Status::Pressed => button::Style {
-
-                                                                                background: Some(current_bt_active_accent.into()),
-
-                                                                                border: Border { color: current_bt_active_accent, width: 2.0, radius: 0.0.into() },
-
-                                                                                text_color: theme.color0,
-
-                                                                                ..Default::default()
-
-                                                                            },
-
-                                                                            _ => button::Style {
-
-                                                                                background: Some(current_bt_bg_color.into()),
-
-                                                                                border: Border {
-
-                                                                                    color: current_bt_border_color,
-
-                                                                                    width: 1.5,
-
-                                                                                    radius: 0.0.into(),
-
-                                                                                },
-
-                                                                                text_color: current_bt_text_color,
-
-                                                                                ..Default::default()
-
-                                                                            }
-
-                                                                        }
-
-                                                                    }
-
-                                                                }),
-
-                                                        )
-
-                                                        .width(Length::Fill)
-
-                                                        .height(Length::Fill),
-
-                                
-
-                                                        // Eye Care Button
-
-                                                        container(
-
-                                                            button(
-
-                                                                container(
-
-                                                                    text("󰈈")
-
-                                                                        .color(eye_care_text_color)
-
-                                                                        .font(font)
-
-                                                                        .size(font_size * 1.6)
-
-                                                                        .center()
-
-                                                                )
-
-                                                                .width(Length::Fill)
-
-                                                                .height(Length::Fill)
-
-                                                                .center_x(Length::Fill)
-
-                                                                .center_y(Length::Fill)
-
-                                                            )
-
-                                                            .on_press(Message::NoOp) // Changed from EyeCareToggle to NoOp
-
-                                                            .style(move |_theme, status| {
-
-                                                                match status {
-
-                                                                    iced::widget::button::Status::Hovered => button::Style {
-
-                                                                        background: Some(if self.eye_care_enabled {
-
-                                                                            let mut c = eye_care_bg_color; c.a = 0.9; c.into()
-
-                                                                        } else {
-
-                                                                            let mut c = eye_care_inactive_color; c.a = 0.1; c.into()
-
-                                                                        }),
-
-                                                                        border: Border {
-
-                                                                            color: if self.eye_care_enabled { eye_care_active_color } else { eye_care_inactive_color },
-
-                                                                            width: 2.0,
-
-                                                                            radius: 0.0.into(),
-
-                                                                        },
-
-                                                                        text_color: eye_care_text_color,
-
-                                                                        ..Default::default()
-
-                                                                    },
-
-                                                                    iced::widget::button::Status::Pressed => button::Style {
-
-                                                                        background: Some(eye_care_active_color.into()),
-
-                                                                        border: Border {
-
-                                                                            color: eye_care_active_color,
-
-                                                                            width: 2.0,
-
-                                                                            radius: 0.0.into(),
-
-                                                                        },
-
-                                                                        text_color: theme.color0,
-
-                                                                        ..Default::default()
-
-                                                                    },
-
-                                                                    _ => button::Style {
-
-                                                                        background: Some(eye_care_bg_color.into()),
-
-                                                                        border: Border {
-
-                                                                            color: eye_care_border_color,
-
-                                                                            width: 1.5,
-
-                                                                            radius: 0.0.into(),
-
-                                                                        },
-
-                                                                        text_color: eye_care_text_color,
-
-                                                                        ..Default::default()
-
-                                                                    }
-
-                                                                }
-
-                                                            }),
-
-                                                        )
-
-                                                        .width(Length::Fixed(45.0))
-
-                                                        .height(Length::Fill),
-
-                                
-
-                                                        // Settings Button (placeholder) - keep the NoOp as it already is
-
-                                                        container(
-
-                                                            button(
-
-                                                                container(
-
-                                                                    text("󰩮")
-
-                                                                        .color(airplane_text_color)
-
-                                                                        .font(font)
-
-                                                                        .size(font_size * 1.6)
-
-                                                                        .center()
-
-                                                                )
-
-                                                                .width(Length::Fill)
-
-                                                                .height(Length::Fill)
-
-                                                                .center_x(Length::Fill)
-
-                                                                .center_y(Length::Fill)
-
-                                                            )
-
-                                                            .on_press(Message::NoOp)
-
-                                                            .style(move |_theme, status| {
-
-                                                                match status {
-
-                                                                    iced::widget::button::Status::Hovered => button::Style {
-
-                                                                        background: Some({
-
-                                                                            let mut c = airplane_inactive_color; c.a = 0.1; c.into()
-
-                                                                        }),
-
-                                                                        border: Border {
-
-                                                                            color: airplane_inactive_color,                                            width: 2.0,
+                // Bottom Row (copy of Middle Row)
+                container(
+                    row![
+                        // Eye Care Button
+                        container(
+                            button
+                                container(
+                                    text("󰈈")
+                                        .color(eye_care_text_color)
+                                        .font(font)
+                                        .size(font_size * 1.6)
+                                        .center()
+                                )
+                                .width(Length::Fill)
+                                .height(Length::Fill)
+                                .center_x(Length::Fill)
+                                .center_y(Length::Fill)
+                            )
+                            .on_press(Message::NoOp) // Changed from EyeCareToggle to NoOp
+                            .style(move |_theme, status| {
+                                match status {
+                                    iced::widget::button::Status::Hovered => button::Style {
+                                        background: Some(if self.eye_care_enabled {
+                                            let mut c = eye_care_bg_color; c.a = 0.9; c.into()
+                                        } else {
+                                            let mut c = eye_care_inactive_color; c.a = 0.1; c.into()
+                                        }),
+                                        border: Border {
+                                            color: if self.eye_care_enabled { eye_care_active_color } else { eye_care_inactive_color },
+                                            width: 2.0,
+                                            radius: 0.0.into(),
+                                        },
+                                        text_color: eye_care_text_color,
+                                        ..Default::default()
+                                    },
+                                    iced::widget::button::Status::Pressed => button::Style {
+                                        background: Some(eye_care_active_color.into()),
+                                        border: Border {
+                                            color: eye_care_active_color,
+                                            width: 2.0,
+                                            radius: 0.0.into(),
+                                        },
+                                        text_color: theme.color0,
+                                        ..Default::default()
+                                    },
+                                    _ => button::Style {
+                                        background: Some(eye_care_bg_color.into()),
+                                        border: Border {
+                                            color: eye_care_border_color,
+                                            width: 1.5,
+                                            radius: 0.0.into(),
+                                        },
+                                        text_color: eye_care_text_color,
+                                        ..Default::default()
+                                    }
+                                }
+                            }),
+                        )
+                        .width(Length::Fixed(45.0))
+                        .height(Length::Fill),
+
+                        // Settings Button (placeholder) - keep the NoOp as it already is
+                        container(
+                            button(
+                                container(
+                                    text("󰩮")
+                                        .color(airplane_text_color)
+                                        .font(font)
+                                        .size(font_size * 1.6)
+                                        .center()
+                                )
+                                .width(Length::Fill)
+                                .height(Length::Fill)
+                                .center_x(Length::Fill)
+                                .center_y(Length::Fill)
+                            )
+                            .on_press(Message::NoOp)
+                            .style(move |_theme, status| {
+                                match status {
+                                    iced::widget::button::Status::Hovered => button::Style {
+                                        background: Some({
+                                            let mut c = airplane_inactive_color; c.a = 0.1; c.into()
+                                        }),
+                                        border: Border {
+                                            color: airplane_inactive_color,                                            width: 2.0,
                                             radius: 0.0.into(),
                                         },
                                         text_color: airplane_text_color,
