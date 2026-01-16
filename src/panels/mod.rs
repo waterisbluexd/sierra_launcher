@@ -8,3 +8,4 @@ pub mod mpris_player;
 pub mod system;
 pub mod services;
 pub mod system_services;
+pub mod services_bottom_row;

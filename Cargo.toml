@@ -17,6 +17,7 @@ bincode = "1.3"
 reqwest = { version = "0.11", features = ["blocking", "json"] }
 dirs = "5.0"
 mpris = "2.0"
+lazy_static = "1.4"
 
 [dependencies.gio]
 version = "0.20"

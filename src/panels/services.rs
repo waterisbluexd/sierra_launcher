@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use super::system_services;
+use super::services_bottom_row;
 
 #[derive(Clone)]
 struct ServiceStatus {
@@ -628,45 +629,8 @@ impl ServicesPanel {
                 )
                 .width(Length::Fill)
                 .height(Length::Fixed(45.0)),
-                // Bottom Row (copy of Middle Row)
-                container(
-                    column![
-                        container(
-                            Space::new()
-                                .width(Length::Fill)
-                                .height(Length::Fixed(1.0)),
-                        )
-                        .style(move |_| container::Style {
-                            background: Some(bg_with_alpha.into()),
-                            border: Border {
-                                color: Color::from_rgb(0.5, 0.5, 0.5),
-                                width: 1.5,
-                                radius: 0.0.into(),
-                            },
-                            ..Default::default()
-                        })
-                        .width(Length::Fill),
-                    
-                        container(
-                            text("󰁹")
-                        )
-                        .style(move |_| container::Style {
-                            background: Some(bg_with_alpha.into()),
-                            border: Border {
-                                color: Color::from_rgb(0.5, 0.5, 0.5),
-                                width: 1.5,
-                                radius: 0.0.into(),
-                            },
-                            ..Default::default()
-                        })
-                        .width(Length::Fill)
-                    ]
-                    .spacing(5)
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                )
-                .width(Length::Fill)
-                .height(Length::Fill), 
+                // Bottom Row
+                services_bottom_row::view_bottom_row(theme, font, font_size),
             ]
             .spacing(10)
         )
