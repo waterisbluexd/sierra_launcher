@@ -161,13 +161,13 @@ fn battery_widget<'a>(
     };
     
     let icon_color = if charging {
-        theme.color2
+        theme.color2  // Green when charging
     } else if percentage <= 20 {
-        Color::from_rgb(0.9, 0.2, 0.2)
+        theme.color1  // Red for critical battery
     } else if percentage <= 50 {
-        Color::from_rgb(0.9, 0.7, 0.2)
+        theme.color3  // Yellow for low battery
     } else {
-        theme.color2
+        theme.color2  // Green for good battery
     };
 
     container(
@@ -216,11 +216,11 @@ fn fan_widget<'a>(
     font_size: f32,
 ) -> Element<'a, Message> {
     let icon_color = if rpm > 3000 {
-        Color::from_rgb(0.9, 0.2, 0.2)
+        theme.color1  // Red for high RPM
     } else if rpm > 1500 {
-        Color::from_rgb(0.9, 0.7, 0.2)
+        theme.color3  // Yellow for medium RPM
     } else {
-        theme.color2
+        theme.color2  // Green for low/normal RPM
     };
 
     container(
@@ -267,11 +267,11 @@ fn cpu_temp_widget<'a>(
     font_size: f32,
 ) -> Element<'a, Message> {
     let icon_color = if temp > 80 {
-        Color::from_rgb(0.9, 0.2, 0.2)
+        theme.color1  // Red for high temperature
     } else if temp > 60 {
-        Color::from_rgb(0.9, 0.7, 0.2)
+        theme.color3  // Yellow for warm temperature
     } else {
-        theme.color2
+        theme.color2  // Green for normal temperature
     };
 
     container(
