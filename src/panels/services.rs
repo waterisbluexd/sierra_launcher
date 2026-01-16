@@ -631,9 +631,9 @@ impl ServicesPanel {
                 // Bottom Row (copy of Middle Row)
                 container(
                     row![
-                        // Eye Care Button
+                        // Battery
                         container(
-                            button
+                            button(
                                 container(
                                     text("󰈈")
                                         .color(eye_care_text_color)
@@ -686,7 +686,7 @@ impl ServicesPanel {
                                 }
                             }),
                         )
-                        .width(Length::Fixed(45.0))
+                        .width(Length::Fill)
                         .height(Length::Fill),
 
                         // Settings Button (placeholder) - keep the NoOp as it already is
@@ -731,7 +731,7 @@ impl ServicesPanel {
                                 }
                             }),
                         )
-                        .width(Length::Fixed(45.0))
+                        .width(Length::Fill)
                         .height(Length::Fill)
                     ]
                     .spacing(10)
