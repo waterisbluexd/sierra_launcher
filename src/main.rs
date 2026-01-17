@@ -76,6 +76,7 @@ struct Launcher {
     title_animator: TitleAnimator,
     control_center_visible: bool,
     clipboard_visible: bool,
+    clipboard_selected_index: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -103,6 +104,9 @@ enum Message {
     PowerOffTheSystem,
     RestartTheSystem,
     SleepModeTheSystem,
+    ClipboardArrowUp,
+    ClipboardArrowDown,
+    ClipboardSelect,
     NoOp,
 }
 
@@ -184,6 +188,7 @@ impl Launcher {
             title_animator,
             control_center_visible: false,
             clipboard_visible: false,
+            clipboard_selected_index: 0,
         }, Command::none())
     }
 
@@ -215,10 +220,18 @@ impl Launcher {
                                 std::process::exit(0);
                             }
                             keyboard::Key::Named(Named::ArrowUp) => {
-                                let _ = self.app_list.update(app_list::Message::ArrowUp);
+                                if self.clipboard_visible {
+                                    return Command::perform(async {}, |_| Message::ClipboardArrowUp);
+                                } else {
+                                    let _ = self.app_list.update(app_list::Message::ArrowUp);
+                                }
                             }
                             keyboard::Key::Named(Named::ArrowDown) => {
-                                let _ = self.app_list.update(app_list::Message::ArrowDown);
+                                if self.clipboard_visible {
+                                    return Command::perform(async {}, |_| Message::ClipboardArrowDown);
+                                } else {
+                                    let _ = self.app_list.update(app_list::Message::ArrowDown);
+                                }
                             }
                             keyboard::Key::Named(Named::ArrowLeft) => {
                                 if modifiers.shift() {
@@ -237,7 +250,11 @@ impl Launcher {
                                 }
                             }
                             keyboard::Key::Named(Named::Enter) => {
-                                let _ = self.app_list.update(app_list::Message::LaunchSelected);
+                                if self.clipboard_visible {
+                                    return Command::perform(async {}, |_| Message::ClipboardSelect);
+                                } else {
+                                    let _ = self.app_list.update(app_list::Message::LaunchSelected);
+                                }
                             }
                             _ => {}
                         }
@@ -440,6 +457,34 @@ impl Launcher {
                 std::process::exit(0);
             }
 
+            Message::ClipboardArrowUp => {
+                if self.clipboard_selected_index > 0 {
+                    self.clipboard_selected_index -= 1;
+                }
+                Command::none()
+            }
+
+            Message::ClipboardArrowDown => {
+                let items = crate::utils::data::search_items("");
+                if self.clipboard_selected_index + 1 < items.len() {
+                    self.clipboard_selected_index += 1;
+                }
+                Command::none()
+            }
+
+            Message::ClipboardSelect => {
+                let items = crate::utils::data::search_items("");
+                if let Some(item) = items.get(self.clipboard_selected_index) {
+                    // Copy selected item to clipboard
+                    use arboard::Clipboard;
+                    if let Ok(mut clipboard) = Clipboard::new() {
+                        let content = item.full_content();
+                        let _ = clipboard.set_text(content);
+                    }
+                }
+                Command::none()
+            }
+
             Message::NoOp => Command::none(),
         }
     }
@@ -514,6 +559,7 @@ impl Launcher {
                             &self.services_panel,
                             self.control_center_visible,
                             self.clipboard_visible,
+                            self.clipboard_selected_index,
                         ))
                         .height(Length::Fill)
                         .width(Length::Fill),

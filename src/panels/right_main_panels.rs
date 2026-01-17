@@ -28,6 +28,7 @@ pub fn right_main_panels_view<'a>(
     services_panel: &'a services::ServicesPanel,
     control_center_visible: bool,
     clipboard_visible: bool,
+    clipboard_selected_index: usize,
 ) -> Element<'a, Message> {
     let current_view = match current_panel {
         Panel::Clock => clock::clock_panel_view(theme, bg_with_alpha, font, font_size),
@@ -232,7 +233,7 @@ pub fn right_main_panels_view<'a>(
 
             // Clipboard panel - only visible when clipboard_visible is true
             if clipboard_visible {
-                clipboard_panel_view(theme, bg_with_alpha, font, font_size)
+                clipboard_panel_view(theme, bg_with_alpha, font, font_size, clipboard_selected_index)
             } else {
                 container(text(""))
                     .width(Length::Shrink)

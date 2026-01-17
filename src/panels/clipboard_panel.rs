@@ -70,6 +70,7 @@ pub fn clipboard_panel_view<'a>(
     bg_with_alpha: Color,
     font: iced::Font,
     font_size: f32,
+    selected_index: usize,
 ) -> Element<'a, Message> {
     // Get clipboard history items
     let items = crate::utils::data::search_items("");
@@ -114,28 +115,48 @@ pub fn clipboard_panel_view<'a>(
             let content = item.full_content();
             let preview_lines = create_preview_lines(&content);
             
-            let bg = if idx % 2 == 0 {
+            let selected = idx == selected_index;
+            
+            let bg = if selected {
+                Some(theme.color3.into())
+            } else if idx % 2 == 0 {
                 Some(Color::from_rgba(theme.color0.r, theme.color0.g, theme.color0.b, 0.1).into())
             } else {
                 None
             };
             
+            let fg = if selected {
+                theme.background
+            } else {
+                theme.foreground
+            };
+            
+            let number_color = if selected {
+                theme.background
+            } else {
+                theme.color3
+            };
+            
             // Create multi-line preview
             let mut item_column = column![].spacing(2);
             
-            // First line with number
+            // First line with number and selection indicator
             if let Some(first_line) = preview_lines.first() {
-                let first_line_text = first_line.clone(); // Clone to avoid lifetime issues
+                let first_line_text = first_line.clone();
                 item_column = item_column.push(
                     row![
+                        text(if selected { ">>" } else { "  " })
+                            .font(font)
+                            .size(font_size * 0.8)
+                            .color(fg),
                         text(format!("{}. ", idx + 1))
                             .font(font)
                             .size(font_size * 0.8)
-                            .color(theme.color3),
+                            .color(number_color),
                         text(first_line_text)
                             .font(font)
                             .size(font_size * 0.8)
-                            .color(theme.foreground),
+                            .color(fg),
                     ]
                     .spacing(4)
                 );
@@ -143,16 +164,16 @@ pub fn clipboard_panel_view<'a>(
             
             // Subsequent lines with indent
             for line in preview_lines.iter().skip(1) {
-                let line_text = line.clone(); // Clone to avoid lifetime issues
+                let line_text = line.clone();
                 item_column = item_column.push(
                     row![
-                        text("   ")
+                        text("      ")
                             .font(font)
                             .size(font_size * 0.8),
                         text(line_text)
                             .font(font)
                             .size(font_size * 0.8)
-                            .color(theme.foreground),
+                            .color(fg),
                     ]
                     .spacing(4)
                 );
