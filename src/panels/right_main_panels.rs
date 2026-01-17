@@ -23,8 +23,9 @@ pub fn right_main_panels_view<'a>(
     current_panel: crate::Panel,
     weather_panel: &'a weather::WeatherPanel,
     music_player: &'a MusicPlayer,
-    system_panel: &'a system::SystemPanel,  // Add this parameter
+    system_panel: &'a system::SystemPanel,
     services_panel: &'a services::ServicesPanel,
+    control_center_visible: bool,
 ) -> Element<'a, Message> {
     let current_view = match current_panel {
         Panel::Clock => clock::clock_panel_view(theme, bg_with_alpha, font, font_size),
@@ -116,7 +117,7 @@ pub fn right_main_panels_view<'a>(
                 stack![
                     container(
                         row![
-                            // Search Bar container this container will allow user to add input like text 
+                            // Search Bar container
                             container(
                                 search_bar.view(theme, font, font_size).map(Message::SearchBarMessage)
                             )
@@ -135,7 +136,7 @@ pub fn right_main_panels_view<'a>(
                             container(
                                 button(
                                     container(
-                                        text("") //if right click show this icon "" to toggole control center
+                                        text(if control_center_visible { "" } else { "󰐥" })
                                             .color(theme.color2)
                                             .font(font)
                                             .size(font_size * 1.3)
@@ -147,7 +148,7 @@ pub fn right_main_panels_view<'a>(
                                     .center_x(Length::Fill) 
                                     .center_y(Length::Fill) 
                                 )
-                                .on_press(Message::PowerOffTheSystem) //PowerOff only if right click didnt happen meaning no control center is opened its not toggled
+                                .on_press(Message::ToggleControlCenter)
                                 .style(move |_, _| button::Style {
                                     background: Some(Color::TRANSPARENT.into()),
                                     ..Default::default()
@@ -202,114 +203,162 @@ pub fn right_main_panels_view<'a>(
                 ..Default::default()
             }),
         ].spacing(5),
-            ////////////////////contrtol center///////////////////////////
-        container(
-            column![
+            
+            // Control Center (only visible when toggled)
+            if control_center_visible {
                 container(
-                        button(
-                            container(
-                                text("󰤄")
-                                    .color(theme.color2)
-                                    .font(font)
-                                    .size(font_size * 1.3)
-                                    .line_height(0.9)
-                                    .center()
+                    column![
+                        container(
+                            button(
+                                container(
+                                    text("󰤄")
+                                        .color(theme.color2)
+                                        .font(font)
+                                        .size(font_size * 1.3)
+                                        .line_height(0.9)
+                                        .center()
+                                )
+                                .width(Length::Fill)
+                                .height(Length::Fill)
+                                .center_x(Length::Fill) 
+                                .center_y(Length::Fill) 
                             )
-                            .width(Length::Fill)
-                            .height(Length::Fill)
-                            .center_x(Length::Fill) 
-                            .center_y(Length::Fill) 
+                            .on_press(Message::SleepModeTheSystem)
+                            .style(move |_, status| {
+                                match status {
+                                    iced::widget::button::Status::Hovered => button::Style {
+                                        background: Some(Color::from_rgba(
+                                            theme.color2.r,
+                                            theme.color2.g,
+                                            theme.color2.b,
+                                            0.2
+                                        ).into()),
+                                        border: Border {
+                                            color: theme.color2,
+                                            width: 2.0,
+                                            radius: 0.0.into(),
+                                        },
+                                        ..Default::default()
+                                    },
+                                    _ => button::Style {
+                                        background: Some(Color::TRANSPARENT.into()),
+                                        border: Border {
+                                            color: theme.color1,
+                                            width: 2.0,
+                                            radius: 0.0.into(),
+                                        },
+                                        ..Default::default()
+                                    }
+                                }
+                            }),
                         )
-                        .on_press(Message::SleepModeTheSystem)
-                        .style(move |_, _| button::Style {
-                            background: Some(Color::TRANSPARENT.into()),
-                            ..Default::default()
-                        }),
-                    )
-                    .width(Length::Fixed(35.0))
-                    .height(Length::Fill)
-                    .style(move |_| container::Style {
-                        background: None,
-                        border: Border {
-                            color: theme.color1,
-                            width: 2.0,
-                            radius: 0.0.into(),
-                        },
-                        ..Default::default()
-                    }),
+                        .width(Length::Fixed(35.0))
+                        .height(Length::Fixed(35.0)),
 
-                    container(
-                        button(
-                            container(
-                                text("󰜉")
-                                    .color(theme.color2)
-                                    .font(font)
-                                    .size(font_size * 1.3)
-                                    .line_height(0.9)
-                                    .center()
+                        container(
+                            button(
+                                container(
+                                    text("󰜉")
+                                        .color(theme.color2)
+                                        .font(font)
+                                        .size(font_size * 1.3)
+                                        .line_height(0.9)
+                                        .center()
+                                )
+                                .width(Length::Fill)
+                                .height(Length::Fill)
+                                .center_x(Length::Fill) 
+                                .center_y(Length::Fill) 
                             )
-                            .width(Length::Fill)
-                            .height(Length::Fill)
-                            .center_x(Length::Fill) 
-                            .center_y(Length::Fill) 
+                            .on_press(Message::RestartTheSystem)
+                            .style(move |_, status| {
+                                match status {
+                                    iced::widget::button::Status::Hovered => button::Style {
+                                        background: Some(Color::from_rgba(
+                                            theme.color3.r,
+                                            theme.color3.g,
+                                            theme.color3.b,
+                                            0.2
+                                        ).into()),
+                                        border: Border {
+                                            color: theme.color3,
+                                            width: 2.0,
+                                            radius: 0.0.into(),
+                                        },
+                                        ..Default::default()
+                                    },
+                                    _ => button::Style {
+                                        background: Some(Color::TRANSPARENT.into()),
+                                        border: Border {
+                                            color: theme.color1,
+                                            width: 2.0,
+                                            radius: 0.0.into(),
+                                        },
+                                        ..Default::default()
+                                    }
+                                }
+                            }),
                         )
-                        .on_press(Message::RestartTheSystem)
-                        .style(move |_, _| button::Style {
-                            background: Some(Color::TRANSPARENT.into()),
-                            ..Default::default()
-                        }),
-                    )
-                    .width(Length::Fixed(35.0))
-                    .height(Length::Fill)
-                    .style(move |_| container::Style {
-                        background: None,
-                        border: Border {
-                            color: theme.color1,
-                            width: 2.0,
-                            radius: 0.0.into(),
-                        },
-                        ..Default::default()
-                    }),
+                        .width(Length::Fixed(35.0))
+                        .height(Length::Fixed(35.0)),
 
-                    container(
-                        button(
-                            container(
-                                text("")
-                                    .color(theme.color2)
-                                    .font(font)
-                                    .size(font_size * 1.3)
-                                    .line_height(0.9)
-                                    .center()
+                        container(
+                            button(
+                                container(
+                                    text("󰐥")
+                                        .color(theme.color2)
+                                        .font(font)
+                                        .size(font_size * 1.3)
+                                        .line_height(0.9)
+                                        .center()
+                                )
+                                .width(Length::Fill)
+                                .height(Length::Fill)
+                                .center_x(Length::Fill) 
+                                .center_y(Length::Fill) 
                             )
-                            .width(Length::Fill)
-                            .height(Length::Fill)
-                            .center_x(Length::Fill) 
-                            .center_y(Length::Fill) 
+                            .on_press(Message::PowerOffTheSystem)
+                            .style(move |_, status| {
+                                match status {
+                                    iced::widget::button::Status::Hovered => button::Style {
+                                        background: Some(Color::from_rgba(
+                                            theme.color1.r,
+                                            theme.color1.g,
+                                            theme.color1.b,
+                                            0.2
+                                        ).into()),
+                                        border: Border {
+                                            color: theme.color1,
+                                            width: 2.0,
+                                            radius: 0.0.into(),
+                                        },
+                                        ..Default::default()
+                                    },
+                                    _ => button::Style {
+                                        background: Some(Color::TRANSPARENT.into()),
+                                        border: Border {
+                                            color: theme.color1,
+                                            width: 2.0,
+                                            radius: 0.0.into(),
+                                        },
+                                        ..Default::default()
+                                    }
+                                }
+                            }),
                         )
-                        .on_press(Message::PowerOffTheSystem)
-                        .style(move |_, _| button::Style {
-                            background: Some(Color::TRANSPARENT.into()),
-                            ..Default::default()
-                        }),
-                    )
-                    .width(Length::Fixed(35.0))
-                    .height(Length::Fill)
-                    .style(move |_| container::Style {
-                        background: None,
-                        border: Border {
-                            color: theme.color1,
-                            width: 2.0,
-                            radius: 0.0.into(),
-                        },
-                        ..Default::default()
-                    }),
-
-                ]
-                .spacing(5)
-            )
-            .padding(iced::padding::left(386).bottom(40).top(539))
-            .width(Length::Fill)
-            .height(Length::Fill)
+                        .width(Length::Fixed(35.0))
+                        .height(Length::Fixed(35.0)),
+                    ]
+                    .spacing(5)
+                )
+                .padding(iced::padding::left(386).bottom(40).top(539))
+                .width(Length::Fill)
+                .height(Length::Fill)
+            } else {
+                container(text(""))
+                    .width(Length::Shrink)
+                    .height(Length::Shrink)
+            }
         ]
     )
     .width(Length::Fill)

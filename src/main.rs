@@ -74,6 +74,7 @@ struct Launcher {
     last_services_refresh: Instant,
     frame_count: u32,
     title_animator: TitleAnimator,
+    control_center_visible: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -97,6 +98,10 @@ enum Message {
     WifiRefresh,
     BluetoothToggle,
     EyeCareToggle,
+    ToggleControlCenter,
+    PowerOffTheSystem,
+    RestartTheSystem,
+    SleepModeTheSystem,
     NoOp,
 }
 
@@ -174,6 +179,7 @@ impl Launcher {
             last_services_refresh: Instant::now(),
             frame_count: 0,
             title_animator,
+            control_center_visible: false,
         }, Command::none())
     }
 
@@ -194,31 +200,39 @@ impl Launcher {
     fn update(&mut self, message: Message) -> Command<Message> {
         use iced::keyboard;
         use keyboard::key::Named;
+        use iced::mouse;
 
         match message {
             Message::IcedEvent(event) => {
-                if let Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) = event {
-                    match key {
-                        keyboard::Key::Named(Named::Escape) => {
-                            std::process::exit(0);
+                match event {
+                    Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) => {
+                        match key {
+                            keyboard::Key::Named(Named::Escape) => {
+                                std::process::exit(0);
+                            }
+                            keyboard::Key::Named(Named::ArrowUp) => {
+                                let _ = self.app_list.update(app_list::Message::ArrowUp);
+                            }
+                            keyboard::Key::Named(Named::ArrowDown) => {
+                                let _ = self.app_list.update(app_list::Message::ArrowDown);
+                            }
+                            keyboard::Key::Named(Named::ArrowLeft) => {
+                                return Command::perform(async {}, |_| Message::CyclePanel(Direction::Left));
+                            }
+                            keyboard::Key::Named(Named::ArrowRight) => {
+                                return Command::perform(async {}, |_| Message::CyclePanel(Direction::Right));
+                            }
+                            keyboard::Key::Named(Named::Enter) => {
+                                let _ = self.app_list.update(app_list::Message::LaunchSelected);
+                            }
+                            _ => {}
                         }
-                        keyboard::Key::Named(Named::ArrowUp) => {
-                            let _ = self.app_list.update(app_list::Message::ArrowUp);
-                        }
-                        keyboard::Key::Named(Named::ArrowDown) => {
-                            let _ = self.app_list.update(app_list::Message::ArrowDown);
-                        }
-                        keyboard::Key::Named(Named::ArrowLeft) => {
-                            return Command::perform(async {}, |_| Message::CyclePanel(Direction::Left));
-                        }
-                        keyboard::Key::Named(Named::ArrowRight) => {
-                            return Command::perform(async {}, |_| Message::CyclePanel(Direction::Right));
-                        }
-                        keyboard::Key::Named(Named::Enter) => {
-                            let _ = self.app_list.update(app_list::Message::LaunchSelected);
-                        }
-                        _ => {}
                     }
+                    Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Right)) => {
+                        // Right-click to toggle control center
+                        self.control_center_visible = !self.control_center_visible;
+                    }
+                    _ => {}
                 }
 
                 Command::none()
@@ -368,6 +382,50 @@ impl Launcher {
                 Command::none()
             }
 
+            Message::ToggleControlCenter => {
+                self.control_center_visible = !self.control_center_visible;
+                Command::none()
+            }
+
+            Message::PowerOffTheSystem => {
+                // Hide control center when action is taken
+                self.control_center_visible = false;
+                
+                // Use systemctl which works without sudo on most modern systems
+                std::thread::spawn(|| {
+                    let _ = std::process::Command::new("systemctl")
+                        .arg("poweroff")
+                        .output();
+                });
+                Command::none()
+            }
+
+            Message::RestartTheSystem => {
+                // Hide control center when action is taken
+                self.control_center_visible = false;
+                
+                std::thread::spawn(|| {
+                    let _ = std::process::Command::new("systemctl")
+                        .arg("reboot")
+                        .output();
+                });
+                Command::none()
+            }
+
+            Message::SleepModeTheSystem => {
+                // Hide control center
+                self.control_center_visible = false;
+                
+                // Approach: Fork a shell command that will outlive the process
+                let _ = std::process::Command::new("bash")
+                    .arg("-c")
+                    .arg("(sleep 0.5 && systemctl suspend) &")
+                    .spawn();
+                
+                // Exit the launcher immediately
+                std::process::exit(0);
+            }
+
             Message::NoOp => Command::none(),
         }
     }
@@ -440,6 +498,7 @@ impl Launcher {
                             &self.music_player,
                             &self.system_panel,
                             &self.services_panel,
+                            self.control_center_visible,
                         ))
                         .height(Length::Fill)
                         .width(Length::Fill),
