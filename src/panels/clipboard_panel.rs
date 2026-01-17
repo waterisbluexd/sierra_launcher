@@ -4,7 +4,8 @@ use crate::utils::theme::Theme;
 use crate::Message;
 
 const PREVIEW_LINES: usize = 3;
-const CHARS_PER_LINE: usize = 45;
+const CHARS_PER_LINE: usize = 40;
+const WINDOW_SIZE: usize = 7; // Number of items to display at once (virtual scrolling)
 
 fn create_preview_lines(content: &str) -> Vec<String> {
     let mut lines = Vec::new();
@@ -75,7 +76,7 @@ pub fn clipboard_panel_view<'a>(
     // Get clipboard history items
     let items = crate::utils::data::search_items("");
     
-    // Build list similar to app_list
+    // Build list with virtual scrolling (same as app_list.rs)
     let mut list = column![].spacing(1);
     
     if items.is_empty() {
@@ -105,13 +106,37 @@ pub fn clipboard_panel_view<'a>(
             .center_x(Length::Fill)
         );
     } else {
+        // === VIRTUAL SCROLLING LOGIC (same as app_list.rs) ===
+        let mut window_start = 0;
+        
+        // Ensure selected item is within the visible window
+        // When selection reaches the last 2 items of window, slide window down
+        if selected_index >= window_start + WINDOW_SIZE - 1 {
+            window_start = (selected_index + 1).saturating_sub(WINDOW_SIZE);
+        }
+        // When selection reaches the first 2 items of window, slide window up
+        else if selected_index < window_start + 1 {
+            window_start = selected_index.saturating_sub(1);
+        }
+        
+        // Ensure window doesn't go past the end
+        let max_start = items.len().saturating_sub(WINDOW_SIZE);
+        if window_start > max_start {
+            window_start = max_start;
+        }
+        
+        // Calculate visible range
+        let window_end = (window_start + WINDOW_SIZE).min(items.len());
+        
         // Add empty line at top for spacing
         list = list.push(
             container(text(""))
                 .height(Length::Fixed(8.0))
         );
         
-        for (idx, item) in items.iter().enumerate() {
+        // === ONLY RENDER ITEMS WITHIN THE WINDOW ===
+        for idx in window_start..window_end {
+            let item = &items[idx];
             let content = item.full_content();
             let preview_lines = create_preview_lines(&content);
             
@@ -219,7 +244,7 @@ pub fn clipboard_panel_view<'a>(
                 )
                 .width(Length::Fill)
                 .height(Length::Fill)
-                .padding(iced::padding::top(15).right(15).left(15))
+                .padding(iced::padding::top(7).right(15).left(15).bottom(7))
                 .style(move |_| container::Style {
                     background: None,
                     ..Default::default()
