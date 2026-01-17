@@ -70,6 +70,7 @@ pub fn clipboard_panel_view<'a>(
             }),
         ]
     )
+    .padding(iced::padding::top(219))
     .width(Length::Fill)
     .height(Length::FillPortion(1))
     .style(move |_| container::Style {

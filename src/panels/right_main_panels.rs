@@ -38,6 +38,7 @@ pub fn right_main_panels_view<'a>(
     
     container(
         stack![
+            
             column![
             // ──────────────────────────────
             // Panel 1 - Clock, Weather, or Music
@@ -205,8 +206,11 @@ pub fn right_main_panels_view<'a>(
             }),
 
             ].spacing(5),
+
+            //if user press shift + arrow left or right it will cycle throught app to clipboard_panel_view
+            //clipboard will be hidden always only visible when cycle if clipboard app goes invisible 
+            clipboard_panel_view(theme, bg_with_alpha, font, font_size)
             
-            //clipboard_panel_view(theme, bg_with_alpha, font, font_size)
             // Control Center (only visible when toggled)
             if control_center_visible {
                 container(
