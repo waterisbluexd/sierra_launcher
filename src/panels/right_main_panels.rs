@@ -35,7 +35,8 @@ pub fn right_main_panels_view<'a>(
     };
     
     container(
-        column![
+        stack![
+            column![
             // ──────────────────────────────
             // Panel 1 - Clock, Weather, or Music
             // ──────────────────────────────
@@ -134,7 +135,7 @@ pub fn right_main_panels_view<'a>(
                             container(
                                 button(
                                     container(
-                                        text("")
+                                        text("") //if right click show this icon "" to toggole control center
                                             .color(theme.color2)
                                             .font(font)
                                             .size(font_size * 1.3)
@@ -146,7 +147,7 @@ pub fn right_main_panels_view<'a>(
                                     .center_x(Length::Fill) 
                                     .center_y(Length::Fill) 
                                 )
-                                .on_press(Message::MusicPlayPause)
+                                .on_press(Message::PowerOffTheSystem) //PowerOff only if right click didnt happen meaning no control center is opened its not toggled
                                 .style(move |_, _| button::Style {
                                     background: Some(Color::TRANSPARENT.into()),
                                     ..Default::default()
@@ -200,8 +201,116 @@ pub fn right_main_panels_view<'a>(
                 background: Some(bg_with_alpha.into()),
                 ..Default::default()
             }),
+        ].spacing(5),
+            ////////////////////contrtol center///////////////////////////
+        container(
+            column![
+                container(
+                        button(
+                            container(
+                                text("󰤄")
+                                    .color(theme.color2)
+                                    .font(font)
+                                    .size(font_size * 1.3)
+                                    .line_height(0.9)
+                                    .center()
+                            )
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                            .center_x(Length::Fill) 
+                            .center_y(Length::Fill) 
+                        )
+                        .on_press(Message::SleepModeTheSystem)
+                        .style(move |_, _| button::Style {
+                            background: Some(Color::TRANSPARENT.into()),
+                            ..Default::default()
+                        }),
+                    )
+                    .width(Length::Fixed(35.0))
+                    .height(Length::Fill)
+                    .style(move |_| container::Style {
+                        background: None,
+                        border: Border {
+                            color: theme.color1,
+                            width: 2.0,
+                            radius: 0.0.into(),
+                        },
+                        ..Default::default()
+                    }),
+
+                    container(
+                        button(
+                            container(
+                                text("󰜉")
+                                    .color(theme.color2)
+                                    .font(font)
+                                    .size(font_size * 1.3)
+                                    .line_height(0.9)
+                                    .center()
+                            )
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                            .center_x(Length::Fill) 
+                            .center_y(Length::Fill) 
+                        )
+                        .on_press(Message::RestartTheSystem)
+                        .style(move |_, _| button::Style {
+                            background: Some(Color::TRANSPARENT.into()),
+                            ..Default::default()
+                        }),
+                    )
+                    .width(Length::Fixed(35.0))
+                    .height(Length::Fill)
+                    .style(move |_| container::Style {
+                        background: None,
+                        border: Border {
+                            color: theme.color1,
+                            width: 2.0,
+                            radius: 0.0.into(),
+                        },
+                        ..Default::default()
+                    }),
+
+                    container(
+                        button(
+                            container(
+                                text("")
+                                    .color(theme.color2)
+                                    .font(font)
+                                    .size(font_size * 1.3)
+                                    .line_height(0.9)
+                                    .center()
+                            )
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                            .center_x(Length::Fill) 
+                            .center_y(Length::Fill) 
+                        )
+                        .on_press(Message::PowerOffTheSystem)
+                        .style(move |_, _| button::Style {
+                            background: Some(Color::TRANSPARENT.into()),
+                            ..Default::default()
+                        }),
+                    )
+                    .width(Length::Fixed(35.0))
+                    .height(Length::Fill)
+                    .style(move |_| container::Style {
+                        background: None,
+                        border: Border {
+                            color: theme.color1,
+                            width: 2.0,
+                            radius: 0.0.into(),
+                        },
+                        ..Default::default()
+                    }),
+
+                ]
+                .spacing(5)
+            )
+            .padding(iced::padding::left(386).bottom(40).top(539))
+            .width(Length::Fill)
+            .height(Length::Fill)
         ]
-        .spacing(5)
     )
     .width(Length::Fill)
     .height(Length::Fill)
