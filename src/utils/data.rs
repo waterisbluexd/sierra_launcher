@@ -1,25 +1,60 @@
-//! Clipboard history data storage and search.
+//! Clipboard history data storage and search with persistent caching.
 
 use super::item::{ClipboardContent, ClipboardItem};
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use std::collections::VecDeque;
 use std::sync::RwLock;
+use std::fs;
+use std::path::PathBuf;
+
+const CACHE_FILE: &str = ".cache/sierra/clipboard.cache";
+const MAX_HISTORY: usize = 50;
 
 /// Global clipboard history storage.
 static CLIPBOARD_HISTORY: RwLock<Option<VecDeque<ClipboardItem>>> = RwLock::new(None);
+
+fn get_cache_path() -> PathBuf {
+    dirs::home_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join(CACHE_FILE)
+}
+
+fn load_from_cache() -> VecDeque<ClipboardItem> {
+    let path = get_cache_path();
+    if let Ok(content) = fs::read(&path) {
+        if let Ok(items) = bincode::deserialize::<VecDeque<ClipboardItem>>(&content) {
+            eprintln!("Loaded {} items from clipboard cache", items.len());
+            return items;
+        }
+    }
+    VecDeque::new()
+}
+
+fn save_to_cache(history: &VecDeque<ClipboardItem>) {
+    let path = get_cache_path();
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    if let Ok(encoded) = bincode::serialize(history) {
+        if let Err(e) = fs::write(&path, encoded) {
+            eprintln!("Failed to save clipboard cache: {}", e);
+        } else {
+            eprintln!("Saved {} items to clipboard cache", history.len());
+        }
+    }
+}
 
 /// Initialize the clipboard history storage.
 pub fn init() {
     let mut history = CLIPBOARD_HISTORY.write().unwrap();
     if history.is_none() {
-        *history = Some(VecDeque::new());
+        *history = Some(load_from_cache());
     }
 }
 
 /// Add a new item to clipboard history.
 /// If the item is identical to the most recent one, it won't be added.
-/// Add a new item to clipboard history.
 pub fn add_item(content: ClipboardContent) {
     let mut history = CLIPBOARD_HISTORY.write().unwrap();
     let history = history.as_mut().expect("Clipboard history not initialized");
@@ -33,6 +68,14 @@ pub fn add_item(content: ClipboardContent) {
 
     let item = ClipboardItem::new(content);
     history.push_front(item);
+    
+    // Enforce max history limit
+    if history.len() > MAX_HISTORY {
+        history.truncate(MAX_HISTORY);
+    }
+    
+    // Save to cache after adding
+    save_to_cache(history);
     
     // Debug output
     eprintln!("Clipboard history: {} items", history.len());
@@ -96,11 +139,27 @@ pub fn item_count() -> usize {
     history.as_ref().map(|h| h.len()).unwrap_or(0)
 }
 
+/// Delete item at specific index
+pub fn delete_item(index: usize) -> bool {
+    let mut history = CLIPBOARD_HISTORY.write().unwrap();
+    let history = history.as_mut().expect("Clipboard history not initialized");
+    
+    if index < history.len() {
+        history.remove(index);
+        save_to_cache(history);
+        eprintln!("Deleted clipboard item at index {}, {} items remaining", index, history.len());
+        true
+    } else {
+        false
+    }
+}
+
 /// Clear all clipboard history.
-#[allow(dead_code)]
 pub fn clear_history() {
     let mut history = CLIPBOARD_HISTORY.write().unwrap();
     if let Some(h) = history.as_mut() {
         h.clear();
+        save_to_cache(h);
+        eprintln!("Cleared all clipboard history");
     }
 }

@@ -1,7 +1,69 @@
-use iced::widget::{container, text, stack, column, scrollable};
+use iced::widget::{container, text, stack, column, scrollable, row};
 use iced::{Element, Border, Color, Length};
 use crate::utils::theme::Theme;
 use crate::Message;
+
+const PREVIEW_LINES: usize = 3;
+const CHARS_PER_LINE: usize = 45;
+
+fn create_preview_lines(content: &str) -> Vec<String> {
+    let mut lines = Vec::new();
+    let mut current = String::new();
+    let mut exhausted = true;
+
+    for (i, word) in content.split_whitespace().enumerate() {
+        if lines.len() >= PREVIEW_LINES {
+            exhausted = false;
+            break;
+        }
+
+        let len = if current.is_empty() { 
+            word.len() 
+        } else { 
+            current.len() + 1 + word.len() 
+        };
+
+        if len <= CHARS_PER_LINE {
+            if !current.is_empty() { current.push(' '); }
+            current.push_str(word);
+        } else {
+            if !current.is_empty() {
+                lines.push(current.trim_end().to_string());
+                current = String::new();
+                if lines.len() >= PREVIEW_LINES { 
+                    exhausted = false; 
+                    break; 
+                }
+            }
+            if word.len() > CHARS_PER_LINE {
+                lines.push(format!("{}...", &word[..CHARS_PER_LINE.saturating_sub(3)]));
+                if i < content.split_whitespace().count() - 1 { 
+                    exhausted = false; 
+                }
+            } else { 
+                current.push_str(word); 
+            }
+        }
+    }
+
+    if !current.is_empty() && lines.len() < PREVIEW_LINES {
+        lines.push(current.trim_end().to_string());
+    }
+
+    if !exhausted && !lines.is_empty() {
+        if let Some(last) = lines.last_mut() {
+            if last.len() > CHARS_PER_LINE.saturating_sub(3) {
+                last.truncate(CHARS_PER_LINE.saturating_sub(3));
+            }
+            last.push_str("...");
+        }
+    }
+
+    if lines.is_empty() { 
+        lines.push("(empty)".to_string()); 
+    }
+    lines
+}
 
 pub fn clipboard_panel_view<'a>(
     theme: &'a Theme,
@@ -18,37 +80,109 @@ pub fn clipboard_panel_view<'a>(
     if items.is_empty() {
         list = list.push(
             container(
-                text("No clipboard history yet")
-                    .color(theme.color6)
-                    .font(font)
-                    .size(font_size)
+                column![
+                    text("No clipboard history yet")
+                        .color(theme.color6)
+                        .font(font)
+                        .size(font_size),
+                    text("")
+                        .size(font_size * 0.5),
+                    text("Copy something to get started!")
+                        .color(Color::from_rgba(
+                            theme.color6.r,
+                            theme.color6.g,
+                            theme.color6.b,
+                            0.5
+                        ))
+                        .font(font)
+                        .size(font_size * 0.8),
+                ]
+                .spacing(4)
             )
-            .padding(10)
+            .padding(20)
             .width(Length::Fill)
+            .center_x(Length::Fill)
         );
     } else {
+        // Add empty line at top for spacing
+        list = list.push(
+            container(text(""))
+                .height(Length::Fixed(8.0))
+        );
+        
         for (idx, item) in items.iter().enumerate() {
-            let preview = item.preview();
+            let content = item.full_content();
+            let preview_lines = create_preview_lines(&content);
+            
             let bg = if idx % 2 == 0 {
                 Some(Color::from_rgba(theme.color0.r, theme.color0.g, theme.color0.b, 0.1).into())
             } else {
                 None
             };
             
+            // Create multi-line preview
+            let mut item_column = column![].spacing(2);
+            
+            // First line with number
+            if let Some(first_line) = preview_lines.first() {
+                let first_line_text = first_line.clone(); // Clone to avoid lifetime issues
+                item_column = item_column.push(
+                    row![
+                        text(format!("{}. ", idx + 1))
+                            .font(font)
+                            .size(font_size * 0.8)
+                            .color(theme.color3),
+                        text(first_line_text)
+                            .font(font)
+                            .size(font_size * 0.8)
+                            .color(theme.foreground),
+                    ]
+                    .spacing(4)
+                );
+            }
+            
+            // Subsequent lines with indent
+            for line in preview_lines.iter().skip(1) {
+                let line_text = line.clone(); // Clone to avoid lifetime issues
+                item_column = item_column.push(
+                    row![
+                        text("   ")
+                            .font(font)
+                            .size(font_size * 0.8),
+                        text(line_text)
+                            .font(font)
+                            .size(font_size * 0.8)
+                            .color(theme.foreground),
+                    ]
+                    .spacing(4)
+                );
+            }
+            
+            // Add separator line
+            item_column = item_column.push(
+                container(text(""))
+                    .width(Length::Fill)
+                    .height(Length::Fixed(1.0))
+                    .style(move |_| container::Style {
+                        background: Some(Color::from_rgba(
+                            theme.color6.r,
+                            theme.color6.g,
+                            theme.color6.b,
+                            0.2
+                        ).into()),
+                        ..Default::default()
+                    })
+            );
+            
             list = list.push(
-                container(
-                    text(preview)
-                        .font(font)
-                        .size(font_size * 0.8)
-                        .color(theme.foreground)
-                )
-                .padding([4, 8])
-                .width(Length::Fill)
-                .style(move |_| container::Style {
-                    background: bg,
-                    border: Border::default(),
-                    ..Default::default()
-                })
+                container(item_column)
+                    .padding([6, 8])
+                    .width(Length::Fill)
+                    .style(move |_| container::Style {
+                        background: bg,
+                        border: Border::default(),
+                        ..Default::default()
+                    })
             );
         }
     }
@@ -80,7 +214,7 @@ pub fn clipboard_panel_view<'a>(
                 },
                 ..Default::default()
             }),
-
+            
             container(
                 container(
                     text(" Clipboard ")

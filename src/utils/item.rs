@@ -1,17 +1,18 @@
 //! Clipboard item data structures.
 
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::time::SystemTime;
 
 /// Represents a single clipboard history entry.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ClipboardItem {
     pub content: ClipboardContent,
     pub timestamp: SystemTime,
 }
 
 /// The content type of a clipboard item.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum ClipboardContent {
     /// Plain text content
     Text(String),
@@ -98,7 +99,7 @@ impl ClipboardItem {
     }
 }
 
-/// Truncate wihtout splitting emojis
+/// Truncate without splitting emojis
 fn truncate_preview_line(line: &str, max: usize) -> String {
     let truncated: String = line.chars().take(max).collect();
 
