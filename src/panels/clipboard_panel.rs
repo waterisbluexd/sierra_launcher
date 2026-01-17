@@ -212,18 +212,20 @@ pub fn clipboard_panel_view<'a>(
         stack![
             container(
                 container(
+                container(
                     scrollable(list)
                         .width(Length::Fill)
                         .height(Length::Fill)
                 )
                 .width(Length::Fill)
                 .height(Length::Fill)
-                .padding(iced::padding::top(30).right(15).left(15))
+                .padding(iced::padding::top(15).right(15).left(15))
                 .style(move |_| container::Style {
                     background: None,
                     ..Default::default()
                 }),
             )
+            .padding(iced::padding::top(0))
             .height(Length::Fill)
             .width(Length::Fill)
             .style(move |_| container::Style {
@@ -235,6 +237,10 @@ pub fn clipboard_panel_view<'a>(
                 },
                 ..Default::default()
             }),
+            )
+            .padding(iced::padding::top(10))
+            .width(Length::Fill)
+            .height(Length::Fill),
             
             container(
                 container(
@@ -259,7 +265,7 @@ pub fn clipboard_panel_view<'a>(
             }),
         ]
     )
-    .padding(iced::padding::top(219))
+    .padding(iced::padding::top(218))
     .width(Length::Fill)
     .height(Length::FillPortion(1))
     .style(move |_| container::Style {
