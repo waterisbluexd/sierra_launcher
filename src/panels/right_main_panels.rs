@@ -136,7 +136,7 @@ pub fn right_main_panels_view<'a>(
                             container(
                                 button(
                                     container(
-                                        text(if control_center_visible { "" } else { "󰐥" })
+                                        text(if control_center_visible { "" } else { "" })
                                             .color(theme.color2)
                                             .font(font)
                                             .size(font_size * 1.3)
@@ -305,7 +305,7 @@ pub fn right_main_panels_view<'a>(
                         container(
                             button(
                                 container(
-                                    text("󰐥")
+                                    text("")
                                         .color(theme.color2)
                                         .font(font)
                                         .size(font_size * 1.3)
