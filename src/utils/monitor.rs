@@ -1,4 +1,4 @@
-//! Clipboard monitoring using simple polling.
+//! Clipboard monitoring using simple polling with pause/resume support.
 
 use super::data;
 use super::item::ClipboardContent;
@@ -8,6 +8,21 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 use tracing::{debug, error, info};
+
+// Global pause flag
+static MONITORING_PAUSED: AtomicBool = AtomicBool::new(false);
+
+/// Pause clipboard monitoring (used when copying from history)
+pub fn pause_monitoring() {
+    MONITORING_PAUSED.store(true, Ordering::Relaxed);
+    debug!("Clipboard monitoring paused");
+}
+
+/// Resume clipboard monitoring
+pub fn resume_monitoring() {
+    MONITORING_PAUSED.store(false, Ordering::Relaxed);
+    debug!("Clipboard monitoring resumed");
+}
 
 /// Start monitoring clipboard changes in a background thread.
 pub fn start_monitor() -> Arc<AtomicBool> {
@@ -27,6 +42,11 @@ pub fn start_monitor() -> Arc<AtomicBool> {
             
             // Poll clipboard every 500ms
             thread::sleep(Duration::from_millis(500));
+            
+            // Skip if monitoring is paused
+            if MONITORING_PAUSED.load(Ordering::Relaxed) {
+                continue;
+            }
             
             // Try to read clipboard
             match Clipboard::new() {

@@ -107,6 +107,7 @@ enum Message {
     ClipboardArrowUp,
     ClipboardArrowDown,
     ClipboardSelect,
+    ClipboardDelete,
     NoOp,
 }
 
@@ -161,12 +162,6 @@ impl Launcher {
         let system_panel = SystemPanel::new();
         let services_panel = ServicesPanel::new();
 
-        // AnimationMode::Rainbow
-        // AnimationMode::Wave
-        // AnimationMode::InOutWave
-        // AnimationMode::Pulse
-        // AnimationMode::Sparkle
-        // AnimationMode::Gradient
         let title_animator = TitleAnimator::new()
             .with_mode(AnimationMode::Wave)
             .with_speed(80);
@@ -235,7 +230,6 @@ impl Launcher {
                             }
                             keyboard::Key::Named(Named::ArrowLeft) => {
                                 if modifiers.shift() {
-                                    // Shift+Left: Toggle clipboard panel
                                     self.clipboard_visible = !self.clipboard_visible;
                                 } else {
                                     return Command::perform(async {}, |_| Message::CyclePanel(Direction::Left));
@@ -243,7 +237,6 @@ impl Launcher {
                             }
                             keyboard::Key::Named(Named::ArrowRight) => {
                                 if modifiers.shift() {
-                                    // Shift+Right: Toggle clipboard panel
                                     self.clipboard_visible = !self.clipboard_visible;
                                 } else {
                                     return Command::perform(async {}, |_| Message::CyclePanel(Direction::Right));
@@ -256,11 +249,15 @@ impl Launcher {
                                     let _ = self.app_list.update(app_list::Message::LaunchSelected);
                                 }
                             }
+                            keyboard::Key::Character(c) => {
+                                if self.clipboard_visible && modifiers.control() && c.as_str() == "d" {
+                                    return Command::perform(async {}, |_| Message::ClipboardDelete);
+                                }
+                            }
                             _ => {}
                         }
                     }
                     Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Right)) => {
-                        // Right-click to toggle control center
                         self.control_center_visible = !self.control_center_visible;
                     }
                     _ => {}
@@ -272,10 +269,8 @@ impl Launcher {
             Message::CheckColors => {
                 self.frame_count += 1;
                 
-                // Update title animation
                 self.title_animator.update();
                 
-                // Only check colors every 60 frames (~1 second at 60fps)
                 let now = Instant::now();
                 if now.duration_since(self.last_color_check) > Duration::from_secs(1) {
                     self.last_color_check = now;
@@ -289,11 +284,9 @@ impl Launcher {
                     }
                 }
                 
-                // Refresh WiFi and Bluetooth status every 5 seconds only
                 if now.duration_since(self.last_services_refresh) > Duration::from_secs(5) {
                     self.last_services_refresh = now;
                     
-                    // Only refresh if Services panel is active
                     if self.current_panel == Panel::Services {
                         self.services_panel.schedule_refresh();
                     }
@@ -335,7 +328,6 @@ impl Launcher {
                     (Panel::Weather, Direction::Left) => Panel::Clock,
                 };
                 
-                // Trigger immediate refresh when switching to Services panel
                 if self.current_panel == Panel::Services {
                     self.services_panel.schedule_refresh();
                 }
@@ -419,10 +411,8 @@ impl Launcher {
             }
 
             Message::PowerOffTheSystem => {
-                // Hide control center when action is taken
                 self.control_center_visible = false;
                 
-                // Use systemctl which works without sudo on most modern systems
                 std::thread::spawn(|| {
                     let _ = std::process::Command::new("systemctl")
                         .arg("poweroff")
@@ -432,7 +422,6 @@ impl Launcher {
             }
 
             Message::RestartTheSystem => {
-                // Hide control center when action is taken
                 self.control_center_visible = false;
                 
                 std::thread::spawn(|| {
@@ -444,16 +433,13 @@ impl Launcher {
             }
 
             Message::SleepModeTheSystem => {
-                // Hide control center
                 self.control_center_visible = false;
                 
-                // Approach: Fork a shell command that will outlive the process
                 let _ = std::process::Command::new("bash")
                     .arg("-c")
                     .arg("(sleep 0.5 && systemctl suspend) &")
                     .spawn();
                 
-                // Exit the launcher immediately
                 std::process::exit(0);
             }
 
@@ -475,11 +461,35 @@ impl Launcher {
             Message::ClipboardSelect => {
                 let items = crate::utils::data::search_items("");
                 if let Some(item) = items.get(self.clipboard_selected_index) {
-                    // Copy selected item to clipboard
                     use arboard::Clipboard;
                     if let Ok(mut clipboard) = Clipboard::new() {
                         let content = item.full_content();
+                        
+                        // Pause monitoring to prevent re-storing
+                        crate::utils::monitor::pause_monitoring();
+                        
                         let _ = clipboard.set_text(content);
+                        
+                        // Resume after delay
+                        std::thread::spawn(|| {
+                            std::thread::sleep(std::time::Duration::from_millis(500));
+                            crate::utils::monitor::resume_monitoring();
+                        });
+                    }
+                }
+                Command::none()
+            }
+
+            Message::ClipboardDelete => {
+                let items = crate::utils::data::search_items("");
+                if !items.is_empty() && self.clipboard_selected_index < items.len() {
+                    crate::utils::data::delete_item(self.clipboard_selected_index);
+                    
+                    let new_count = crate::utils::data::item_count();
+                    if self.clipboard_selected_index >= new_count && new_count > 0 {
+                        self.clipboard_selected_index = new_count - 1;
+                    } else if new_count == 0 {
+                        self.clipboard_selected_index = 0;
                     }
                 }
                 Command::none()
@@ -501,7 +511,6 @@ impl Launcher {
 
         let font_size = self.config.font_size.unwrap_or(22.0);
         
-        // Create animated vertical text with individual character colors
         let title_text = " sierra-launcher ";
         let total_chars = title_text.chars().count();
         let mut title_column = column![].spacing(0);

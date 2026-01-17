@@ -5,7 +5,7 @@ use crate::Message;
 
 const PREVIEW_LINES: usize = 3;
 const CHARS_PER_LINE: usize = 40;
-const WINDOW_SIZE: usize = 7; // Number of items to display at once (virtual scrolling)
+const WINDOW_SIZE: usize = 7; // Virtual scrolling - only render 7 items at a time
 
 fn create_preview_lines(content: &str) -> Vec<String> {
     let mut lines = Vec::new();
