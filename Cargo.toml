@@ -18,7 +18,7 @@ reqwest = { version = "0.11", features = ["blocking", "json"] }
 dirs = "5.0"
 mpris = "2.0"
 lazy_static = "1.4"
-arboard = "3.4"
+arboard = { version = "3.4", features = ["wayland-data-control"] }  # ← Added wayland-data-control feature
 wayland-client = "0.31"
 wayland-protocols-wlr = "0.3"
 tracing = "0.1"

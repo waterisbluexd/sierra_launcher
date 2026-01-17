@@ -19,6 +19,7 @@ pub fn init() {
 
 /// Add a new item to clipboard history.
 /// If the item is identical to the most recent one, it won't be added.
+/// Add a new item to clipboard history.
 pub fn add_item(content: ClipboardContent) {
     let mut history = CLIPBOARD_HISTORY.write().unwrap();
     let history = history.as_mut().expect("Clipboard history not initialized");
@@ -32,6 +33,9 @@ pub fn add_item(content: ClipboardContent) {
 
     let item = ClipboardItem::new(content);
     history.push_front(item);
+    
+    // Debug output
+    eprintln!("Clipboard history: {} items", history.len());
 }
 
 /// Check if two clipboard contents are the same.

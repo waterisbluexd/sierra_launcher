@@ -63,7 +63,7 @@ pub fn clipboard_panel_view<'a>(
                 )
                 .width(Length::Fill)
                 .height(Length::Fill)
-                .padding(iced::padding::top(15).right(15).left(15))
+                .padding(iced::padding::top(30).right(15).left(15))
                 .style(move |_| container::Style {
                     background: None,
                     ..Default::default()
@@ -78,20 +78,6 @@ pub fn clipboard_panel_view<'a>(
                     width: 2.0,
                     radius: 0.0.into(),
                 },
-                ..Default::default()
-            }),
-            
-            container(
-                text(" Clipboard ")
-                    .color(theme.color6)
-                    .font(font)
-                    .size(font_size)
-            )
-            .padding(iced::padding::top(9))
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .style(move |_| container::Style {
-                background: None,
                 ..Default::default()
             }),
 
