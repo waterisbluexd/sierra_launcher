@@ -11,6 +11,7 @@ use crate::panels::system;
 use crate::panels::services;
 use super::mpris_player::MusicPlayer;
 use crate::panels::system::system_panel_view;
+use crate::panels::clipboard_panel::clipboard_panel_view;
 use crate::Panel;
 
 pub fn right_main_panels_view<'a>(
@@ -202,8 +203,10 @@ pub fn right_main_panels_view<'a>(
                 background: Some(bg_with_alpha.into()),
                 ..Default::default()
             }),
-        ].spacing(5),
+
+            ].spacing(5),
             
+            //clipboard_panel_view(theme, bg_with_alpha, font, font_size)
             // Control Center (only visible when toggled)
             if control_center_visible {
                 container(
@@ -311,7 +314,7 @@ pub fn right_main_panels_view<'a>(
                             .style(move |_, status| {
                                 match status {
                                     iced::widget::button::Status::Hovered => button::Style {
-                                        background:Some(bg_with_alpha.into()),
+                                        background: Some(bg_with_alpha.into()),
                                         border: Border {
                                             color: theme.color7,
                                             width: 2.0,

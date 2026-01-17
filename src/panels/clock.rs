@@ -10,17 +10,14 @@ pub fn clock_panel_view<'a>(
     font: iced::Font,
     font_size: f32,
 ) -> Element<'a, Message> {
-    // Get current time
     let now = Local::now();
     let time_str = now.format("%H:%M").to_string(); // 24-hour format
     let date_str = now.format("%A, %B %d").to_string();
-    
-    // Simple large text clock
     let clock_content = column![
         text(time_str)
             .color(theme.color6)
             .font(font)
-            .size(font_size * 7.0)  // Much larger font - adjust as needed
+            .size(font_size * 7.0)  
             .line_height(1.3),
         text(date_str)
             .color(theme.color6)
@@ -35,7 +32,6 @@ pub fn clock_panel_view<'a>(
     container(
         container(
             stack![
-                // Background + content container
                 container(
                     container(clock_content)
                         .width(Length::Fill)
