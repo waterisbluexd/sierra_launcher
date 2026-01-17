@@ -432,7 +432,7 @@ impl Launcher {
 
     fn view(&self) -> Element<'_, Message> {
         let bg = self.theme.background;
-        let bg_with_alpha = Color::from_rgba(bg.r, bg.g, bg.b, 1.0);
+        let bg_with_alpha = Color::from_rgb(bg.r, bg.g, bg.b);
 
         let font = match self.config.font.as_deref() {
             Some("Monocraft") => Font::with_name("Monocraft"),

@@ -136,8 +136,8 @@ pub fn right_main_panels_view<'a>(
                             container(
                                 button(
                                     container(
-                                        text(if control_center_visible { "" } else { "" })
-                                            .color(theme.color2)
+                                        text(if control_center_visible { "󰁝" } else { "" })
+                                            .color(theme.color6)
                                             .font(font)
                                             .size(font_size * 1.3)
                                             .line_height(0.9)
@@ -212,7 +212,7 @@ pub fn right_main_panels_view<'a>(
                             button(
                                 container(
                                     text("󰤄")
-                                        .color(theme.color2)
+                                        .color(theme.color6)
                                         .font(font)
                                         .size(font_size * 1.3)
                                         .line_height(0.9)
@@ -227,21 +227,16 @@ pub fn right_main_panels_view<'a>(
                             .style(move |_, status| {
                                 match status {
                                     iced::widget::button::Status::Hovered => button::Style {
-                                        background: Some(Color::from_rgba(
-                                            theme.color2.r,
-                                            theme.color2.g,
-                                            theme.color2.b,
-                                            0.2
-                                        ).into()),
+                                        background: Some(bg_with_alpha.into()),
                                         border: Border {
-                                            color: theme.color2,
+                                            color: theme.color7,
                                             width: 2.0,
                                             radius: 0.0.into(),
                                         },
                                         ..Default::default()
                                     },
                                     _ => button::Style {
-                                        background: Some(Color::TRANSPARENT.into()),
+                                        background: Some(bg_with_alpha.into()),
                                         border: Border {
                                             color: theme.color1,
                                             width: 2.0,
@@ -259,7 +254,7 @@ pub fn right_main_panels_view<'a>(
                             button(
                                 container(
                                     text("󰜉")
-                                        .color(theme.color2)
+                                        .color(theme.color6)
                                         .font(font)
                                         .size(font_size * 1.3)
                                         .line_height(0.9)
@@ -274,21 +269,16 @@ pub fn right_main_panels_view<'a>(
                             .style(move |_, status| {
                                 match status {
                                     iced::widget::button::Status::Hovered => button::Style {
-                                        background: Some(Color::from_rgba(
-                                            theme.color3.r,
-                                            theme.color3.g,
-                                            theme.color3.b,
-                                            0.2
-                                        ).into()),
+                                        background: Some(bg_with_alpha.into()),
                                         border: Border {
-                                            color: theme.color3,
+                                            color: theme.color7,
                                             width: 2.0,
                                             radius: 0.0.into(),
                                         },
                                         ..Default::default()
                                     },
                                     _ => button::Style {
-                                        background: Some(Color::TRANSPARENT.into()),
+                                        background: Some(bg_with_alpha.into()),
                                         border: Border {
                                             color: theme.color1,
                                             width: 2.0,
@@ -306,7 +296,7 @@ pub fn right_main_panels_view<'a>(
                             button(
                                 container(
                                     text("")
-                                        .color(theme.color2)
+                                        .color(theme.color6)
                                         .font(font)
                                         .size(font_size * 1.3)
                                         .line_height(0.9)
@@ -321,21 +311,16 @@ pub fn right_main_panels_view<'a>(
                             .style(move |_, status| {
                                 match status {
                                     iced::widget::button::Status::Hovered => button::Style {
-                                        background: Some(Color::from_rgba(
-                                            theme.color1.r,
-                                            theme.color1.g,
-                                            theme.color1.b,
-                                            0.2
-                                        ).into()),
+                                        background:Some(bg_with_alpha.into()),
                                         border: Border {
-                                            color: theme.color1,
+                                            color: theme.color7,
                                             width: 2.0,
                                             radius: 0.0.into(),
                                         },
                                         ..Default::default()
                                     },
                                     _ => button::Style {
-                                        background: Some(Color::TRANSPARENT.into()),
+                                        background: Some(bg_with_alpha.into()),
                                         border: Border {
                                             color: theme.color1,
                                             width: 2.0,
