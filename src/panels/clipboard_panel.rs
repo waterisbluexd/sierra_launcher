@@ -28,11 +28,6 @@ pub fn clipboard_panel_view<'a>(
         );
     } else {
         for (idx, item) in items.iter().enumerate() {
-            // Skip images for now as requested
-            if matches!(item.content, crate::utils::item::ClipboardContent::Image { .. }) {
-                continue;
-            }
-            
             let preview = item.preview();
             let bg = if idx % 2 == 0 {
                 Some(Color::from_rgba(theme.color0.r, theme.color0.g, theme.color0.b, 0.1).into())
@@ -44,7 +39,7 @@ pub fn clipboard_panel_view<'a>(
                 container(
                     text(preview)
                         .font(font)
-                        .size(font_size * 0.9)
+                        .size(font_size * 0.8)
                         .color(theme.foreground)
                 )
                 .padding([4, 8])

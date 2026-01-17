@@ -15,12 +15,6 @@ pub struct ClipboardItem {
 pub enum ClipboardContent {
     /// Plain text content
     Text(String),
-    /// Image data with dimensions (raw RGBA pixel data)
-    Image {
-        width: usize,
-        height: usize,
-        rgba_bytes: Vec<u8>,
-    },
     /// File path(s) copied from file manager
     FilePaths(Vec<PathBuf>),
     /// Rich text / HTML content
@@ -45,7 +39,6 @@ impl ClipboardItem {
                 let first_line = text.lines().next().unwrap_or("");
                 truncate_preview_line(first_line, MAX_LENGTH)
             }
-            ClipboardContent::Image { .. } => "[Image]".to_string(),
             ClipboardContent::FilePaths(paths) => {
                 if paths.len() == 1 {
                     paths[0]
@@ -68,7 +61,6 @@ impl ClipboardItem {
     pub fn full_content(&self) -> String {
         match &self.content {
             ClipboardContent::Text(text) => text.clone(),
-            ClipboardContent::Image { .. } => "[Image preview]".to_string(),
             ClipboardContent::FilePaths(paths) => paths
                 .iter()
                 .filter_map(|p| p.to_str())
@@ -80,26 +72,27 @@ impl ClipboardItem {
 
     /// Check if this item is a text file that can be previewed.
     pub fn is_previewable_file(&self) -> bool {
-        if let ClipboardContent::FilePaths(paths) = &self.content
-            && paths.len() == 1
-            && let Some(ext) = paths[0].extension().and_then(|e| e.to_str())
-        {
-            return matches!(
-                ext,
-                "txt"
-                    | "md"
-                    | "rs"
-                    | "py"
-                    | "js"
-                    | "ts"
-                    | "json"
-                    | "yaml"
-                    | "yml"
-                    | "toml"
-                    | "html"
-                    | "css"
-                    | "sh"
-            );
+        if let ClipboardContent::FilePaths(paths) = &self.content {
+            if paths.len() == 1 {
+                if let Some(ext) = paths[0].extension().and_then(|e| e.to_str()) {
+                    return matches!(
+                        ext,
+                        "txt"
+                            | "md"
+                            | "rs"
+                            | "py"
+                            | "js"
+                            | "ts"
+                            | "json"
+                            | "yaml"
+                            | "yml"
+                            | "toml"
+                            | "html"
+                            | "css"
+                            | "sh"
+                    );
+                }
+            }
         }
         false
     }
