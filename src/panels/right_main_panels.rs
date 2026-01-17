@@ -209,7 +209,7 @@ pub fn right_main_panels_view<'a>(
 
             //if user press shift + arrow left or right it will cycle throught app to clipboard_panel_view
             //clipboard will be hidden always only visible when cycle if clipboard app goes invisible 
-            clipboard_panel_view(theme, bg_with_alpha, font, font_size)
+            clipboard_panel_view(theme, bg_with_alpha, font, font_size),
             
             // Control Center (only visible when toggled)
             if control_center_visible {
