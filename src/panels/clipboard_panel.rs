@@ -1,4 +1,4 @@
-use iced::widget::{container, text, column, stack};
+use iced::widget::{container, text, stack};
 use iced::{Element, Border, Color, Length};
 use crate::utils::theme::Theme;
 use crate::Message;

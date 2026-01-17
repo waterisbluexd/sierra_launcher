@@ -75,6 +75,7 @@ struct Launcher {
     frame_count: u32,
     title_animator: TitleAnimator,
     control_center_visible: bool,
+    clipboard_visible: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -156,7 +157,7 @@ impl Launcher {
 
         // AnimationMode::Rainbow
         // AnimationMode::Wave
-        // AnimationMode::In_Out_Wave
+        // AnimationMode::InOutWave
         // AnimationMode::Pulse
         // AnimationMode::Sparkle
         // AnimationMode::Gradient
@@ -180,6 +181,7 @@ impl Launcher {
             frame_count: 0,
             title_animator,
             control_center_visible: false,
+            clipboard_visible: false,
         }, Command::none())
     }
 
@@ -205,7 +207,7 @@ impl Launcher {
         match message {
             Message::IcedEvent(event) => {
                 match event {
-                    Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) => {
+                    Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, .. }) => {
                         match key {
                             keyboard::Key::Named(Named::Escape) => {
                                 std::process::exit(0);
@@ -217,10 +219,20 @@ impl Launcher {
                                 let _ = self.app_list.update(app_list::Message::ArrowDown);
                             }
                             keyboard::Key::Named(Named::ArrowLeft) => {
-                                return Command::perform(async {}, |_| Message::CyclePanel(Direction::Left));
+                                if modifiers.shift() {
+                                    // Shift+Left: Toggle clipboard panel
+                                    self.clipboard_visible = !self.clipboard_visible;
+                                } else {
+                                    return Command::perform(async {}, |_| Message::CyclePanel(Direction::Left));
+                                }
                             }
                             keyboard::Key::Named(Named::ArrowRight) => {
-                                return Command::perform(async {}, |_| Message::CyclePanel(Direction::Right));
+                                if modifiers.shift() {
+                                    // Shift+Right: Toggle clipboard panel
+                                    self.clipboard_visible = !self.clipboard_visible;
+                                } else {
+                                    return Command::perform(async {}, |_| Message::CyclePanel(Direction::Right));
+                                }
                             }
                             keyboard::Key::Named(Named::Enter) => {
                                 let _ = self.app_list.update(app_list::Message::LaunchSelected);
@@ -499,6 +511,7 @@ impl Launcher {
                             &self.system_panel,
                             &self.services_panel,
                             self.control_center_visible,
+                            self.clipboard_visible,
                         ))
                         .height(Length::Fill)
                         .width(Length::Fill),

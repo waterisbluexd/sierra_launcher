@@ -27,6 +27,7 @@ pub fn right_main_panels_view<'a>(
     system_panel: &'a system::SystemPanel,
     services_panel: &'a services::ServicesPanel,
     control_center_visible: bool,
+    clipboard_visible: bool,
 ) -> Element<'a, Message> {
     let current_view = match current_panel {
         Panel::Clock => clock::clock_panel_view(theme, bg_with_alpha, font, font_size),
@@ -45,171 +46,199 @@ pub fn right_main_panels_view<'a>(
             // ──────────────────────────────
             current_view,
             // ──────────────────────────────
-            // Panel 2 (FIXED)
+            // Panel 2 (Apps) - Hidden when clipboard is visible
             // ──────────────────────────────
-            container(
-                stack![
-                    container(
+            if !clipboard_visible {
+                container(
+                    stack![
                         container(
                             container(
-                                app_list.view(theme, font, font_size).map(Message::AppListMessage)
+                                container(
+                                    app_list.view(theme, font, font_size).map(Message::AppListMessage)
+                                )
+                                .width(Length::Fill)
+                                .height(Length::Fill)
+                                .padding(iced::padding::top(15).right(15).left(15))
+                                .style(move |_| container::Style {
+                                    background: None,
+                                    ..Default::default()
+                                }),
                             )
+                                .height(Length::Fill)
+                                .width(Length::Fill)
+                                .style(move |_| container::Style {
+                                    background: None,
+                                    border: Border {
+                                        color: theme.color3,
+                                        width: 2.0,
+                                        radius: 0.0.into(),
+                                    },
+                                    ..Default::default()
+                                }),
+                        )
+                        .padding(iced::padding::top(9))
                             .width(Length::Fill)
                             .height(Length::Fill)
-                            .padding(iced::padding::top(15).right(15).left(15))
                             .style(move |_| container::Style {
                                 background: None,
+                                ..Default::default()
+                            }),
+
+                        container(
+                            container( 
+                                text(" Apps ")
+                                    .color(theme.color6)
+                                    .font(font)
+                                    .size(font_size)
+                            )
+                            .width(Length::Shrink)
+                            .height(Length::Shrink)
+                            .style(move |_| container::Style {
+                                background: Some(bg_with_alpha.into()),
                                 ..Default::default()
                             }),
                         )
-                            .height(Length::Fill)
-                            .width(Length::Fill)
-                            .style(move |_| container::Style {
-                                background: None,
-                                border: Border {
-                                    color: theme.color3,
-                                    width: 2.0,
-                                    radius: 0.0.into(),
-                                },
-                                ..Default::default()
-                            }),
-                    )
-                    .padding(iced::padding::top(9))
-                        .width(Length::Fill)
-                        .height(Length::Fill)
+                        .padding(iced::padding::left(8))
+                        .width(Length::Shrink)
+                        .height(Length::Shrink)
                         .style(move |_| container::Style {
                             background: None,
                             ..Default::default()
                         }),
+                    ]
+                )
+                .width(Length::Fill)
+                .height(Length::FillPortion(2))
+                .style(move |_| container::Style {
+                    background: None,
+                    ..Default::default()
+                })
+            } else {
+                // Empty placeholder when clipboard is visible
+                container(text(""))
+                    .width(Length::Fill)
+                    .height(Length::FillPortion(2))
+                    .style(move |_| container::Style {
+                        background: None,
+                        ..Default::default()
+                    })
+            },
 
-                    container(
-                        container( 
-                            text(" Apps ")
-                                .color(theme.color6)
-                                .font(font)
-                                .size(font_size)
+            // ──────────────────────────────
+            // Panel 3 (Input/Search bar) - Hidden when clipboard is visible
+            // ──────────────────────────────
+            if !clipboard_visible {
+                container(
+                    stack![
+                        container(
+                            row![
+                                // Search Bar container
+                                container(
+                                    search_bar.view(theme, font, font_size).map(Message::SearchBarMessage)
+                                )
+                                .width(Length::FillPortion(1))
+                                .height(Length::Fixed(35.0))
+                                .style(move |_| container::Style {
+                                    background: Some(bg_with_alpha.into()),
+                                    border: Border {
+                                        color: theme.color6,
+                                        width: 2.0,
+                                        radius: 0.0.into(),
+                                    },
+                                    ..Default::default()
+                                }),
+
+                                container(
+                                    button(
+                                        container(
+                                            text(if control_center_visible { "󰁝" } else { "" })
+                                                .color(theme.color6)
+                                                .font(font)
+                                                .size(font_size * 1.3)
+                                                .line_height(0.9)
+                                                .center()
+                                        )
+                                        .width(Length::Fill)
+                                        .height(Length::Fill)
+                                        .center_x(Length::Fill) 
+                                        .center_y(Length::Fill) 
+                                    )
+                                    .on_press(Message::ToggleControlCenter)
+                                    .style(move |_, _| button::Style {
+                                        background: Some(Color::TRANSPARENT.into()),
+                                        ..Default::default()
+                                    }),
+                                )
+                                .width(Length::Fixed(35.0))
+                                .height(Length::Fill)
+                                .style(move |_| container::Style {
+                                    background: None,
+                                    border: Border {
+                                        color: theme.color1,
+                                        width: 2.0,
+                                        radius: 0.0.into(),
+                                    },
+                                    ..Default::default()
+                                }),
+                            ]
+                            .spacing(5)
+                            .height(Length::Fill)
                         )
-                        .width(Length::Shrink)
-                        .height(Length::Shrink)
+                        .padding(iced::padding::top(10))
+                        .width(Length::Fill)
+                        .height(Length::Fill)
                         .style(move |_| container::Style {
                             background: Some(bg_with_alpha.into()),
                             ..Default::default()
                         }),
-                    )
-                    .padding(iced::padding::left(8))
-                    .width(Length::Shrink)
-                    .height(Length::Shrink)
+
+                        container(
+                            container(
+                                text(" Input ")
+                                    .color(theme.color6)
+                                    .font(font)
+                                    .size(font_size)
+                            )
+                            .width(Length::Shrink)
+                            .height(Length::Shrink)
+                            .style(move |_| container::Style {
+                                background: Some(bg_with_alpha.into()),
+                                ..Default::default()
+                            })
+                        )
+                        .padding(iced::padding::bottom(30).left(8))
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                    ]
+                )
+                .width(Length::Fill)
+                .height(Length::Fixed(45.0))
+                .style(move |_| container::Style {
+                    background: Some(bg_with_alpha.into()),
+                    ..Default::default()
+                })
+            } else {
+                // Empty placeholder when clipboard is visible
+                container(text(""))
+                    .width(Length::Fill)
+                    .height(Length::Fixed(45.0))
                     .style(move |_| container::Style {
                         background: None,
                         ..Default::default()
-                    }),
-                ]
-            )
-            .width(Length::Fill)
-            .height(Length::FillPortion(2))
-            .style(move |_| container::Style {
-                background: None,
-                ..Default::default()
-            }),
-
-            // ──────────────────────────────
-            // Panel 3 (stacked layers)
-            // ──────────────────────────────
-            container(
-                stack![
-                    container(
-                        row![
-                            // Search Bar container
-                            container(
-                                search_bar.view(theme, font, font_size).map(Message::SearchBarMessage)
-                            )
-                            .width(Length::FillPortion(1))
-                            .height(Length::Fixed(35.0))
-                            .style(move |_| container::Style {
-                                background: Some(bg_with_alpha.into()),
-                                border: Border {
-                                    color: theme.color6,
-                                    width: 2.0,
-                                    radius: 0.0.into(),
-                                },
-                                ..Default::default()
-                            }),
-
-                            container(
-                                button(
-                                    container(
-                                        text(if control_center_visible { "󰁝" } else { "" })
-                                            .color(theme.color6)
-                                            .font(font)
-                                            .size(font_size * 1.3)
-                                            .line_height(0.9)
-                                            .center()
-                                    )
-                                    .width(Length::Fill)
-                                    .height(Length::Fill)
-                                    .center_x(Length::Fill) 
-                                    .center_y(Length::Fill) 
-                                )
-                                .on_press(Message::ToggleControlCenter)
-                                .style(move |_, _| button::Style {
-                                    background: Some(Color::TRANSPARENT.into()),
-                                    ..Default::default()
-                                }),
-                            )
-                            .width(Length::Fixed(35.0))
-                            .height(Length::Fill)
-                            .style(move |_| container::Style {
-                                background: None,
-                                border: Border {
-                                    color: theme.color1,
-                                    width: 2.0,
-                                    radius: 0.0.into(),
-                                },
-                                ..Default::default()
-                            }),
-                        ]
-                        .spacing(5)
-                        .height(Length::Fill)
-                    )
-                    .padding(iced::padding::top(10))
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .style(move |_| container::Style {
-                        background: Some(bg_with_alpha.into()),
-                        ..Default::default()
-                    }),
-
-                    container(
-                        container(
-                            text(" Input ")
-                                .color(theme.color6)
-                                .font(font)
-                                .size(font_size)
-                        )
-                        .width(Length::Shrink)
-                        .height(Length::Shrink)
-                        .style(move |_| container::Style {
-                            background: Some(bg_with_alpha.into()),
-                            ..Default::default()
-                        })
-                    )
-                    .padding(iced::padding::bottom(30).left(8))
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                ]
-            )
-            .width(Length::Fill)
-            .height(Length::Fixed(45.0))
-            .style(move |_| container::Style {
-                background: Some(bg_with_alpha.into()),
-                ..Default::default()
-            }),
+                    })
+            },
 
             ].spacing(5),
 
-            //if user press shift + arrow left or right it will cycle throught app to clipboard_panel_view
-            //clipboard will be hidden always only visible when cycle if clipboard app goes invisible 
-            clipboard_panel_view(theme, bg_with_alpha, font, font_size),
+            // Clipboard panel - only visible when clipboard_visible is true
+            if clipboard_visible {
+                clipboard_panel_view(theme, bg_with_alpha, font, font_size)
+            } else {
+                container(text(""))
+                    .width(Length::Shrink)
+                    .height(Length::Shrink)
+                    .into()
+            },
             
             // Control Center (only visible when toggled)
             if control_center_visible {
@@ -302,7 +331,7 @@ pub fn right_main_panels_view<'a>(
                         container(
                             button(
                                 container(
-                                    text("")
+                                    text("")
                                         .color(theme.color6)
                                         .font(font)
                                         .size(font_size * 1.3)
@@ -350,6 +379,7 @@ pub fn right_main_panels_view<'a>(
                 container(text(""))
                     .width(Length::Shrink)
                     .height(Length::Shrink)
+                    .into()
             }
         ]
     )

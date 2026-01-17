@@ -9,7 +9,7 @@ pub enum AnimationMode {
     /// Single color wave moves from top to bottom
     Wave,
     /// All characters pulse the same color in sync
-    In_Out_Wave,
+    InOutWave,
     Pulse,
     /// Random sparkle effect
     Sparkle,
@@ -111,7 +111,7 @@ impl TitleAnimator {
                 }
             }
 
-            AnimationMode::In_Out_Wave => {
+            AnimationMode::InOutWave => {
                 if total_chars == 0 { return theme.foreground; }
                 // Single color for the whole wave, changes each cycle.
                 let wave_cycle = self.animation_offset / total_chars;
