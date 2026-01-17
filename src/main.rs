@@ -121,6 +121,8 @@ impl TryInto<LayershellCustomActionWithId> for Message {
 
 impl Launcher {
     fn new() -> (Self, Command<Message>) {
+        crate::utils::data::init();
+        let _clipboard_monitor = crate::utils::monitor::start_monitor();
         let theme = WalColors::load()
             .map(|w| w.to_theme())
             .unwrap_or_else(|_| Theme {
