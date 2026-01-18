@@ -4,7 +4,7 @@ mod panels;
 use crate::panels::title_color::{TitleAnimator, AnimationMode};
 
 use iced_layershell::application;
-use iced::widget::{container, text, stack, row, column};
+use iced::widget::{container, text, stack, row, column, text_input, operation::focus};
 use iced::{Element, Event, Border, Color, Length, Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
 use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
@@ -169,6 +169,9 @@ impl Launcher {
         let title_animator = TitleAnimator::new()
             .with_mode(AnimationMode::Wave)
             .with_speed(80);
+        
+        // Use focus to focus the text input
+        let focus_command = focus(search_bar.input_id.clone());
 
         (Self { 
             theme, 
@@ -188,7 +191,7 @@ impl Launcher {
             control_center_visible: false,
             clipboard_visible: false,
             clipboard_selected_index: 0,
-        }, Command::none())
+        }, focus_command)
     }
 
     fn namespace() -> String {

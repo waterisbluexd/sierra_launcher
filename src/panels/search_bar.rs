@@ -9,7 +9,7 @@ pub enum Message {
 
 pub struct SearchBar {
     pub input_value: String,
-    input_id: Id,
+    pub input_id: Id,
 }
 
 impl SearchBar {
