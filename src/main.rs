@@ -77,6 +77,7 @@ struct Launcher {
     control_center_visible: bool,
     clipboard_visible: bool,
     clipboard_selected_index: usize,
+    is_first_frame: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -169,9 +170,6 @@ impl Launcher {
         let title_animator = TitleAnimator::new()
             .with_mode(AnimationMode::Wave)
             .with_speed(80);
-        
-        // Use focus to focus the text input
-        let focus_command = focus(search_bar.input_id.clone());
 
         (Self { 
             theme, 
@@ -191,7 +189,8 @@ impl Launcher {
             control_center_visible: false,
             clipboard_visible: false,
             clipboard_selected_index: 0,
-        }, focus_command)
+            is_first_frame: true,
+        }, Command::none())
     }
 
     fn namespace() -> String {
@@ -270,6 +269,12 @@ impl Launcher {
             }
 
             Message::CheckColors => {
+                // Focus the search bar on the first frame
+                if self.is_first_frame {
+                    self.is_first_frame = false;
+                    return focus(self.search_bar.input_id.clone());
+                }
+                
                 self.frame_count += 1;
                 
                 self.title_animator.update();
