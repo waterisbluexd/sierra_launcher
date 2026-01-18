@@ -127,6 +127,12 @@ impl TryInto<LayershellCustomActionWithId> for Message {
 impl Launcher {
     fn new() -> (Self, Command<Message>) {
         crate::utils::data::init();
+
+        let config = Config::load();
+        if let Some(ref font_name) = config.font {
+            eprintln!("Using font: {}", font_name);
+        }
+
         let _clipboard_monitor = crate::utils::monitor::start_monitor();
         let theme = WalColors::load()
             .map(|w| w.to_theme())
@@ -501,9 +507,10 @@ impl Launcher {
         let bg_with_alpha = Color::from_rgb(bg.r, bg.g, bg.b);
 
         let font = match self.config.font.as_deref() {
-            Some("Monocraft") => Font::with_name("Monocraft"),
-            Some("Monospace") => Font::with_name("Monospace"),
-            _ => Font::default(),
+            Some(font_name) => {
+                Font::with_name(font_name)
+            }
+            None => Font::default(),
         };
 
         let font_size = self.config.font_size.unwrap_or(22.0);
