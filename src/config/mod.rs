@@ -4,14 +4,14 @@ use std::path::PathBuf;
 use iced::Font;
 
 #[derive(Deserialize, Debug)]
-struct ConfigFile {
+pub struct ConfigFile {
     pub font: Option<String>,
     pub font_size: Option<f32>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    pub font: Option<Font>,
+    pub font_name: Option<String>,  // Store the font NAME, not Font object
     pub font_size: Option<f32>,
 }
 
@@ -35,13 +35,8 @@ impl Config {
                 }
             });
 
-            // Convert font name string to Font object
-            let font = config_file.font.map(|font_name| {
-                Font::with_name(&font_name)
-            });
-
             Config {
-                font,
+                font_name: config_file.font,
                 font_size: config_file.font_size,
             }
         } else {
@@ -49,12 +44,25 @@ impl Config {
             Self::default()
         }
     }
+
+    // Helper method to get Font from the stored name
+    pub fn get_font(&self) -> Font {
+        self.font_name
+            .as_ref()
+            .map(|name| {
+                // Leak the string to get 'static lifetime
+                // This is acceptable since fonts are loaded once and rarely change
+                let static_name: &'static str = Box::leak(name.clone().into_boxed_str());
+                Font::with_name(static_name)
+            })
+            .unwrap_or(Font::default())
+    }
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            font: Some(Font::with_name("Monospace")),
+            font_name: Some("Monospace".to_string()),
             font_size: Some(14.0),
         }
     }

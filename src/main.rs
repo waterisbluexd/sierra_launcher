@@ -5,7 +5,7 @@ use crate::panels::title_color::{TitleAnimator, AnimationMode};
 
 use iced_layershell::application;
 use iced::widget::{container, text, stack, row, column};
-use iced::{Element, Event, Border, Color, Length, Font, Task as Command, event};
+use iced::{Element, Event, Border, Color, Length, Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
 use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
 use iced_layershell::settings::{LayerShellSettings, Settings};
@@ -504,8 +504,8 @@ impl Launcher {
         let bg = self.theme.background;
         let bg_with_alpha = Color::from_rgb(bg.r, bg.g, bg.b);
 
-        // Use the Font stored in config, or default
-        let font = self.config.font.unwrap_or(Font::default());
+        // Get Font from config using helper method
+        let font = self.config.get_font();
         let font_size = self.config.font_size.unwrap_or(22.0);
         
         let title_text = " sierra-launcher ";
