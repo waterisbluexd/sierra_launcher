@@ -246,13 +246,9 @@ impl Launcher {
                                     return Command::perform(async {}, |_| Message::CyclePanel(Direction::Right));
                                 }
                             }
-                            keyboard::Key::Named(Named::Enter) => {
-                                if self.clipboard_visible {
-                                    return Command::perform(async {}, |_| Message::ClipboardSelect);
-                                } else {
-                                    let _ = self.app_list.update(app_list::Message::LaunchSelected);
-                                }
-                            }
+
+
+
                             keyboard::Key::Character(c) => {
                                 if self.clipboard_visible && modifiers.control() && c.as_str() == "d" {
                                     return Command::perform(async {}, |_| Message::ClipboardDelete);
@@ -307,8 +303,8 @@ impl Launcher {
                         Command::none()
                     }
                     search_bar::Message::Submitted => {
-                        println!("Search submitted: {}", self.search_bar.input_value);
-                        Command::none()
+                        let _ = self.app_list.update(app_list::Message::LaunchSelected);
+                        std::process::exit(0);
                     }
                 }
             }
