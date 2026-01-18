@@ -129,9 +129,7 @@ impl Launcher {
         crate::utils::data::init();
 
         let config = Config::load();
-        if let Some(ref font_name) = config.font {
-            eprintln!("Using font: {}", font_name);
-        }
+        eprintln!("Config loaded - font_size: {:?}", config.font_size);
 
         let _clipboard_monitor = crate::utils::monitor::start_monitor();
         let theme = WalColors::load()
@@ -506,13 +504,8 @@ impl Launcher {
         let bg = self.theme.background;
         let bg_with_alpha = Color::from_rgb(bg.r, bg.g, bg.b);
 
-        let font = match self.config.font.as_deref() {
-            Some(font_name) => {
-                Font::with_name(font_name)
-            }
-            None => Font::default(),
-        };
-
+        // Use the Font stored in config, or default
+        let font = self.config.font.unwrap_or(Font::default());
         let font_size = self.config.font_size.unwrap_or(22.0);
         
         let title_text = " sierra-launcher ";
