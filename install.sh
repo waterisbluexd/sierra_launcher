@@ -1,124 +1,84 @@
 #!/bin/bash
-
 set -e
 
-echo "=== Sierra Launcher Installation ==="
+echo "=== Sierra Launcher - Wayland Only ==="
 echo ""
 
-# Check if running on Wayland
+# Check Wayland
 if [ -z "$WAYLAND_DISPLAY" ] && [ "$XDG_SESSION_TYPE" != "wayland" ]; then
-    echo "Warning: This launcher is designed for Wayland. Current session: $XDG_SESSION_TYPE"
-    read -p "Continue anyway? (y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
-fi
-
-# Install dependencies
-echo "Installing dependencies..."
-if command -v pacman &> /dev/null; then
-    # Arch Linux
-    sudo pacman -S --needed rust gcc gtk3 pkg-config brightnessctl pulseaudio redshift
-elif command -v apt &> /dev/null; then
-    # Debian/Ubuntu
-    sudo apt update
-    sudo apt install -y build-essential cargo libgtk-3-dev pkg-config brightnessctl pulseaudio redshift
-elif command -v dnf &> /dev/null; then
-    # Fedora
-    sudo dnf install -y rust cargo gtk3-devel gcc brightnessctl pulseaudio redshift
-else
-    echo "Unsupported package manager. Please install dependencies manually:"
-    echo "  - Rust and Cargo"
-    echo "  - GTK3 development files"
-    echo "  - brightnessctl, pulseaudio, redshift"
+    echo "ERROR: This launcher requires Wayland"
+    echo "Current session: ${XDG_SESSION_TYPE:-unknown}"
     exit 1
 fi
 
-# Build the project
+# Detect package manager and install deps
+echo "Installing dependencies..."
+if command -v pacman &>/dev/null; then
+    sudo pacman -S --needed rust gcc gtk3 pkg-config brightnessctl pulseaudio redshift
+elif command -v apt &>/dev/null; then
+    sudo apt update && sudo apt install -y build-essential cargo libgtk-3-dev pkg-config brightnessctl pulseaudio redshift
+elif command -v dnf &>/dev/null; then
+    sudo dnf install -y rust cargo gtk3-devel gcc brightnessctl pulseaudio redshift
+else
+    echo "ERROR: Unsupported package manager"
+    echo "Please install manually: rust, cargo, gtk3-dev, brightnessctl, pulseaudio, redshift"
+    exit 1
+fi
+
+# Build
 echo ""
-echo "Building sierra-launcher..."
+echo "Building..."
 cargo build --release
 
-# Install binary
-echo ""
-echo "Installing binary..."
-sudo cp target/release/sierra_launcher /usr/local/bin/sierra-launcher
-sudo chmod +x /usr/local/bin/sierra-launcher
+# Install
+echo "Installing to /usr/local/bin..."
+sudo install -m 755 target/release/sierra_launcher /usr/local/bin/sierra-launcher
 
-# Create config directory
-echo "Creating config directory..."
-mkdir -p ~/.config/sierra
+# Setup config
+mkdir -p ~/.config/sierra ~/.cache/sierra
 
-# Copy config file
-if [ -f "config/Sierra" ]; then
-    cp config/Sierra ~/.config/sierra/Sierra
-    echo "Config file copied to ~/.config/sierra/Sierra"
+# Generate default config if it doesn't exist
+if [ ! -f ~/.config/sierra/Sierra ]; then
+    echo "Creating default config..."
+    cat > ~/.config/sierra/Sierra << 'EOF'
+# Sierra Launcher Configuration
+
+# Font settings
+font = "Monocraft"
+font_size = 14.0
+
+# Theme settings
+# Set to true to use pywal colors from ~/.cache/wal/colors.json
+# Set to false to use custom theme below
+use_pywal = false
+
+# Custom theme colors (hex format)
+# Only used when use_pywal = false
+[theme]
+background = "#1a1b26"   # Dark background
+foreground = "#c0caf5"   # Light foreground text
+border = "#7aa2f7"       # Border color
+accent = "#7dcfff"       # Accent color
+
+# Terminal color palette
+color0 = "#15161e"       # Black
+color1 = "#f7768e"       # Red
+color2 = "#9ece6a"       # Green
+color3 = "#e0af68"       # Yellow
+color4 = "#7aa2f7"       # Blue
+color5 = "#bb9af7"       # Magenta
+color6 = "#7dcfff"       # Cyan
+color7 = "#a9b1d6"       # White
+color8 = "#414868"       # Bright Black
+color9 = "#f7768e"       # Bright Red
+color10 = "#9ece6a"      # Bright Green
+color11 = "#e0af68"      # Bright Yellow
+color12 = "#7aa2f7"      # Bright Blue
+color13 = "#bb9af7"      # Bright Magenta
+color14 = "#7dcfff"      # Bright Cyan
+color15 = "#c0caf5"      # Bright White
+EOF
+    echo " Config created at ~/.config/sierra/Sierra"
+else
+    echo " Config already exists at ~/.config/sierra/Sierra"
 fi
-
-# Create cache directory
-mkdir -p ~/.cache/sierra
-
-echo ""
-echo "=== Installation Complete! ==="
-echo ""
-echo "To bind to Super+F, you need to add a keybinding in your window manager."
-echo ""
-echo "For Hyprland, add this to ~/.config/hypr/hyprland.conf:"
-echo "  bind = SUPER, F, exec, sierra-launcher"
-echo ""
-echo "For Sway, add this to ~/.config/sway/config:"
-echo "  bindsym Mod4+f exec sierra-launcher"
-echo ""
-echo "For KDE Plasma (Wayland), go to:"
-echo "  System Settings > Shortcuts > Custom Shortcuts"
-echo "  Add new command shortcut with 'sierra-launcher'"
-echo ""
-echo "For GNOME (Wayland), run:"
-echo "  gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings \"['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/']\""
-echo "  gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/ name 'Sierra Launcher'"
-echo "  gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/ command 'sierra-launcher'"
-echo "  gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/ binding '<Super>f'"
-echo ""
-
-# Detect window manager and offer to configure
-if pgrep -x "Hyprland" > /dev/null; then
-    echo "Hyprland detected!"
-    read -p "Would you like to automatically add Super+F binding to hyprland.conf? (y/N) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        HYPR_CONF="$HOME/.config/hypr/hyprland.conf"
-        if [ -f "$HYPR_CONF" ]; then
-            if ! grep -q "sierra-launcher" "$HYPR_CONF"; then
-                echo "" >> "$HYPR_CONF"
-                echo "# Sierra Launcher" >> "$HYPR_CONF"
-                echo "bind = SUPER, F, exec, sierra-launcher" >> "$HYPR_CONF"
-                echo "✓ Added keybinding to $HYPR_CONF"
-                echo "  Reload Hyprland config to apply changes"
-            else
-                echo "⚠ Keybinding already exists in $HYPR_CONF"
-            fi
-        fi
-    fi
-elif pgrep -x "sway" > /dev/null; then
-    echo "Sway detected!"
-    read -p "Would you like to automatically add Super+F binding to sway config? (y/N) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        SWAY_CONF="$HOME/.config/sway/config"
-        if [ -f "$SWAY_CONF" ]; then
-            if ! grep -q "sierra-launcher" "$SWAY_CONF"; then
-                echo "" >> "$SWAY_CONF"
-                echo "# Sierra Launcher" >> "$SWAY_CONF"
-                echo "bindsym Mod4+f exec sierra-launcher" >> "$SWAY_CONF"
-                echo "✓ Added keybinding to $SWAY_CONF"
-                echo "  Reload sway config to apply changes (Mod+Shift+C)"
-            else
-                echo "⚠ Keybinding already exists in $SWAY_CONF"
-            fi
-        fi
-    fi
-fi
-
-echo ""
-echo "You can now run 'sierra-launcher' or press Super+F (if configured)"
