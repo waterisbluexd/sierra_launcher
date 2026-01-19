@@ -130,36 +130,14 @@ impl Launcher {
         crate::utils::data::init();
 
         let config = Config::load();
-        eprintln!("Config loaded - font_size: {:?}", config.font_size);
+        eprintln!("Config loaded - font_size: {:?}, use_pywal: {}", config.font_size, config.use_pywal);
 
         let _clipboard_monitor = crate::utils::monitor::start_monitor();
-        let theme = WalColors::load()
-            .map(|w| w.to_theme())
-            .unwrap_or_else(|_| Theme {
-                background: Color::from_rgba(0.15, 0.15, 0.18, 0.82),
-                foreground: Color::WHITE,
-                border: Color::from_rgb(0.5, 0.5, 0.5),
-                accent: Color::from_rgb(0.6, 0.6, 0.6),
-                color0: Color::BLACK,
-                color1: Color::from_rgb(0.8, 0.0, 0.0),
-                color2: Color::from_rgb(0.0, 0.8, 0.0),
-                color3: Color::from_rgb(0.8, 0.8, 0.0),
-                color4: Color::from_rgb(0.0, 0.0, 0.8),
-                color5: Color::from_rgb(0.8, 0.0, 0.8),
-                color6: Color::from_rgb(0.0, 0.8, 0.8),
-                color7: Color::from_rgb(0.7, 0.7, 0.7),
-                color8: Color::from_rgb(0.5, 0.5, 0.5),
-                color9: Color::from_rgb(1.0, 0.0, 0.0),
-                color10: Color::from_rgb(0.0, 1.0, 0.0),
-                color11: Color::from_rgb(1.0, 1.0, 0.0),
-                color12: Color::from_rgb(0.0, 0.0, 1.0),
-                color13: Color::from_rgb(1.0, 0.0, 1.0),
-                color14: Color::from_rgb(0.0, 1.0, 1.0),
-                color15: Color::WHITE,
-            });
+        
+        // Load theme based on config preferences
+        let theme = Theme::load_from_config(&config);
 
         let watcher = ColorWatcher::new().ok();
-        let config = Config::load();
         let search_bar = SearchBar::new();
         let app_list = AppList::new();
         let weather_panel = WeatherPanel::new();
@@ -168,7 +146,7 @@ impl Launcher {
         let services_panel = ServicesPanel::new();
 
         let title_animator = TitleAnimator::new()
-            .with_mode(AnimationMode::Wave)
+            .with_mode(AnimationMode::Wave)  // Use Wave animation
             .with_speed(80);
 
         (Self { 
@@ -308,10 +286,14 @@ impl Launcher {
                 if now.duration_since(self.last_color_check) > Duration::from_secs(1) {
                     self.last_color_check = now;
                     
-                    if let Some(ref watcher) = self.watcher {
-                        if watcher.check_for_changes() {
-                            if let Ok(wal_colors) = WalColors::load() {
-                                self.theme = wal_colors.to_theme();
+                    // Only check for pywal changes if pywal is enabled
+                    if self.config.use_pywal {
+                        if let Some(ref watcher) = self.watcher {
+                            if watcher.check_for_changes() {
+                                if let Ok(wal_colors) = WalColors::load() {
+                                    self.theme = wal_colors.to_theme();
+                                    eprintln!("Pywal theme reloaded");
+                                }
                             }
                         }
                     }
