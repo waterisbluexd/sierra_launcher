@@ -2,6 +2,7 @@ use iced::widget::{column, container, row, scrollable, text};
 use iced::{Border, Element, Length, Task};
 use gio::prelude::*;
 use gio::{AppLaunchContext, DesktopAppInfo};
+use std::sync::OnceLock;
 
 use crate::utils::theme::Theme;
 
@@ -15,30 +16,31 @@ pub enum Message {
 
 #[derive(Debug, Clone)]
 pub struct App {
-    appinfo: DesktopAppInfo,
+    id: String,
     name: String,
-    description: Option<String>,
+    name_lower: String,
+    description_lower: Option<String>,
 }
 
+static APP_CACHE: OnceLock<Vec<App>> = OnceLock::new();
+
 pub struct AppList {
-    all_apps: Vec<App>,
-    filtered_apps: Vec<App>,
+    filtered_indices: Vec<usize>,
     pub search_query: String,
     pub selected_index: usize,
     scroll_id: iced::widget::Id,
-    
-    // Virtual scrolling parameters
-    window_size: usize,  // Number of items to display at once (e.g., 10)
-    window_start: usize, // Starting index of the visible window
+    window_size: usize,
+    window_start: usize,
 }
 
 impl AppList {
     pub fn new() -> Self {
-        let all_apps = Self::load_desktop_apps();
+        APP_CACHE.get_or_init(|| Self::load_desktop_apps());
+
+        let total_apps = Self::all_apps().len();
 
         Self {
-            filtered_apps: all_apps.clone(),
-            all_apps,
+            filtered_indices: (0..total_apps).collect(),
             search_query: String::new(),
             selected_index: 0,
             scroll_id: iced::widget::Id::unique(),
@@ -47,77 +49,76 @@ impl AppList {
         }
     }
 
+    fn all_apps() -> &'static [App] {
+        APP_CACHE.get().expect("Apps should be initialized")
+    }
+
     fn load_desktop_apps() -> Vec<App> {
-        let mut apps = Vec::new();
+        let mut apps: Vec<App> = gio::AppInfo::all()
+            .into_iter()
+            .filter_map(|app| {
+                let desktop = app.downcast::<DesktopAppInfo>().ok()?;
 
-        for app in gio::AppInfo::all() {
-            let Ok(desktop) = app.downcast::<DesktopAppInfo>() else {
-                continue;
-            };
+                if !desktop.should_show() {
+                    return None;
+                }
 
-            if !desktop.should_show() {
-                continue;
-            }
+                let name = desktop.name().to_string();
+                let name_lower = name.to_lowercase();
+                let description_lower = desktop.description().map(|d| d.to_lowercase());
 
-            apps.push(App {
-                name: desktop.name().to_string(),
-                description: desktop.description().map(|d| d.to_string()),
-                appinfo: desktop,
-            });
-        }
+                Some(App {
+                    id: desktop.id()?.to_string(),
+                    name,
+                    name_lower,
+                    description_lower,
+                })
+            })
+            .collect();
 
-        apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        apps.sort_unstable_by(|a, b| a.name_lower.cmp(&b.name_lower));
         apps
     }
 
     fn filter_apps(&mut self) {
         if self.search_query.is_empty() {
-            self.filtered_apps = self.all_apps.clone();
+            self.filtered_indices = (0..Self::all_apps().len()).collect();
         } else {
             let q = self.search_query.to_lowercase();
-            self.filtered_apps = self
-                .all_apps
-                .iter()
-                .filter(|app| {
-                    app.name.to_lowercase().contains(&q)
-                        || app
-                            .description
-                            .as_ref()
-                            .map(|d| d.to_lowercase().contains(&q))
-                            .unwrap_or(false)
-                })
-                .cloned()
-                .collect();
+            let apps = Self::all_apps();
+
+            self.filtered_indices.clear();
+            self.filtered_indices.extend(
+                apps.iter()
+                    .enumerate()
+                    .filter(|(_, app)| {
+                        app.name_lower.contains(&q)
+                            || app
+                                .description_lower
+                                .as_deref()
+                                .map_or(false, |d| d.contains(&q))
+                    })
+                    .map(|(idx, _)| idx),
+            );
         }
 
-        if self.selected_index >= self.filtered_apps.len() {
+        if self.selected_index >= self.filtered_indices.len() {
             self.selected_index = 0;
         }
-        
-        // Reset window when filtering changes
+
         self.update_window();
     }
 
     fn update_window(&mut self) {
-        if self.filtered_apps.is_empty() {
+        if self.filtered_indices.is_empty() {
             self.window_start = 0;
             return;
         }
 
-        // Ensure selected item is within the visible window
-        // When selection reaches the last 2 items of window, slide window down
-        if self.selected_index >= self.window_start + self.window_size - 1 {
-            self.window_start = (self.selected_index + 1).saturating_sub(self.window_size);
-        }
-        // When selection reaches the first 2 items of window, slide window up
-        else if self.selected_index < self.window_start + 1 {
-            self.window_start = self.selected_index.saturating_sub(1);
-        }
-
-        // Ensure window doesn't go past the end
-        let max_start = self.filtered_apps.len().saturating_sub(self.window_size);
-        if self.window_start > max_start {
-            self.window_start = max_start;
+        if self.selected_index >= self.window_start + self.window_size {
+            self.window_start = self.selected_index + 1 - self.window_size;
+        } else if self.selected_index < self.window_start {
+            self.window_start = self.selected_index;
         }
     }
 
@@ -126,6 +127,7 @@ impl AppList {
             Message::SearchInput(query) => {
                 self.search_query = query;
                 self.filter_apps();
+                self.window_start = 0;
                 Task::none()
             }
             Message::ArrowUp => {
@@ -136,7 +138,9 @@ impl AppList {
                 Task::none()
             }
             Message::ArrowDown => {
-                if self.selected_index + 1 < self.filtered_apps.len() {
+                if !self.filtered_indices.is_empty()
+                    && self.selected_index < self.filtered_indices.len() - 1
+                {
                     self.selected_index += 1;
                     self.update_window();
                 }
@@ -150,8 +154,11 @@ impl AppList {
     }
 
     fn launch_selected(&self) {
-        if let Some(app) = self.filtered_apps.get(self.selected_index) {
-            let _ = app.appinfo.launch(&[], AppLaunchContext::NONE);
+        if let Some(&app_idx) = self.filtered_indices.get(self.selected_index) {
+            let app = &Self::all_apps()[app_idx];
+            if let Some(info) = DesktopAppInfo::new(&app.id) {
+                let _ = info.launch(&[], AppLaunchContext::NONE);
+            }
         }
     }
 
@@ -162,13 +169,12 @@ impl AppList {
         font_size: f32,
     ) -> Element<'a, Message> {
         let mut items = column![].spacing(1);
+        let window_end = (self.window_start + self.window_size).min(self.filtered_indices.len());
+        let apps = Self::all_apps();
 
-        // Calculate the visible range
-        let window_end = (self.window_start + self.window_size).min(self.filtered_apps.len());
-        
-        // Only render items within the window
         for idx in self.window_start..window_end {
-            let app = &self.filtered_apps[idx];
+            let &app_idx = &self.filtered_indices[idx];
+            let app = &apps[app_idx];
             let selected = idx == self.selected_index;
 
             let bg = if selected {
@@ -208,6 +214,7 @@ impl AppList {
                     }),
             );
         }
+
         scrollable(items)
             .id(self.scroll_id.clone())
             .width(Length::Fill)

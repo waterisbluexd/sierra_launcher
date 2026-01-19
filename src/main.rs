@@ -1,10 +1,10 @@
 mod utils;
 mod config;
 mod panels;
-use crate::panels::title_color::{TitleAnimator, AnimationMode};
+use crate::panels::title_color::TitleAnimator;
 
 use iced_layershell::application;
-use iced::widget::{container, text, stack, row, column, text_input, operation::focus};
+use iced::widget::{container, text, stack, row, column, operation::focus};
 use iced::{Element, Event, Border, Color, Length, Task as Command, event};
 use iced_layershell::actions::LayershellCustomActionWithId;
 use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
