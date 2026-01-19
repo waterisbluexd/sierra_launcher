@@ -3799,6 +3799,8 @@ dependencies = [
  "lazy_static",
  "mpris",
  "notify",
+ "parking_lot",
+ "rayon",
  "regex",
  "reqwest",
  "serde",

@@ -208,26 +208,6 @@ impl AppList {
                     }),
             );
         }
-
-        // Indicator removed - not visible for now
-        // if !self.filtered_apps.is_empty() {
-        //     let indicator = text(format!(
-        //         "Showing {}-{} of {}",
-        //         self.window_start + 1,
-        //         window_end,
-        //         self.filtered_apps.len()
-        //     ))
-        //     .font(font)
-        //     .size(font_size * 0.8)
-        //     .color(theme.foreground);
-        //
-        //     items = items.push(
-        //         container(indicator)
-        //             .padding([4, 4])
-        //             .width(Length::Fill)
-        //     );
-        // }
-
         scrollable(items)
             .id(self.scroll_id.clone())
             .width(Length::Fill)
