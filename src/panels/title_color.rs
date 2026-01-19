@@ -4,16 +4,11 @@ use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AnimationMode {
-    /// Each character cycles through all colors independently
     Rainbow,
-    /// Single color wave moves from top to bottom
     Wave,
-    /// All characters pulse the same color in sync
     InOutWave,
     Pulse,
-    /// Random sparkle effect
     Sparkle,
-    /// Gradient that shifts through colors
     Gradient,
 }
 
@@ -22,7 +17,7 @@ pub struct TitleAnimator {
     last_animation_update: Instant,
     animation_speed: Duration,
     mode: AnimationMode,
-    sparkle_state: Vec<usize>, // For sparkle mode
+    sparkle_state: Vec<usize>,
 }
 
 impl TitleAnimator {
@@ -32,7 +27,7 @@ impl TitleAnimator {
             last_animation_update: Instant::now(),
             animation_speed: Duration::from_millis(100),
             mode: AnimationMode::Rainbow,
-            sparkle_state: vec![0; 20], // Enough for most titles
+            sparkle_state: vec![0; 20],
         }
     }
 
@@ -56,8 +51,6 @@ impl TitleAnimator {
         if now.duration_since(self.last_animation_update) > self.animation_speed {
             self.last_animation_update = now;
             self.animation_offset = self.animation_offset.wrapping_add(1);
-            
-            // Update sparkle state
             if self.mode == AnimationMode::Sparkle {
                 for state in &mut self.sparkle_state {
                     if rand::random::<f32>() > 0.7 {
@@ -77,13 +70,11 @@ impl TitleAnimator {
 
         match self.mode {
             AnimationMode::Rainbow => {
-                // Each character cycles through colors independently
                 let color_index = (char_index + self.animation_offset) % colors.len();
                 colors[color_index]
             }
             AnimationMode::Wave => {
                 if total_chars == 0 { return theme.foreground; }
-                // Single color for the whole wave, changes each cycle.
                 let wave_cycle = self.animation_offset / total_chars;
                 let color_index = wave_cycle % colors.len();
                 let current_color = colors[color_index];
@@ -94,9 +85,6 @@ impl TitleAnimator {
                 } else {
                     (total_chars - wave_position) + char_index
                 };
-                
-                // Characters near the wave position get the current color
-                // Others get a dimmed version of the base color
                 if distance == 0 {
                     current_color
                 } else if distance <= 0 {
@@ -113,7 +101,6 @@ impl TitleAnimator {
 
             AnimationMode::InOutWave => {
                 if total_chars == 0 { return theme.foreground; }
-                // Single color for the whole wave, changes each cycle.
                 let wave_cycle = self.animation_offset / total_chars;
                 let color_index = wave_cycle % colors.len();
                 let current_color = colors[color_index];
@@ -124,9 +111,6 @@ impl TitleAnimator {
                 } else {
                     (total_chars - wave_position) + char_index
                 };
-                
-                // Characters near the wave position get the current color
-                // Others get a dimmed version of the base color
                 if distance == 0 {
                     current_color
                 } else if distance <= 14 {
@@ -142,13 +126,11 @@ impl TitleAnimator {
             }
             
             AnimationMode::Pulse => {
-                // All characters pulse the same color in sync
                 let color_index = self.animation_offset % colors.len();
                 colors[color_index]
             }
             
             AnimationMode::Sparkle => {
-                // Random sparkle effect
                 if char_index < self.sparkle_state.len() {
                     let color_index = self.sparkle_state[char_index] % colors.len();
                     colors[color_index]
@@ -158,14 +140,11 @@ impl TitleAnimator {
             }
             
             AnimationMode::Gradient => {
-                // Smooth gradient that shifts through colors
                 let position = (char_index as f32 / total_chars as f32) * colors.len() as f32;
                 let offset_position = (position + self.animation_offset as f32) % colors.len() as f32;
                 let color_index = offset_position.floor() as usize % colors.len();
                 let next_color_index = (color_index + 1) % colors.len();
                 let blend = offset_position.fract();
-                
-                // Blend between two colors for smooth gradient
                 let color1 = colors[color_index];
                 let color2 = colors[next_color_index];
                 Color::from_rgb(
@@ -194,7 +173,6 @@ impl Default for TitleAnimator {
     }
 }
 
-// Simple random number generator for sparkle effect
 mod rand {
     use std::cell::Cell;
     

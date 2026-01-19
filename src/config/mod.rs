@@ -9,6 +9,8 @@ pub struct ConfigFile {
     pub font_size: Option<f32>,
     pub use_pywal: Option<bool>,
     pub theme: Option<ThemeConfig>,
+    pub title_text: Option<String>,
+    pub title_animation: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -41,6 +43,8 @@ pub struct Config {
     pub font_size: Option<f32>,
     pub use_pywal: bool,
     pub custom_theme: Option<ThemeConfig>,
+    pub title_text: String,           // ← ADD THIS
+    pub title_animation: String,      // ← ADD THIS
 }
 
 impl Config {
@@ -63,6 +67,8 @@ impl Config {
                     font_size: Some(14.0),
                     use_pywal: Some(false),
                     theme: None,
+                    title_text: Some(" sierra-launcher ".to_string()),      // ← ADD THIS
+                    title_animation: Some("Wave".to_string()),              // ← ADD THIS
                 }
             });
 
@@ -71,6 +77,8 @@ impl Config {
                 font_size: config_file.font_size,
                 use_pywal: config_file.use_pywal.unwrap_or(false),
                 custom_theme: config_file.theme,
+                title_text: config_file.title_text.unwrap_or_else(|| " sierra-launcher ".to_string()),        // ← ADD THIS
+                title_animation: config_file.title_animation.unwrap_or_else(|| "Wave".to_string()),           // ← ADD THIS
             }
         } else {
             eprintln!("Config not found at {:?}, using defaults", config_path);
@@ -86,6 +94,24 @@ impl Config {
                 Font::with_name(static_name)
             })
             .unwrap_or(Font::default())
+    }
+
+    /// Get the AnimationMode from config string
+    pub fn get_animation_mode(&self) -> crate::panels::title_color::AnimationMode {
+        use crate::panels::title_color::AnimationMode;
+        
+        match self.title_animation.as_str() {
+            "Rainbow" => AnimationMode::Rainbow,
+            "Wave" => AnimationMode::Wave,
+            "InOutWave" => AnimationMode::InOutWave,
+            "Pulse" => AnimationMode::Pulse,
+            "Sparkle" => AnimationMode::Sparkle,
+            "Gradient" => AnimationMode::Gradient,
+            _ => {
+                eprintln!("Unknown animation mode '{}', using Wave", self.title_animation);
+                AnimationMode::Wave
+            }
+        }
     }
 
     /// Convert hex color string to iced Color
@@ -118,6 +144,8 @@ impl Default for Config {
             font_size: Some(14.0),
             use_pywal: false,
             custom_theme: None,
+            title_text: " sierra-launcher ".to_string(),
+            title_animation: "Wave".to_string(),
         }
     }
 }

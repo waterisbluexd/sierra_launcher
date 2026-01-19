@@ -47,6 +47,11 @@ if [ ! -f ~/.config/sierra/Sierra ]; then
 font = "Monocraft"
 font_size = 14.0
 
+# Title settings
+title_text = " sierra-launcher "
+# Available animations: Rainbow, Wave, InOutWave, Pulse, Sparkle, Gradient
+title_animation = "Wave"
+
 # Theme settings
 # Set to true to use pywal colors from ~/.cache/wal/colors.json
 # Set to false to use custom theme below

@@ -146,7 +146,7 @@ impl Launcher {
         let services_panel = ServicesPanel::new();
 
         let title_animator = TitleAnimator::new()
-            .with_mode(AnimationMode::Wave)  // Use Wave animation
+            .with_mode(config.get_animation_mode())
             .with_speed(80);
 
         (Self { 
@@ -519,7 +519,7 @@ impl Launcher {
         let font = self.config.get_font();
         let font_size = self.config.font_size.unwrap_or(22.0);
         
-        let title_text = " sierra-launcher ";
+        let title_text = &self.config.title_text;
         let total_chars = title_text.chars().count();
         let mut title_column = column![].spacing(0);
         
