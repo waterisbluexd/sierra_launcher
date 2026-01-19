@@ -220,6 +220,17 @@ impl Launcher {
                             keyboard::Key::Named(Named::Escape) => {
                                 std::process::exit(0);
                             }
+                            
+                            keyboard::Key::Named(Named::Enter) => {
+                                if self.clipboard_visible {
+                                    return Command::perform(async {}, |_| Message::ClipboardSelect);
+                                } else {
+                                    // Launch selected app
+                                    let _ = self.app_list.update(app_list::Message::LaunchSelected);
+                                    std::process::exit(0);
+                                }
+                            }
+                            
                             keyboard::Key::Named(Named::ArrowUp) => {
                                 if self.clipboard_visible {
                                     return Command::perform(async {}, |_| Message::ClipboardArrowUp);
@@ -227,6 +238,7 @@ impl Launcher {
                                     let _ = self.app_list.update(app_list::Message::ArrowUp);
                                 }
                             }
+                            
                             keyboard::Key::Named(Named::ArrowDown) => {
                                 if self.clipboard_visible {
                                     return Command::perform(async {}, |_| Message::ClipboardArrowDown);
@@ -234,6 +246,7 @@ impl Launcher {
                                     let _ = self.app_list.update(app_list::Message::ArrowDown);
                                 }
                             }
+                            
                             keyboard::Key::Named(Named::ArrowLeft) => {
                                 if modifiers.shift() {
                                     self.clipboard_visible = !self.clipboard_visible;
@@ -241,6 +254,7 @@ impl Launcher {
                                     return Command::perform(async {}, |_| Message::CyclePanel(Direction::Left));
                                 }
                             }
+                            
                             keyboard::Key::Named(Named::ArrowRight) => {
                                 if modifiers.shift() {
                                     self.clipboard_visible = !self.clipboard_visible;
@@ -249,13 +263,24 @@ impl Launcher {
                                 }
                             }
 
-
+                            keyboard::Key::Named(Named::Backspace) => {
+                                if !self.clipboard_visible && !self.search_bar.input_value.is_empty() {
+                                    // Handle backspace for search input
+                                    self.search_bar.input_value.pop();
+                                    let _ = self.app_list.update(app_list::Message::SearchInput(self.search_bar.input_value.clone()));
+                                }
+                            }
 
                             keyboard::Key::Character(c) => {
                                 if self.clipboard_visible && modifiers.control() && c.as_str() == "d" {
                                     return Command::perform(async {}, |_| Message::ClipboardDelete);
+                                } else if !self.clipboard_visible && !modifiers.control() && !modifiers.alt() && !modifiers.logo() {
+                                    // Type into search bar even when not focused
+                                    self.search_bar.input_value.push_str(c.as_str());
+                                    let _ = self.app_list.update(app_list::Message::SearchInput(self.search_bar.input_value.clone()));
                                 }
                             }
+                            
                             _ => {}
                         }
                     }
