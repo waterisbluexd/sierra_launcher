@@ -127,7 +127,10 @@ impl TryInto<LayershellCustomActionWithId> for Message {
 
 impl Launcher {
     fn new() -> (Self, Command<Message>) {
-        crate::utils::data::init();
+        // ★ MOVE BLOCKING CLIPBOARD INIT TO BACKGROUND THREAD ★
+        std::thread::spawn(|| {
+            crate::utils::data::init();
+        });
 
         let config = Config::load();
         eprintln!("Config loaded - font_size: {:?}, use_pywal: {}", config.font_size, config.use_pywal);
@@ -139,7 +142,10 @@ impl Launcher {
 
         let watcher = ColorWatcher::new().ok();
         let search_bar = SearchBar::new();
+        
+        // ★ AppList::new() NOW RETURNS IMMEDIATELY - apps load in background ★
         let app_list = AppList::new();
+        
         let weather_panel = WeatherPanel::new();
         let music_player = MusicPlayer::new();
         let system_panel = SystemPanel::new();
@@ -272,10 +278,20 @@ impl Launcher {
             }
 
             Message::CheckColors => {
-                // Focus the search bar on the first frame
+                // ★ FIRST FRAME: Focus search bar and trigger app loading ★
                 if self.is_first_frame {
                     self.is_first_frame = false;
+                    
+                    // Trigger lazy loading of apps in background
+                    self.app_list.start_loading();
+                    eprintln!("[Main] Triggered lazy app loading");
+                    
                     return focus(self.search_bar.input_id.clone());
+                }
+                
+                // ★ CHECK IF APPS FINISHED LOADING ★
+                if self.app_list.check_loaded() {
+                    eprintln!("[Main] Apps finished loading - UI will update automatically");
                 }
                 
                 self.frame_count += 1;

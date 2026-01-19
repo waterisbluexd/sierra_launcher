@@ -2,7 +2,8 @@ use iced::widget::{column, container, row, scrollable, text};
 use iced::{Border, Element, Length, Task};
 use gio::prelude::*;
 use gio::{AppLaunchContext, DesktopAppInfo};
-use std::sync::OnceLock;
+use std::sync::{Arc, Mutex, OnceLock};
+use std::thread;
 
 use crate::utils::theme::Theme;
 
@@ -12,6 +13,7 @@ pub enum Message {
     ArrowUp,
     ArrowDown,
     LaunchSelected,
+    AppsLoaded, // NEW: Signal that apps finished loading
 }
 
 #[derive(Debug, Clone)]
@@ -24,6 +26,16 @@ pub struct App {
 
 static APP_CACHE: OnceLock<Vec<App>> = OnceLock::new();
 
+// Track loading state
+static LOADING_STATE: OnceLock<Arc<Mutex<LoadingState>>> = OnceLock::new();
+
+#[derive(Debug, Clone, PartialEq)]
+enum LoadingState {
+    NotStarted,
+    Loading,
+    Loaded,
+}
+
 pub struct AppList {
     filtered_indices: Vec<usize>,
     pub search_query: String,
@@ -31,27 +43,96 @@ pub struct AppList {
     scroll_id: iced::widget::Id,
     window_size: usize,
     window_start: usize,
+    is_loading: bool, // NEW: Track if we're currently loading
 }
 
 impl AppList {
+    /// Create new AppList - DOES NOT load apps yet!
+    /// Apps will be loaded asynchronously after window appears
     pub fn new() -> Self {
-        APP_CACHE.get_or_init(|| Self::load_desktop_apps());
-
-        let total_apps = Self::all_apps().len();
-
+        // Initialize loading state tracker
+        LOADING_STATE.get_or_init(|| Arc::new(Mutex::new(LoadingState::NotStarted)));
+        
         Self {
-            filtered_indices: (0..total_apps).collect(),
+            filtered_indices: Vec::new(), // Start empty
             search_query: String::new(),
             selected_index: 0,
             scroll_id: iced::widget::Id::unique(),
             window_size: 17,
             window_start: 0,
+            is_loading: false,
         }
     }
 
-    fn all_apps() -> &'static [App] {
-        APP_CACHE.get().expect("Apps should be initialized")
+    /// Trigger lazy loading of apps in background thread
+    pub fn start_loading(&mut self) {
+        let state = LOADING_STATE.get().unwrap().clone();
+        let mut state_lock = state.lock().unwrap();
+        
+        // Only start loading once
+        if *state_lock != LoadingState::NotStarted {
+            drop(state_lock);
+            
+            // If already loaded, populate immediately
+            if APP_CACHE.get().is_some() {
+                let total_apps = Self::all_apps().len();
+                self.filtered_indices = (0..total_apps).collect();
+                self.is_loading = false;
+            }
+            return;
+        }
+        
+        *state_lock = LoadingState::Loading;
+        drop(state_lock);
+        
+        self.is_loading = true;
+        
+        // Load apps in background thread
+        thread::spawn(move || {
+            eprintln!("[AppList] Starting background app loading...");
+            let start = std::time::Instant::now();
+            
+            // This will initialize APP_CACHE
+            APP_CACHE.get_or_init(|| Self::load_desktop_apps());
+            
+            // Update state
+            let state = LOADING_STATE.get().unwrap();
+            *state.lock().unwrap() = LoadingState::Loaded;
+            
+            eprintln!("[AppList] Loaded {} apps in {:?}", 
+                APP_CACHE.get().unwrap().len(), 
+                start.elapsed()
+            );
+        });
     }
+
+    /// Check if apps are loaded and update filtered list
+    pub fn check_loaded(&mut self) -> bool {
+        if !self.is_loading {
+            return false;
+        }
+        
+        let state = LOADING_STATE.get().unwrap();
+        let state_lock = state.lock().unwrap();
+        
+        if *state_lock == LoadingState::Loaded {
+            drop(state_lock);
+            
+            // Apps are now available - populate the list
+            let total_apps = Self::all_apps().len();
+            self.filtered_indices = (0..total_apps).collect();
+            self.is_loading = false;
+            
+            eprintln!("[AppList] Apps populated - {} total", total_apps);
+            return true;
+        }
+        
+        false
+    }
+
+    fn all_apps() -> &'static [App] {
+    APP_CACHE.get().map_or(&[], |v| v.as_slice())
+}
 
     fn load_desktop_apps() -> Vec<App> {
         let mut apps: Vec<App> = gio::AppInfo::all()
@@ -77,15 +158,22 @@ impl AppList {
             .collect();
 
         apps.sort_unstable_by(|a, b| a.name_lower.cmp(&b.name_lower));
+        eprintln!("[AppList] Loaded and sorted {} desktop apps", apps.len());
         apps
     }
 
     fn filter_apps(&mut self) {
+        let apps = Self::all_apps();
+        
+        if apps.is_empty() {
+            self.filtered_indices.clear();
+            return;
+        }
+        
         if self.search_query.is_empty() {
-            self.filtered_indices = (0..Self::all_apps().len()).collect();
+            self.filtered_indices = (0..apps.len()).collect();
         } else {
             let q = self.search_query.to_lowercase();
-            let apps = Self::all_apps();
 
             self.filtered_indices.clear();
             self.filtered_indices.extend(
@@ -150,6 +238,13 @@ impl AppList {
                 self.launch_selected();
                 Task::none()
             }
+            Message::AppsLoaded => {
+                // Apps finished loading - repopulate list
+                let total_apps = Self::all_apps().len();
+                self.filtered_indices = (0..total_apps).collect();
+                self.is_loading = false;
+                Task::none()
+            }
         }
     }
 
@@ -169,50 +264,84 @@ impl AppList {
         font_size: f32,
     ) -> Element<'a, Message> {
         let mut items = column![].spacing(1);
-        let window_end = (self.window_start + self.window_size).min(self.filtered_indices.len());
-        let apps = Self::all_apps();
-
-        for idx in self.window_start..window_end {
-            let &app_idx = &self.filtered_indices[idx];
-            let app = &apps[app_idx];
-            let selected = idx == self.selected_index;
-
-            let bg = if selected {
-                Some(theme.color3.into())
-            } else {
-                None
-            };
-
-            let fg = if selected {
-                theme.background
-            } else {
-                theme.foreground
-            };
-
-            let content = if selected {
-                row![
-                    text(">>").font(font).size(font_size).color(fg),
-                    text(&app.name).font(font).size(font_size).color(fg),
-                ]
-                .spacing(4)
-            } else {
-                row![
-                    text("  ").font(font).size(font_size).color(fg),
-                    text(&app.name).font(font).size(font_size).color(fg),
-                ]
-                .spacing(4)
-            };
-
+        
+        // Show loading message if apps aren't loaded yet
+        if self.is_loading || Self::all_apps().is_empty() {
             items = items.push(
-                container(content)
-                    .padding([2, 4])
-                    .width(Length::Fill)
-                    .style(move |_| container::Style {
-                        background: bg,
-                        border: Border::default(),
-                        ..Default::default()
-                    }),
+                container(
+                    text("Loading applications...")
+                        .font(font)
+                        .size(font_size)
+                        .color(theme.color6)
+                )
+                .padding(20)
+                .width(Length::Fill)
+                .center_x(Length::Fill)
             );
+        } else if self.filtered_indices.is_empty() {
+            // Show "no results" if search yields nothing
+            items = items.push(
+                container(
+                    text(if self.search_query.is_empty() {
+                        "No applications found"
+                    } else {
+                        "No matching applications"
+                    })
+                    .font(font)
+                    .size(font_size)
+                    .color(theme.color6)
+                )
+                .padding(20)
+                .width(Length::Fill)
+                .center_x(Length::Fill)
+            );
+        } else {
+            // Normal app list rendering
+            let window_end = (self.window_start + self.window_size).min(self.filtered_indices.len());
+            let apps = Self::all_apps();
+
+            for idx in self.window_start..window_end {
+                let &app_idx = &self.filtered_indices[idx];
+                let app = &apps[app_idx];
+                let selected = idx == self.selected_index;
+
+                let bg = if selected {
+                    Some(theme.color3.into())
+                } else {
+                    None
+                };
+
+                let fg = if selected {
+                    theme.background
+                } else {
+                    theme.foreground
+                };
+
+                let content = if selected {
+                    row![
+                        text(">>").font(font).size(font_size).color(fg),
+                        text(&app.name).font(font).size(font_size).color(fg),
+                    ]
+                    .spacing(4)
+                } else {
+                    row![
+                        text("  ").font(font).size(font_size).color(fg),
+                        text(&app.name).font(font).size(font_size).color(fg),
+                    ]
+                    .spacing(4)
+                };
+
+                items = items.push(
+                    container(content)
+                        .padding([2, 4])
+                        .width(Length::Fill)
+                        .style(move |_| container::Style {
+                            background: bg,
+                            border: Border::default(),
+                            ..Default::default()
+                        }),
+                );
+            }
         }
 
         scrollable(items)
