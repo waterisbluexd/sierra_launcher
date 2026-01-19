@@ -2,6 +2,7 @@ use iced::Color;
 use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
+use crate::config::{Config, ThemeConfig};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct WalColors {
@@ -44,7 +45,6 @@ pub struct Theme {
     pub border: Color,
     #[allow(dead_code)]
     pub accent: Color,
-    // Add all 16 colors from the palette
     #[allow(dead_code)]
     pub color0: Color,
     #[allow(dead_code)]
@@ -94,7 +94,6 @@ impl WalColors {
             foreground: hex_to_color(&self.special.foreground),
             border: hex_to_color(&self.colors.color7),
             accent: hex_to_color(&self.colors.color4),
-            // Convert all palette colors
             color0: hex_to_color(&self.colors.color0),
             color1: hex_to_color(&self.colors.color1),
             color2: hex_to_color(&self.colors.color2),
@@ -115,10 +114,144 @@ impl WalColors {
     }
 }
 
+impl Theme {
+    /// Load theme based on config preferences
+    pub fn load_from_config(config: &Config) -> Self {
+        if config.use_pywal {
+            // Try to load pywal theme
+            if let Ok(wal_colors) = WalColors::load() {
+                eprintln!("Using pywal theme");
+                return wal_colors.to_theme();
+            } else {
+                eprintln!("Pywal enabled but colors.json not found, falling back to custom/default theme");
+            }
+        }
+        
+        // Use custom theme from config if available
+        if let Some(ref theme_config) = config.custom_theme {
+            eprintln!("Using custom theme from config");
+            return Self::from_config_theme(theme_config);
+        }
+        
+        // Fallback to default theme
+        eprintln!("Using default theme");
+        Self::default()
+    }
+    
+    /// Create theme from config theme
+    fn from_config_theme(theme_config: &ThemeConfig) -> Self {
+        Theme {
+            background: theme_config.background
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgba(0.15, 0.15, 0.18, 0.82)),
+            foreground: theme_config.foreground
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::WHITE),
+            border: theme_config.border
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(0.5, 0.5, 0.5)),
+            accent: theme_config.accent
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(0.6, 0.6, 0.6)),
+            color0: theme_config.color0
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::BLACK),
+            color1: theme_config.color1
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(0.8, 0.0, 0.0)),
+            color2: theme_config.color2
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(0.0, 0.8, 0.0)),
+            color3: theme_config.color3
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(0.8, 0.8, 0.0)),
+            color4: theme_config.color4
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(0.0, 0.0, 0.8)),
+            color5: theme_config.color5
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(0.8, 0.0, 0.8)),
+            color6: theme_config.color6
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(0.0, 0.8, 0.8)),
+            color7: theme_config.color7
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(0.7, 0.7, 0.7)),
+            color8: theme_config.color8
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(0.5, 0.5, 0.5)),
+            color9: theme_config.color9
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(1.0, 0.0, 0.0)),
+            color10: theme_config.color10
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(0.0, 1.0, 0.0)),
+            color11: theme_config.color11
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(1.0, 1.0, 0.0)),
+            color12: theme_config.color12
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(0.0, 0.0, 1.0)),
+            color13: theme_config.color13
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(1.0, 0.0, 1.0)),
+            color14: theme_config.color14
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::from_rgb(0.0, 1.0, 1.0)),
+            color15: theme_config.color15
+                .as_ref()
+                .map(|s| Config::hex_to_color(s))
+                .unwrap_or(Color::WHITE),
+        }
+    }
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Theme {
+            background: Color::from_rgba(0.15, 0.15, 0.18, 0.82),
+            foreground: Color::WHITE,
+            border: Color::from_rgb(0.5, 0.5, 0.5),
+            accent: Color::from_rgb(0.6, 0.6, 0.6),
+            color0: Color::BLACK,
+            color1: Color::from_rgb(0.8, 0.0, 0.0),
+            color2: Color::from_rgb(0.0, 0.8, 0.0),
+            color3: Color::from_rgb(0.8, 0.8, 0.0),
+            color4: Color::from_rgb(0.0, 0.0, 0.8),
+            color5: Color::from_rgb(0.8, 0.0, 0.8),
+            color6: Color::from_rgb(0.0, 0.8, 0.8),
+            color7: Color::from_rgb(0.7, 0.7, 0.7),
+            color8: Color::from_rgb(0.5, 0.5, 0.5),
+            color9: Color::from_rgb(1.0, 0.0, 0.0),
+            color10: Color::from_rgb(0.0, 1.0, 0.0),
+            color11: Color::from_rgb(1.0, 1.0, 0.0),
+            color12: Color::from_rgb(0.0, 0.0, 1.0),
+            color13: Color::from_rgb(1.0, 0.0, 1.0),
+            color14: Color::from_rgb(0.0, 1.0, 1.0),
+            color15: Color::WHITE,
+        }
+    }
+}
+
 fn hex_to_color(hex: &str) -> Color {
-    let hex = hex.trim_start_matches('#');
-    let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
-    let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
-    let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0);
-    Color::from_rgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0)
+    Config::hex_to_color(hex)
 }

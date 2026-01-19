@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Sierra Launcher Installation Script
-# This script installs sierra-launcher and sets up Super+F keybinding
-
 set -e
 
 echo "=== Sierra Launcher Installation ==="
