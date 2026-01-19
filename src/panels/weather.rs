@@ -1,5 +1,5 @@
 use iced::widget::{container, text, column, row, stack};
-use iced::{Element, Border, Color, Length};
+use iced::{Element, Border, Color, Length, Padding};
 use chrono::{Local, Timelike};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -82,35 +82,30 @@ pub struct WeatherPanel {
 
 impl WeatherPanel {
     pub fn new() -> Self {
-        let weather_data = Arc::new(Mutex::new(Self::load_from_cache()));
-        let is_updating = Arc::new(Mutex::new(false));
+        let weather_data = Arc::new(Mutex::new(None));
+        let is_updating = Arc::new(Mutex::new(true));
         
-        // Start background update if cache is old or missing
-        let should_update = {
-            let data = weather_data.lock().unwrap();
-            match &*data {
-                None => true,
-                Some(w) => {
-                    SystemTime::now()
-                        .duration_since(w.cached_at)
-                        .map(|d| d.as_secs() > 3600)
-                        .unwrap_or(true)
+        let weather_clone = Arc::clone(&weather_data);
+        let updating_clone = Arc::clone(&is_updating);
+
+        thread::spawn(move || {
+            if let Some(cached) = Self::load_from_cache() {
+                *weather_clone.lock().unwrap() = Some(cached.clone());
+                if let Ok(age) = SystemTime::now().duration_since(cached.cached_at) {
+                    if age.as_secs() < 3600 {
+                        *updating_clone.lock().unwrap() = false;
+                        return;
+                    }
                 }
             }
-        };
 
-        if should_update {
-            let weather_clone = Arc::clone(&weather_data);
-            let updating_clone = Arc::clone(&is_updating);
-            thread::spawn(move || {
-                *updating_clone.lock().unwrap() = true;
-                if let Ok(new_data) = Self::fetch_weather_data() {
-                    *weather_clone.lock().unwrap() = Some(new_data.clone());
-                    let _ = Self::save_to_cache(&new_data);
-                }
-                *updating_clone.lock().unwrap() = false;
-            });
-        }
+            if let Ok(new_data) = Self::fetch_weather_data() {
+                *weather_clone.lock().unwrap() = Some(new_data.clone());
+                let _ = Self::save_to_cache(&new_data);
+            }
+            
+            *updating_clone.lock().unwrap() = false;
+        });
 
         Self {
             weather_data,
@@ -153,71 +148,29 @@ impl WeatherPanel {
     fn get_weather_art(condition: &str) -> Vec<&'static str> {
         let condition_lower = condition.to_lowercase();
         if condition_lower.contains("sunny") || condition_lower.contains("clear") {
-            vec![
-                "    \\   /    ",
-                "     .-.     ",
-                "  — (   ) —  ",
-                "     `-'     ",
-                "    /   \\    ",
-            ]
+            vec!["    \\   /    ", "     .-.     ", "  — (   ) —  ", "     `-'     ", "    /   \\    "]
         } else if condition_lower.contains("cloudy") {
-            vec![
-                "             ",
-                "     .--.    ",
-                "  .-(    ).  ",
-                " (___.__)__) ",
-                "             ",
-            ]
+            vec!["             ", "     .--.    ", "  .-(    ).  ", " (___.__)__) ", "             "]
         } else if condition_lower.contains("rain") || condition_lower.contains("shower") {
-            vec![
-                "     .--.    ",
-                "  .-(    ).  ",
-                " (___.__)__) ",
-                "   ‚'‚'‚'‚'   ",
-                "   ‚'‚'‚'‚'   ",
-            ]
+            vec!["     .--.    ", "  .-(    ).  ", " (___.__)__) ", "   ‚'‚'‚'‚'   ", "   ‚'‚'‚'‚'   "]
         } else if condition_lower.contains("snow") {
-            vec![
-                "     .--.    ",
-                "  .-(    ).  ",
-                " (___.__)__) ",
-                "   * * * *   ",
-                "  * * * *    ",
-            ]
+            vec!["     .--.    ", "  .-(    ).  ", " (___.__)__) ", "   * * * * ", "  * * * * "]
         } else if condition_lower.contains("thunder") || condition_lower.contains("storm") {
-            vec![
-                "     .--.    ",
-                "  .-(    ).  ",
-                " (___.__)__) ",
-                "   ⚡'‚'⚡'‚'   ",
-                "   ‚'⚡'‚'‚'   ",
-            ]
+            vec!["     .--.    ", "  .-(    ).  ", " (___.__)__) ", "   ⚡'‚'⚡'‚'   ", "   ‚'⚡'‚'‚'   "]
         } else {
-            vec![
-                "    .--.     ",
-                "   (    )    ",
-                "  (      )   ",
-                " (________)  ",
-                "             ",
-            ]
+            vec!["    .--.     ", "   (    )    ", "  (      )   ", " (________)  ", "             "]
         }
     }
 
     fn fetch_weather_data() -> Result<WeatherData, Box<dyn std::error::Error>> {
         let client = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(5))
+            .timeout(Duration::from_secs(4))
             .build()?;
 
-        let location_resp: serde_json::Value = client
-            .get("https://ipinfo.io/json")
-            .send()?
-            .json()?;
+        let url = "https://wttr.in/?format=j1";
         
-        let city = location_resp["city"].as_str().unwrap_or("auto");
-
-        let url = format!("https://wttr.in/{}?format=j1", city);
         let weather_resp: WttrResponse = client
-            .get(&url)
+            .get(url)
             .header("User-Agent", "curl")
             .send()?
             .json()?;
@@ -255,16 +208,13 @@ impl WeatherPanel {
         
         let mut lines = Vec::new();
         
-        // Header with time labels
         let mut header = String::new();
         for i in 0..6 {
             let slot_idx = (start_slot as usize + i) % 8;
-            let label = time_labels[slot_idx];
-            header.push_str(&format!("{:>7}", label));
+            header.push_str(&format!("{:>7}", time_labels[slot_idx]));
         }
         lines.push(header);
         
-        // Temperature line
         let mut temp_line = String::new();
         for i in 0..6 {
             let slot_idx = (start_slot as usize + i) % 8;
@@ -276,7 +226,6 @@ impl WeatherPanel {
         }
         lines.push(temp_line);
         
-        // Wind line
         let mut wind_line = String::new();
         for i in 0..6 {
             let slot_idx = (start_slot as usize + i) % 8;
@@ -288,7 +237,6 @@ impl WeatherPanel {
         }
         lines.push(wind_line);
         
-        // Precipitation line
         let mut precip_line = String::new();
         for i in 0..6 {
             let slot_idx = (start_slot as usize + i) % 8;
@@ -314,61 +262,46 @@ impl WeatherPanel {
         let is_updating = *self.is_updating.lock().unwrap();
 
         let content = if let Some(weather_clone) = weather_data_guard.clone() {
-            // Extract all string data upfront to avoid lifetime issues
             let greeting = Self::get_greeting().to_string();
-            let condition = weather_clone.condition.clone();
-            let temp = weather_clone.temp.clone();
-            let wind_speed = weather_clone.wind_speed.clone();
-            let wind_dir = weather_clone.wind_dir.clone();
-            let humidity = weather_clone.humidity.clone();
-            let hourly = weather_clone.hourly.clone();
+            let art_lines = Self::get_weather_art(&weather_clone.condition);
             
-            // Build weather display
-            let art_lines = Self::get_weather_art(&condition);
-            
-            // Weather art as column
             let mut art_col = column![].spacing(0);
             for line in art_lines {
                 art_col = art_col.push(
                     text(line)
-                    .line_height(1.0)
-                        .color(Color::from_rgb(0.5, 0.8, 1.0)) // Cyan
+                        .line_height(1.0)
+                        .color(Color::from_rgb(0.5, 0.8, 1.0))
                         .font(font)
                         .size(font_size)
                 );
             }
             
-            // Weather info
-            let mut info_col = column![].spacing(5).padding(iced::Padding { top: 10.0, right: 0.0, bottom: 0.0, left: 0.0 });
+            let mut info_col = column![].spacing(5).padding(Padding { top: 10.0, right: 0.0, bottom: 0.0, left: 0.0 });
             
-            // Greeting
             info_col = info_col.push(
                 text(greeting)
                     .line_height(1.0)
-                    .color(Color::from_rgb(1.0, 0.5, 0.4)) // Light red/orange
+                    .color(Color::from_rgb(1.0, 0.5, 0.4))
                     .font(font)
                     .size(font_size)
             );
             
-            // Condition
             info_col = info_col.push(
-                text(condition)
+                text(weather_clone.condition.clone()) // FIXED: Cloned to take ownership
                     .line_height(1.0)
                     .color(Color::WHITE)
                     .font(font)
                     .size(font_size)
             );
             
-            // Temperature
             info_col = info_col.push(
-                text(format!("{}°C", temp))
+                text(format!("{}°C", weather_clone.temp))
                     .line_height(1.0)
-                    .color(Color::from_rgb(0.7, 0.9, 1.0)) // Light cyan
+                    .color(Color::from_rgb(0.7, 0.9, 1.0))
                     .font(font)
                     .size(font_size * 1.2)
             );
             
-            // Wind
             info_col = info_col.push(
                 row![
                     text("Wind: ")
@@ -376,7 +309,7 @@ impl WeatherPanel {
                         .color(Color::from_rgb(0.5, 0.5, 0.5))
                         .font(font)
                         .size(font_size),
-                    text(format!("{} km/h {}", wind_speed, wind_dir))
+                    text(format!("{} km/h {}", weather_clone.wind_speed, weather_clone.wind_dir))
                         .line_height(1.0)
                         .color(Color::WHITE)
                         .font(font)
@@ -385,7 +318,6 @@ impl WeatherPanel {
                 .spacing(5)
             );
             
-            // Humidity
             info_col = info_col.push(
                 row![
                     text("Humidity: ")
@@ -393,7 +325,7 @@ impl WeatherPanel {
                         .color(Color::from_rgb(0.5, 0.5, 0.5))
                         .font(font)
                         .size(font_size),
-                    text(format!("{}%", humidity))
+                    text(format!("{}%", weather_clone.humidity))
                         .line_height(1.0)
                         .color(Color::WHITE)
                         .font(font)
@@ -402,7 +334,6 @@ impl WeatherPanel {
                 .spacing(5)
             );
             
-            // Updating indicator
             if is_updating {
                 info_col = info_col.push(
                     text("↻ updating...")
@@ -412,30 +343,28 @@ impl WeatherPanel {
                 );
             }
             
-            // Top section: art + info
             let top_section = row![
                 container(art_col)
                     .width(Length::Fixed(160.0))
-                    .padding(iced::Padding { top: 10.0, right: 0.0, bottom: 0.0, left: 45.0 }),
+                    .padding(Padding { top: 10.0, right: 0.0, bottom: 0.0, left: 45.0 }),
                 container(info_col)
                     .width(Length::Fixed(200.0))
-                    .padding(iced::Padding { top: 0.0, right:0.0, bottom: 0.0, left: 45.0}),
+                    .padding(Padding { top: 0.0, right:0.0, bottom: 0.0, left: 45.0}),
             ]
             .spacing(1);
             
-            // Hourly forecast
-            let forecast_lines = Self::format_hourly_forecast(&hourly);
-            let mut forecast_col = column![].spacing(2).padding(iced::Padding { top: 20.0, right: 30.0, bottom: 0.0, left: 0.0 });
+            let forecast_lines = Self::format_hourly_forecast(&weather_clone.hourly);
+            let mut forecast_col = column![].spacing(2).padding(Padding { top: 20.0, right: 30.0, bottom: 0.0, left: 0.0 });
             
-            for (i, line) in forecast_lines.iter().enumerate() {
+            for (i, line) in forecast_lines.into_iter().enumerate() {
                 let color = if i == 0 {
-                    Color::from_rgb(0.5, 0.8, 1.0) // Cyan for header
+                    Color::from_rgb(0.5, 0.8, 1.0)
                 } else {
                     Color::WHITE
                 };
                 
                 forecast_col = forecast_col.push(
-                    text(line.clone())
+                    text(line)
                         .line_height(1.0)
                         .color(color)
                         .font(font)
@@ -443,7 +372,6 @@ impl WeatherPanel {
                 );
             }
             
-            // Complete layout
             column![
                 top_section,
                 container(forecast_col)
@@ -453,7 +381,6 @@ impl WeatherPanel {
             .spacing(0)
             
         } else {
-            // Loading state
             column![
                 container(
                     text("Loading weather...")
@@ -471,7 +398,6 @@ impl WeatherPanel {
         container(
             container(
                 stack![
-                    // Background + content container
                     container(
                         container(content)
                             .width(Length::Fill)
@@ -491,7 +417,6 @@ impl WeatherPanel {
                     .width(Length::Fill)
                     .height(Length::Fill),
                     
-                    // Floating title label
                     container(
                         container(
                             text(" Weather ")
