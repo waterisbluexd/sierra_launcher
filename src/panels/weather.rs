@@ -270,7 +270,7 @@ impl WeatherPanel {
                 art_col = art_col.push(
                     text(line)
                         .line_height(1.0)
-                        .color(Color::from_rgb(0.5, 0.8, 1.0))
+                        .color(theme.color4)
                         .font(font)
                         .size(font_size)
                 );
@@ -281,7 +281,7 @@ impl WeatherPanel {
             info_col = info_col.push(
                 text(greeting)
                     .line_height(1.0)
-                    .color(Color::from_rgb(1.0, 0.5, 0.4))
+                    .color(theme.color1)
                     .font(font)
                     .size(font_size)
             );
@@ -289,7 +289,7 @@ impl WeatherPanel {
             info_col = info_col.push(
                 text(weather_clone.condition.clone())
                     .line_height(1.0)
-                    .color(Color::WHITE)
+                    .color(theme.foreground)
                     .font(font)
                     .size(font_size)
             );
@@ -297,7 +297,7 @@ impl WeatherPanel {
             info_col = info_col.push(
                 text(format!("{}°C", weather_clone.temp))
                     .line_height(1.0)
-                    .color(Color::from_rgb(0.7, 0.9, 1.0))
+                    .color(theme.color12)
                     .font(font)
                     .size(font_size * 1.2)
             );
@@ -306,12 +306,12 @@ impl WeatherPanel {
                 row![
                     text("Wind: ")
                         .line_height(1.0)
-                        .color(Color::from_rgb(0.5, 0.5, 0.5))
+                        .color(theme.color8)
                         .font(font)
                         .size(font_size),
                     text(format!("{} km/h {}", weather_clone.wind_speed, weather_clone.wind_dir))
                         .line_height(1.0)
-                        .color(Color::WHITE)
+                        .color(theme.foreground)
                         .font(font)
                         .size(font_size),
                 ]
@@ -322,12 +322,12 @@ impl WeatherPanel {
                 row![
                     text("Humidity: ")
                         .line_height(1.0)
-                        .color(Color::from_rgb(0.5, 0.5, 0.5))
+                        .color(theme.color8)
                         .font(font)
                         .size(font_size),
                     text(format!("{}%", weather_clone.humidity))
                         .line_height(1.0)
-                        .color(Color::WHITE)
+                        .color(theme.foreground)
                         .font(font)
                         .size(font_size),
                 ]
@@ -337,7 +337,7 @@ impl WeatherPanel {
             if is_updating {
                 info_col = info_col.push(
                     text("↻ updating...")
-                        .color(Color::from_rgb(0.5, 0.5, 0.5))
+                        .color(theme.color8)
                         .font(font)
                         .size(font_size * 0.9)
                 );
@@ -358,9 +358,9 @@ impl WeatherPanel {
             
             for (i, line) in forecast_lines.into_iter().enumerate() {
                 let color = if i == 0 {
-                    Color::from_rgb(0.5, 0.8, 1.0)
+                    theme.color4
                 } else {
-                    Color::WHITE
+                    theme.foreground
                 };
                 
                 forecast_col = forecast_col.push(
@@ -384,7 +384,7 @@ impl WeatherPanel {
             column![
                 container(
                     text("Loading weather...")
-                        .color(Color::from_rgb(0.5, 0.5, 0.5))
+                        .color(theme.color8)
                         .font(font)
                         .size(font_size)
                 )
