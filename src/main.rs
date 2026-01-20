@@ -490,23 +490,16 @@ impl Launcher {
             }
 
             Message::ClipboardSelect => {
-                let items = crate::utils::data::search_items("");
-                if let Some(item) = items.get(self.clipboard_selected_index) {
-                    let content = item.full_content();
+                    let items = crate::utils::data::search_items("");
+                    if let Some(item) = items.get(self.clipboard_selected_index) {
+                        let content = item.full_content();
                     
-                    // Tell monitor to ignore this exact text
-                    crate::utils::monitor::set_ignore_next(content.clone());
-                    
-                    // Copy to clipboard synchronously (blocking)
-                    use arboard::Clipboard;
-                    if let Ok(mut clipboard) = Clipboard::new() {
-                        let _ = clipboard.set_text(&content);
-                        // Give clipboard time to actually copy
-                        std::thread::sleep(std::time::Duration::from_millis(50));
+                        crate::utils::monitor::set_ignore_next(content.clone());
+                        let _ = crate::utils::copy::copy_to_clipboard(&content);
                     }
+                    Command::none()
                 }
-                Command::none()
-            }
+
 
             Message::ClipboardDelete => {
                 let items = crate::utils::data::search_items("");
