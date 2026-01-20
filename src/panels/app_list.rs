@@ -13,7 +13,6 @@ pub enum Message {
     ArrowUp,
     ArrowDown,
     LaunchSelected,
-    AppsLoaded, // NEW: Signal that apps finished loading
 }
 
 #[derive(Debug, Clone)]
@@ -43,7 +42,7 @@ pub struct AppList {
     scroll_id: iced::widget::Id,
     window_size: usize,
     window_start: usize,
-    is_loading: bool, // NEW: Track if we're currently loading
+    is_loading: bool,
 }
 
 impl AppList {
@@ -60,11 +59,12 @@ impl AppList {
             scroll_id: iced::widget::Id::unique(),
             window_size: 17,
             window_start: 0,
-            is_loading: false,
+            is_loading: false, // Not loading yet - wait for start_loading() call
         }
     }
 
     /// Trigger lazy loading of apps in background thread
+    /// Call this AFTER the first frame is rendered
     pub fn start_loading(&mut self) {
         let state = LOADING_STATE.get().unwrap().clone();
         let mut state_lock = state.lock().unwrap();
@@ -78,6 +78,7 @@ impl AppList {
                 let total_apps = Self::all_apps().len();
                 self.filtered_indices = (0..total_apps).collect();
                 self.is_loading = false;
+                eprintln!("[AppList] Apps already cached - {} total", total_apps);
             }
             return;
         }
@@ -86,10 +87,10 @@ impl AppList {
         drop(state_lock);
         
         self.is_loading = true;
+        eprintln!("[AppList] Starting lazy app loading...");
         
         // Load apps in background thread
         thread::spawn(move || {
-            eprintln!("[AppList] Starting background app loading...");
             let start = std::time::Instant::now();
             
             // This will initialize APP_CACHE
@@ -99,7 +100,7 @@ impl AppList {
             let state = LOADING_STATE.get().unwrap();
             *state.lock().unwrap() = LoadingState::Loaded;
             
-            eprintln!("[AppList] Loaded {} apps in {:?}", 
+            eprintln!("[AppList] ✓ Loaded {} apps in {:?}", 
                 APP_CACHE.get().unwrap().len(), 
                 start.elapsed()
             );
@@ -107,6 +108,7 @@ impl AppList {
     }
 
     /// Check if apps are loaded and update filtered list
+    /// Returns true if apps just finished loading
     pub fn check_loaded(&mut self) -> bool {
         if !self.is_loading {
             return false;
@@ -123,7 +125,7 @@ impl AppList {
             self.filtered_indices = (0..total_apps).collect();
             self.is_loading = false;
             
-            eprintln!("[AppList] Apps populated - {} total", total_apps);
+            eprintln!("[AppList] ✓ Apps populated - {} total", total_apps);
             return true;
         }
         
@@ -131,10 +133,12 @@ impl AppList {
     }
 
     fn all_apps() -> &'static [App] {
-    APP_CACHE.get().map_or(&[], |v| v.as_slice())
-}
+        APP_CACHE.get().map_or(&[], |v| v.as_slice())
+    }
 
     fn load_desktop_apps() -> Vec<App> {
+        eprintln!("[AppList] Loading desktop applications...");
+        
         let mut apps: Vec<App> = gio::AppInfo::all()
             .into_iter()
             .filter_map(|app| {
@@ -157,8 +161,10 @@ impl AppList {
             })
             .collect();
 
+        // Sort apps alphabetically
         apps.sort_unstable_by(|a, b| a.name_lower.cmp(&b.name_lower));
-        eprintln!("[AppList] Loaded and sorted {} desktop apps", apps.len());
+        
+        eprintln!("[AppList] ✓ Loaded and sorted {} desktop apps", apps.len());
         apps
     }
 
@@ -236,13 +242,6 @@ impl AppList {
             }
             Message::LaunchSelected => {
                 self.launch_selected();
-                Task::none()
-            }
-            Message::AppsLoaded => {
-                // Apps finished loading - repopulate list
-                let total_apps = Self::all_apps().len();
-                self.filtered_indices = (0..total_apps).collect();
-                self.is_loading = false;
                 Task::none()
             }
         }
