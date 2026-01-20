@@ -193,7 +193,7 @@ pub fn clipboard_panel_view<'a>(
     }
 
     container(
-        stack![
+        stack![container(
             container(
                 scrollable(list)
                     .width(Length::Fill)
@@ -210,6 +210,10 @@ pub fn clipboard_panel_view<'a>(
                 },
                 ..Default::default()
             }),
+        ).padding(iced::padding::top(10))
+        .width(Length::Fill)
+        .height(Length::Fill),
+            
             container(
                 text(" Clipboard ")
                     .font(font)

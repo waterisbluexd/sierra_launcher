@@ -1,13 +1,13 @@
-//! Clipboard copy operations using wl-clipboard-rs
+use std::process::{Command, Stdio};
 
-use wl_clipboard_rs::copy::{MimeType, Options, Source};
-
-/// Copy text to clipboard using wl-clipboard-rs
 pub fn copy_to_clipboard(text: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let opts = Options::new();
-    opts.copy(
-        Source::Bytes(text.as_bytes().to_vec().into()),
-        MimeType::Text,
-    )?;
+    let mut child = Command::new("wl-copy")
+        .stdin(Stdio::piped())
+        .spawn()?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        use std::io::Write;
+        stdin.write_all(text.as_bytes())?;
+    }
     Ok(())
 }

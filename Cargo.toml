@@ -43,6 +43,7 @@ rayon = "1.8"
 parking_lot = "0.12"       
 wl-clipboard-rs = "0.9"
 
+
 [dependencies.gio]
 version = "0.20"
 features = ["v2_66"]
