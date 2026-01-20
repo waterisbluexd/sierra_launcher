@@ -287,7 +287,7 @@ impl WeatherPanel {
             );
             
             info_col = info_col.push(
-                text(weather_clone.condition.clone()) // FIXED: Cloned to take ownership
+                text(weather_clone.condition.clone())
                     .line_height(1.0)
                     .color(Color::WHITE)
                     .font(font)
@@ -413,7 +413,7 @@ impl WeatherPanel {
                                 ..Default::default()
                             })
                     )
-                    .padding(iced::padding::top(15))
+                    .padding(Padding { top: 15.0, right: 0.0, bottom: 0.0, left: 0.0 })
                     .width(Length::Fill)
                     .height(Length::Fill),
                     
@@ -431,7 +431,7 @@ impl WeatherPanel {
                             ..Default::default()
                         })
                     )
-                    .padding(iced::padding::left(8).top(5))
+                    .padding(Padding { top: 5.0, right: 0.0, bottom: 0.0, left: 8.0 })
                     .width(Length::Shrink)
                     .height(Length::Shrink),
                 ]
