@@ -213,18 +213,22 @@ pub fn clipboard_panel_view<'a>(
         ).padding(iced::padding::top(10))
         .width(Length::Fill)
         .height(Length::Fill),
-            
+        
+        container(
             container(
                 text(" Clipboard ")
-                    .font(font)
-                    .size(font_size)
-                    .color(theme.color6),
-            )
-            .padding(iced::padding::left(8))
-            .style(move |_| container::Style {
-                background: Some(bg_with_alpha.into()),
-                ..Default::default()
+                .font(font)
+                .size(font_size)
+                .color(theme.color6),
+                )
+                .style(move |_| container::Style {
+                    background: Some(bg_with_alpha.into()),
+                    ..Default::default()
             }),
+        )
+        .padding(iced::padding::left(8))
+        .width(Length::Fill)
+        .height(Length::Fill),
         ],
     )
     .padding(iced::padding::top(218))

@@ -13,8 +13,8 @@ overflow-checks = false
 debug = false              
 
 [profile.release.package."*"]
-opt-level = 3
-codegen-units = 1
+opt-level = 2
+codegen-units = 8
 
 [profile.dev]
 opt-level = 1
