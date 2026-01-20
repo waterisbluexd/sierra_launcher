@@ -7,12 +7,10 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-/// System panel with real-time metrics
 pub struct SystemPanel {
     metrics: Arc<Mutex<SystemMetrics>>,
 }
 
-/// Represents system metrics data
 #[derive(Clone)]
 pub struct SystemMetrics {
     pub cpu_usage: f32,
@@ -41,55 +39,72 @@ impl SystemPanel {
         let metrics = Arc::new(Mutex::new(SystemMetrics::default()));
         let metrics_clone = Arc::clone(&metrics);
 
-        // Spawn background thread to collect system metrics
+        // Spawn background thread with lazy initialization
         thread::spawn(move || {
+            eprintln!("[System] Initializing system monitoring...");
+            let start = std::time::Instant::now();
+            
+            // Initialize sysinfo components ONCE (expensive operation)
             let mut sys = System::new_all();
             let mut networks = Networks::new_with_refreshed_list();
             let mut disks = Disks::new_with_refreshed_list();
+            
+            eprintln!("[System] ✓ Initialized in {:?}", start.elapsed());
 
+            // First refresh to get initial data
+            sys.refresh_cpu_usage();
+            sys.refresh_memory();
+            
             loop {
-                // Refresh system info
+                // Only refresh what we need, not System::new_all() every time
                 sys.refresh_cpu_usage();
                 sys.refresh_memory();
                 networks.refresh();
                 disks.refresh();
 
                 let mut m = metrics_clone.lock().unwrap();
-
+                
                 // CPU usage
                 m.cpu_usage = sys.global_cpu_usage();
-
+                
                 // Memory usage
-                m.mem_usage = if sys.total_memory() > 0 {
-                    (sys.used_memory() as f64 / sys.total_memory() as f64 * 100.0) as f32
+                let total_mem = sys.total_memory();
+                m.mem_usage = if total_mem > 0 {
+                    (sys.used_memory() as f64 / total_mem as f64 * 100.0) as f32
                 } else {
                     0.0
                 };
-
-                // Disk usage
-                let (disk_used, disk_total): (u64, u64) = disks.list().iter()
-                   .map(|disk| (disk.total_space() - disk.available_space(), disk.total_space()))
-                   .fold((0, 0), |(acc_used, acc_total), (used, total)| {
+                
+                // Disk usage (optimized with iterator chaining)
+                let (disk_used, disk_total) = disks.list()
+                    .iter()
+                    .fold((0u64, 0u64), |(acc_used, acc_total), disk| {
+                        let total = disk.total_space();
+                        let used = total - disk.available_space();
                         (acc_used + used, acc_total + total)
                     });
+                
                 m.disk_usage = if disk_total > 0 {
                     (disk_used as f64 / disk_total as f64 * 100.0) as f32
                 } else {
                     0.0
                 };
 
-                // Network usage
-                let total_network: u64 = networks.iter()
-                   .map(|(_, data)| data.received() + data.transmitted())
-                   .sum();
-                m.net_usage = (total_network as f64 / 10_000_000.0 * 100.0) as f32;
+                // Network usage (optimized)
+                let total_network: u64 = networks
+                    .iter()
+                    .map(|(_, data)| data.received() + data.transmitted())
+                    .sum();
+                m.net_usage = (total_network as f64 / 10_000_000.0 * 100.0).min(100.0) as f32;
 
-                // GPU usage (nvidia-smi)
-                let gpu_usages = Self::get_gpu_usage();
+                // GPU usage (cached to avoid spawning processes every 2 seconds)
+                let gpu_usages = Self::get_gpu_usage_cached();
                 m.gpu_usage = gpu_usages[0];
                 m.gpu1_usage = gpu_usages[1];
 
                 drop(m);
+                
+                // Sleep for 2 seconds before next refresh
                 thread::sleep(Duration::from_secs(2));
             }
         });
@@ -97,34 +112,66 @@ impl SystemPanel {
         Self { metrics }
     }
 
+    // Cached GPU usage - only update every 4 seconds instead of 2
+    fn get_gpu_usage_cached() -> Vec<f32> {
+        use std::sync::OnceLock;
+        use std::time::Instant;
+        
+        static GPU_CACHE: OnceLock<Mutex<(Vec<f32>, Instant)>> = OnceLock::new();
+        let cache = GPU_CACHE.get_or_init(|| {
+            Mutex::new((vec![0.0, 0.0], Instant::now() - Duration::from_secs(10)))
+        });
+        
+        let mut cached = cache.lock().unwrap();
+        let now = Instant::now();
+        
+        // Only refresh GPU stats every 4 seconds (nvidia-smi is slow)
+        if now.duration_since(cached.1) > Duration::from_secs(4) {
+            cached.0 = Self::get_gpu_usage();
+            cached.1 = now;
+        }
+        
+        cached.0.clone()
+    }
+
     fn get_gpu_usage() -> Vec<f32> {
         let mut gpu_usages = vec![0.0, 0.0];
-        if let Ok(output) = std::process::Command::new("nvidia-smi")
-           .args(&["--query-gpu=utilization.gpu", "--format=csv,noheader,nounits"])
-           .output() {
-            if let Ok(stdout) = String::from_utf8(output.stdout) {
-                for (i, line) in stdout.lines().take(2).enumerate() {
-                    if let Ok(usage) = line.trim().parse::<f32>() {
-                        gpu_usages[i] = usage;
+        
+        // Use a timeout to prevent blocking if nvidia-smi hangs
+        let output = std::process::Command::new("timeout")
+            .args(&[
+                "1",  // 1 second timeout
+                "nvidia-smi",
+                "--query-gpu=utilization.gpu",
+                "--format=csv,noheader,nounits"
+            ])
+            .output();
+        
+        if let Ok(output) = output {
+            if output.status.success() {
+                if let Ok(stdout) = String::from_utf8(output.stdout) {
+                    for (i, line) in stdout.lines().take(2).enumerate() {
+                        if let Ok(usage) = line.trim().parse::<f32>() {
+                            gpu_usages[i] = usage;
+                        }
                     }
                 }
             }
         }
+        
         gpu_usages
     }
 }
 
 /// Creates a vertical bar visualization for a metric
+#[inline]
 fn vertical_bar<'a>(
     label: &'a str,
     value: f32,
     theme: &'a Theme,
     font: Font,
 ) -> Element<'a, Message> {
-    // ═══════════════════════════════════════════════════════════
-    // CHANGE BAR WIDTH HERE - This value controls the width of ALL bars
-    const BAR_WIDTH: f32 = 20.0;  // ← CHANGE THIS VALUE to make bars wider/narrower
-    // ═══════════════════════════════════════════════════════════
+    const BAR_WIDTH: f32 = 20.0;
 
     let percentage_text = text(format!("{:.0}%", value))
         .size(12)
@@ -137,16 +184,13 @@ fn vertical_bar<'a>(
     
     // Calculate layout portions (Total = 1000)
     let filled_portion = (bar_height_ratio * 1000.0).round() as u16;
-    let empty_portion = (1000.0 - filled_portion as f32).round() as u16;
+    let empty_portion = 1000u16.saturating_sub(filled_portion);
     
     let bar_visual = container(
         column![
-            // ═══════════════════════════════════════════════════════════
-            // BACKGROUND BAR (Top / Empty)
-            // ═══════════════════════════════════════════════════════════
-            container(Space::new()) // Space just fills the container
+            // Empty portion (top)
+            container(Space::new())
                 .width(Length::Fixed(BAR_WIDTH))
-                // HEIGHT IS APPLIED TO CONTAINER, NOT SPACE!
                 .height(if empty_portion > 0 { 
                     Length::FillPortion(empty_portion) 
                 } else { 
@@ -156,9 +200,9 @@ fn vertical_bar<'a>(
                     background: Some(theme.color11.into()), 
                     ..Default::default()
                 }),
-            container(Space::new()) // Space just fills the container
+            // Filled portion (bottom)
+            container(Space::new())
                 .width(Length::Fixed(BAR_WIDTH))
-                // HEIGHT IS APPLIED TO CONTAINER, NOT SPACE!
                 .height(if filled_portion > 0 { 
                     Length::FillPortion(filled_portion) 
                 } else { 
@@ -202,7 +246,7 @@ pub fn system_panel_view<'a>(
 ) -> Element<'a, Message> {
     let metrics = system_panel.metrics.lock().unwrap().clone();
 
-    let metrics_data = vec![
+    let metrics_data = [
         ("CPU", metrics.cpu_usage),
         ("MEM", metrics.mem_usage),
         ("NET", metrics.net_usage),
@@ -213,11 +257,11 @@ pub fn system_panel_view<'a>(
 
     let bars_row = row(
         metrics_data
-           .into_iter()
-           .map(|(label, value)| vertical_bar(label, value, theme, font))
-           .collect::<Vec<_>>()
+            .iter()
+            .map(|&(label, value)| vertical_bar(label, value, theme, font))
+            .collect::<Vec<_>>()
     )
-    .spacing(12)  // ← Space between each bar
+    .spacing(12)
     .width(Length::Fill)
     .height(Length::Fill)
     .padding(8);
@@ -245,7 +289,7 @@ pub fn system_panel_view<'a>(
                 .padding(iced::padding::top(15))
                 .width(Length::Fill)
                 .height(Length::Fill),
-                // Floating title label
+                
                 container(
                     container(
                         text(" System ")
