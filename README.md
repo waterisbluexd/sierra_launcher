@@ -1,1 +1,8 @@
-![GenScene](https://github.com/user-attachments/assets/4735a94b-0853-482c-8f77-de3b4415a44c)
+<p align="center">
+  <img 
+    src="https://github.com/user-attachments/assets/fd94f17a-4d80-4d38-859d-91d350eb3549"
+    width="300"
+    height="60"
+    alt="Sprite-0003"
+  />
+</p>
