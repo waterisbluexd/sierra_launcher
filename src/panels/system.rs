@@ -8,7 +8,7 @@ use std::thread;
 use std::time::Duration;
 
 pub struct SystemPanel {
-    metrics: Arc<Mutex<SystemMetrics>>,
+    metrics: Arc<Mutex<Option<SystemMetrics>>>,  // ← Made Option for lazy init
 }
 
 #[derive(Clone)]
@@ -36,11 +36,14 @@ impl Default for SystemMetrics {
 
 impl SystemPanel {
     pub fn new() -> Self {
-        let metrics = Arc::new(Mutex::new(SystemMetrics::default()));
+        let metrics = Arc::new(Mutex::new(None));  // ← Start with None
         let metrics_clone = Arc::clone(&metrics);
 
-        // Spawn background thread with lazy initialization
+        // Spawn background thread - don't block initialization
         thread::spawn(move || {
+            // ✅ Delay 100ms so window can appear first
+            thread::sleep(Duration::from_millis(100));
+            
             eprintln!("[System] Initializing system monitoring...");
             let start = std::time::Instant::now();
             
@@ -55,6 +58,12 @@ impl SystemPanel {
             sys.refresh_cpu_usage();
             sys.refresh_memory();
             
+            // ✅ Set initial metrics so UI can start rendering
+            {
+                let mut m = metrics_clone.lock().unwrap();
+                *m = Some(SystemMetrics::default());
+            }
+            
             loop {
                 // Only refresh what we need, not System::new_all() every time
                 sys.refresh_cpu_usage();
@@ -62,47 +71,49 @@ impl SystemPanel {
                 networks.refresh();
                 disks.refresh();
 
-                let mut m = metrics_clone.lock().unwrap();
+                let mut metrics_opt = metrics_clone.lock().unwrap();
                 
-                // CPU usage
-                m.cpu_usage = sys.global_cpu_usage();
-                
-                // Memory usage
-                let total_mem = sys.total_memory();
-                m.mem_usage = if total_mem > 0 {
-                    (sys.used_memory() as f64 / total_mem as f64 * 100.0) as f32
-                } else {
-                    0.0
-                };
-                
-                // Disk usage (optimized with iterator chaining)
-                let (disk_used, disk_total) = disks.list()
-                    .iter()
-                    .fold((0u64, 0u64), |(acc_used, acc_total), disk| {
-                        let total = disk.total_space();
-                        let used = total - disk.available_space();
-                        (acc_used + used, acc_total + total)
-                    });
-                
-                m.disk_usage = if disk_total > 0 {
-                    (disk_used as f64 / disk_total as f64 * 100.0) as f32
-                } else {
-                    0.0
-                };
+                if let Some(ref mut m) = *metrics_opt {
+                    // CPU usage
+                    m.cpu_usage = sys.global_cpu_usage();
+                    
+                    // Memory usage
+                    let total_mem = sys.total_memory();
+                    m.mem_usage = if total_mem > 0 {
+                        (sys.used_memory() as f64 / total_mem as f64 * 100.0) as f32
+                    } else {
+                        0.0
+                    };
+                    
+                    // Disk usage (optimized with iterator chaining)
+                    let (disk_used, disk_total) = disks.list()
+                        .iter()
+                        .fold((0u64, 0u64), |(acc_used, acc_total), disk| {
+                            let total = disk.total_space();
+                            let used = total - disk.available_space();
+                            (acc_used + used, acc_total + total)
+                        });
+                    
+                    m.disk_usage = if disk_total > 0 {
+                        (disk_used as f64 / disk_total as f64 * 100.0) as f32
+                    } else {
+                        0.0
+                    };
 
-                // Network usage (optimized)
-                let total_network: u64 = networks
-                    .iter()
-                    .map(|(_, data)| data.received() + data.transmitted())
-                    .sum();
-                m.net_usage = (total_network as f64 / 10_000_000.0 * 100.0).min(100.0) as f32;
+                    // Network usage (optimized)
+                    let total_network: u64 = networks
+                        .iter()
+                        .map(|(_, data)| data.received() + data.transmitted())
+                        .sum();
+                    m.net_usage = (total_network as f64 / 10_000_000.0 * 100.0).min(100.0) as f32;
 
-                // GPU usage (cached to avoid spawning processes every 2 seconds)
-                let gpu_usages = Self::get_gpu_usage_cached();
-                m.gpu_usage = gpu_usages[0];
-                m.gpu1_usage = gpu_usages[1];
+                    // GPU usage (cached to avoid spawning processes every 2 seconds)
+                    let gpu_usages = Self::get_gpu_usage_cached();
+                    m.gpu_usage = gpu_usages[0];
+                    m.gpu1_usage = gpu_usages[1];
+                }
 
-                drop(m);
+                drop(metrics_opt);
                 
                 // Sleep for 2 seconds before next refresh
                 thread::sleep(Duration::from_secs(2));
@@ -244,7 +255,71 @@ pub fn system_panel_view<'a>(
     font: iced::Font,
     font_size: f32,
 ) -> Element<'a, Message> {
-    let metrics = system_panel.metrics.lock().unwrap().clone();
+    let metrics_guard = system_panel.metrics.lock().unwrap();
+    
+    // ✅ Handle None case (system still initializing)
+    if metrics_guard.is_none() {
+        drop(metrics_guard);
+        
+        return container(
+            container(
+                stack![
+                    container(
+                        container(
+                            text("Loading system info...")
+                                .font(font)
+                                .size(font_size)
+                                .color(theme.color6)
+                                .center()
+                        )
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .center_x(Length::Fill)
+                        .center_y(Length::Fill)
+                        .padding(iced::padding::top(25))
+                        .style(move |_| container::Style {
+                            background: None,
+                            border: Border {
+                                color: theme.color3,
+                                width: 2.0,
+                                radius: 0.0.into(),
+                            },
+                            ..Default::default()
+                        })
+                    )
+                    .padding(iced::padding::top(15))
+                    .width(Length::Fill)
+                    .height(Length::Fill),
+                    
+                    container(
+                        container(
+                            text(" System ")
+                                .color(theme.color6)
+                                .font(font)
+                                .size(font_size)
+                        )
+                        .width(Length::Shrink)
+                        .height(Length::Shrink)
+                        .style(move |_| container::Style {
+                            background: Some(bg_with_alpha.into()),
+                            ..Default::default()
+                        })
+                    )
+                    .padding(iced::padding::left(8).top(5))
+                    .width(Length::Shrink)
+                    .height(Length::Shrink),
+                ]
+            )
+            .width(Length::Fill)
+            .height(Length::Fill)
+        )
+        .width(Length::Fill)
+        .height(Length::FillPortion(1))
+        .into();
+    }
+    
+    let metrics = metrics_guard.as_ref().unwrap().clone();
+    drop(metrics_guard);
 
     let metrics_data = [
         ("CPU", metrics.cpu_usage),

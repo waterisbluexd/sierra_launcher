@@ -127,7 +127,18 @@ impl TryInto<LayershellCustomActionWithId> for Message {
 
 impl Launcher {
     fn new() -> (Self, Command<Message>) {
-        // ★ MOVE BLOCKING CLIPBOARD INIT TO BACKGROUND THREAD ★
+
+        let start = std::time::Instant::now();
+    eprintln!("[Main] Starting initialization...");
+    
+    crate::utils::data::init();
+    eprintln!("[Main] Clipboard init: {:?}", start.elapsed());
+    
+    let config = Config::load();
+    eprintln!("[Main] Config load: {:?}", start.elapsed());
+    
+        let theme = Theme::load_from_config(&config);
+        eprintln!("[Main] Theme load: {:?}", start.elapsed());
         std::thread::spawn(|| {
             crate::utils::data::init();
         });
