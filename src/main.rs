@@ -22,6 +22,9 @@ use crate::panels::services::ServicesPanel;
 use std::time::{Duration, Instant};
 
 fn main() -> Result<(), iced_layershell::Error> {
+    eprintln!("[Main] ========== STARTUP ==========");
+    let app_start = std::time::Instant::now();
+    eprintln!("[Main] Starting at: {:?}", app_start);
     application(
         Launcher::new,
         Launcher::namespace,
