@@ -299,7 +299,7 @@ impl Launcher {
                     // Trigger lazy loading of apps in background
                     self.app_list.start_loading();
                     eprintln!("[Main] Triggered lazy app loading");
-                    
+                    self.system_panel.start();
                     return focus(self.search_bar.input_id.clone());
                 }
                 
