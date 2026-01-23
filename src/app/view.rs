@@ -9,21 +9,23 @@ pub fn view(launcher: &Launcher) -> Element<'_, Message> {
     let bg = launcher.theme.background;
     let bg_with_alpha = Color::from_rgb(bg.r, bg.g, bg.b);
 
-    // Get Font from config using helper method
     let font = launcher.config.get_font();
     let font_size = launcher.config.font_size.unwrap_or(22.0);
-    
+
     let title_text = &launcher.config.title_text;
     let total_chars = title_text.chars().count();
     let mut title_column = column![].spacing(0);
-    
+
     for (i, ch) in title_text.chars().enumerate() {
-        let char_color = launcher.title_animator.get_color_for_char(&launcher.theme, i, total_chars);
+        let char_color = launcher
+            .title_animator
+            .get_color_for_char(&launcher.theme, i, total_chars);
+
         title_column = title_column.push(
             text(ch.to_string())
                 .font(font)
                 .size(font_size)
-                .color(char_color)
+                .color(char_color),
         );
     }
 
@@ -71,11 +73,12 @@ pub fn view(launcher: &Launcher) -> Element<'_, Message> {
                         launcher.control_center_visible,
                         launcher.clipboard_visible,
                         launcher.clipboard_selected_index,
+                        launcher.wallpaper_index.as_ref(),
                     ))
                     .height(Length::Fill)
                     .width(Length::Fill),
                 ]
-                .spacing(45)
+                .spacing(45),
             )
             .padding(iced::padding::bottom(14).right(14))
             .width(Length::Fill)
@@ -83,17 +86,17 @@ pub fn view(launcher: &Launcher) -> Element<'_, Message> {
             container(
                 container(
                     container(title_column)
-                    .padding(0)
-                    .style(move |_| container::Style {
-                        background: Some(bg_with_alpha.into()),
-                        ..Default::default()
-                    })
+                        .padding(0)
+                        .style(move |_| container::Style {
+                            background: Some(bg_with_alpha.into()),
+                            ..Default::default()
+                        }),
                 )
-                .padding([20, 10])
+                .padding([20, 10]),
             )
             .width(Length::Fill)
-            .height(Length::Fill)
-        ]
+            .height(Length::Fill),
+        ],
     )
     .padding(2)
     .width(Length::Fill)

@@ -28,7 +28,7 @@ debug = false
 [dependencies]
 sysinfo = { version = "0.31", features = ["system", "disk", "network"] }
 
-iced = { version = "0.14", features = ["advanced"] }
+iced = { version = "0.14", features = ["advanced", "image"] }
 iced_layershell = "0.14.2"
 
 notify = "6.1"

@@ -12,6 +12,7 @@ use crate::panels::services;
 use super::mpris_player::MusicPlayer;
 use crate::panels::system::system_panel_view;
 use crate::panels::wallpaper_panel;
+use crate::utils::wallpaper_manager::WallpaperIndex;
 use crate::panels::clipboard_panel::clipboard_panel_view;
 use crate::Panel;
 
@@ -30,12 +31,20 @@ pub fn right_main_panels_view<'a>(
     control_center_visible: bool,
     clipboard_visible: bool,
     clipboard_selected_index: usize,
+    wallpaper_index: Option<&'a WallpaperIndex>,
 ) -> Element<'a, Message> {
     let current_view = match current_panel {
         Panel::Clock => clock::clock_panel_view(theme, bg_with_alpha, font, font_size),
         Panel::Weather => weather_panel.view(theme, bg_with_alpha, font, font_size),
         Panel::Music => music::music_panel_view(theme, bg_with_alpha, font, font_size, music_player),
-        Panel::Wallpaper => wallpaper_panel::wallpaper_panel_view(theme, bg_with_alpha, font, font_size),
+        Panel::Wallpaper => wallpaper_panel::wallpaper_panel_view(
+    theme,
+    bg_with_alpha,
+    font,
+    font_size,
+    wallpaper_index,
+),
+
         Panel::System => system_panel_view(system_panel, theme, bg_with_alpha, font, font_size),
         Panel::Services => services_panel.view(theme, bg_with_alpha, font, font_size),
     };
@@ -44,13 +53,7 @@ pub fn right_main_panels_view<'a>(
         stack![
             
             column![
-            // ──────────────────────────────
-            // Panel 1 - Clock, Weather, or Music
-            // ──────────────────────────────
             current_view,
-            // ──────────────────────────────
-            // Panel 2 (Apps) - Hidden when clipboard is visible
-            // ──────────────────────────────
             if !clipboard_visible {
                 container(
                     stack![
