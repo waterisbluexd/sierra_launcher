@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
-use tracing::{debug, error, info};
+use tracing::{debug, info};
 use wl_clipboard_rs::paste::{get_contents, ClipboardType, Seat, MimeType};
 
 // Global ignore text - text we just set that should not be re-added

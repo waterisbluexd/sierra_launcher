@@ -153,13 +153,3 @@ pub fn delete_item(index: usize) -> bool {
         false
     }
 }
-
-/// Clear all clipboard history.
-pub fn clear_history() {
-    let mut history = CLIPBOARD_HISTORY.write().unwrap();
-    if let Some(h) = history.as_mut() {
-        h.clear();
-        save_to_cache(h);
-        eprintln!("Cleared all clipboard history");
-    }
-}

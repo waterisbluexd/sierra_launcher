@@ -242,11 +242,6 @@ impl SystemPanel {
             }
         });
     }
-
-    /// Non-blocking read for UI / consumers
-    pub fn metrics(&self) -> Option<SystemMetrics> {
-        self.metrics.lock().unwrap().clone()
-    }
 }
 
 

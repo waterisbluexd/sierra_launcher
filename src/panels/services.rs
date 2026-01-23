@@ -815,10 +815,6 @@ impl ServicesPanel {
         .into()
     }
 
-    pub fn set_slider_height(&mut self, height: f32) {
-        self.slider_height = height;
-    }
-
     pub fn set_volume(&mut self, value: f32) {
         self.volume_value = value.clamp(0.0, 100.0);
         if self.volume_value > 0.0 {

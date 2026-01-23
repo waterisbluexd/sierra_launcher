@@ -41,11 +41,6 @@ impl TitleAnimator {
         self
     }
 
-    pub fn set_mode(&mut self, mode: AnimationMode) {
-        self.mode = mode;
-        self.reset();
-    }
-
     pub fn update(&mut self) {
         let now = Instant::now();
         if now.duration_since(self.last_animation_update) > self.animation_speed {
@@ -154,16 +149,6 @@ impl TitleAnimator {
                 )
             }
         }
-    }
-
-    pub fn reset(&mut self) {
-        self.animation_offset = 0;
-        self.last_animation_update = Instant::now();
-        self.sparkle_state = vec![0; 20];
-    }
-
-    pub fn current_mode(&self) -> AnimationMode {
-        self.mode
     }
 }
 

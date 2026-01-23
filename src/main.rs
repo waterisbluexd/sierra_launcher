@@ -56,6 +56,7 @@ pub enum Panel {
     Clock,
     Weather,
     Music,
+    Wallpaper,
     System,
     Services,
 }
@@ -101,7 +102,6 @@ enum Message {
     AirplaneModeToggle,
     BrightnessMinToggle,
     WifiToggle,
-    WifiRefresh,
     BluetoothToggle,
     EyeCareToggle,
     ToggleControlCenter,
@@ -139,20 +139,11 @@ impl Launcher {
     
     let config = Config::load();
     eprintln!("[Main] Config load: {:?}", start.elapsed());
+    let theme = Theme::load_from_config(&config);
     
-        let theme = Theme::load_from_config(&config);
-        eprintln!("[Main] Theme load: {:?}", start.elapsed());
-        std::thread::spawn(|| {
-            crate::utils::data::init();
-        });
-
-        let config = Config::load();
-        eprintln!("Config loaded - font_size: {:?}, use_pywal: {}", config.font_size, config.use_pywal);
-
         let _clipboard_monitor = crate::utils::monitor::start_monitor();
         
         // Load theme based on config preferences
-        let theme = Theme::load_from_config(&config);
 
         let watcher = ColorWatcher::new().ok();
         let search_bar = SearchBar::new();
@@ -363,12 +354,14 @@ impl Launcher {
                 self.current_panel = match (self.current_panel, direction) {
                     (Panel::Clock, Direction::Right) => Panel::Weather,
                     (Panel::Weather, Direction::Right) => Panel::Music,
-                    (Panel::Music, Direction::Right) => Panel::System,
+                    (Panel::Music, Direction::Right) => Panel::Wallpaper,
+                    (Panel::Wallpaper, Direction::Right) => Panel::System,
                     (Panel::System, Direction::Right) => Panel::Services,
                     (Panel::Services, Direction::Right) => Panel::Clock,
                     (Panel::Clock, Direction::Left) => Panel::Services,
                     (Panel::Services, Direction::Left) => Panel::System,
-                    (Panel::System, Direction::Left) => Panel::Music,
+                    (Panel::System, Direction::Left) => Panel::Wallpaper,
+                    (Panel::Wallpaper, Direction::Left) => Panel::Music,
                     (Panel::Music, Direction::Left) => Panel::Weather,
                     (Panel::Weather, Direction::Left) => Panel::Clock,
                 };
@@ -432,11 +425,6 @@ impl Launcher {
 
             Message::WifiToggle => {
                 self.services_panel.toggle_wifi();
-                Command::none()
-            }
-
-            Message::WifiRefresh => {
-                self.services_panel.schedule_refresh();
                 Command::none()
             }
 
