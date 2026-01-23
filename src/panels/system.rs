@@ -2,11 +2,133 @@ use iced::widget::{container, text, column, row, stack, Space};
 use iced::{Element, Border, Color, Length, Alignment, Font};
 use crate::utils::theme::Theme;
 use crate::Message;
-
 use sysinfo::{System, Disks, Networks};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
+
+// ─────────────────────────────────────────────
+// GPU Manager (New Modular Logic)
+// ─────────────────────────────────────────────
+
+#[derive(serde::Deserialize)]
+struct RocmSmiCard {
+    #[serde(rename = "GPU use (%)")]
+    gpu_use: Option<String>,
+}
+
+enum GpuType {
+    Nvidia,
+    Amd,
+    None,
+}
+
+struct GpuManager {
+    gpu_type: GpuType,
+    cache: Mutex<(Vec<f32>, Instant)>,
+}
+
+impl GpuManager {
+    fn new() -> Self {
+        let gpu_type = if Self::command_exists("nvidia-smi") {
+            GpuType::Nvidia
+        } else if Self::command_exists("rocm-smi") {
+            GpuType::Amd
+        } else {
+            GpuType::None
+        };
+
+        Self {
+            gpu_type,
+            cache: Mutex::new((vec![0.0, 0.0], Instant::now() - Duration::from_secs(10))),
+        }
+    }
+
+    /// Check if a command exists on the system's PATH (Unix-like systems)
+    fn command_exists(cmd: &str) -> bool {
+        let output = std::process::Command::new("which")
+            .arg(cmd)
+            .output();
+
+        if let Ok(output) = output {
+            output.status.success()
+        } else {
+            false
+        }
+    }
+
+    fn get_gpu_usage_cached(&self) -> Vec<f32> {
+        let mut guard = self.cache.lock().unwrap();
+        if guard.1.elapsed() > Duration::from_secs(4) {
+            guard.0 = self.get_gpu_usage();
+            guard.1 = Instant::now();
+        }
+        guard.0.clone()
+    }
+
+    fn get_gpu_usage(&self) -> Vec<f32> {
+        match self.gpu_type {
+            GpuType::Nvidia => self.get_nvidia_usage(),
+            GpuType::Amd => self.get_amd_usage(),
+            GpuType::None => vec![0.0, 0.0],
+        }
+    }
+
+    fn get_nvidia_usage(&self) -> Vec<f32> {
+        let mut gpu_usages = vec![0.0, 0.0];
+        let output = std::process::Command::new("timeout")
+            .args([
+                "1",
+                "nvidia-smi",
+                "--query-gpu=utilization.gpu",
+                "--format=csv,noheader,nounits",
+            ])
+            .output();
+
+        if let Ok(o) = output {
+            if let Ok(text) = String::from_utf8(o.stdout) {
+                for (i, line) in text.lines().take(2).enumerate() {
+                    if let Ok(v) = line.trim().parse::<f32>() {
+                        gpu_usages[i] = v;
+                    }
+                }
+            }
+        }
+        gpu_usages
+    }
+
+    fn get_amd_usage(&self) -> Vec<f32> {
+        let mut gpu_usages = vec![0.0, 0.0];
+        let output = std::process::Command::new("timeout")
+            .args(["1", "rocm-smi", "--show-usage", "--json"])
+            .output();
+
+        if let Ok(o) = output {
+            if let Ok(text) = String::from_utf8(o.stdout) {
+                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) {
+                    if let Some(cards_map) = json.as_object() {
+                        let cards = cards_map.into_iter().filter(|(k, _)| k.starts_with("card"));
+                        for (i, (_, card_val)) in cards.take(2).enumerate() {
+                            if let Ok(card_info) = serde_json::from_value::<RocmSmiCard>(card_val.clone()) {
+                                if let Some(use_percent) = card_info.gpu_use {
+                                    if let Ok(v) = use_percent.trim().parse::<f32>() {
+                                        gpu_usages[i] = v;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        gpu_usages
+    }
+}
+
+
+// ─────────────────────────────────────────────
+// System Panel (Adapted to use GpuManager)
+// ─────────────────────────────────────────────
 
 pub struct SystemPanel {
     metrics: Arc<Mutex<Option<SystemMetrics>>>,
@@ -37,6 +159,7 @@ impl Default for SystemMetrics {
 }
 
 impl SystemPanel {
+    /// Cheap, pure constructor — no side effects
     pub fn new() -> Self {
         Self {
             metrics: Arc::new(Mutex::new(None)),
@@ -44,7 +167,7 @@ impl SystemPanel {
         }
     }
 
-    /// 🔥 Start system monitoring AFTER UI is rendered
+    /// Explicit deferred initialization (call after first frame)
     pub fn start(&mut self) {
         if self.started {
             return;
@@ -54,19 +177,16 @@ impl SystemPanel {
         let metrics = Arc::clone(&self.metrics);
 
         thread::spawn(move || {
-            eprintln!("[System] Initializing system monitoring...");
-            let start = Instant::now();
-
-            // EXPENSIVE — now fully deferred
+            // ── One-time expensive initialization ──
             let mut sys = System::new_all();
             let mut networks = Networks::new_with_refreshed_list();
             let mut disks = Disks::new_with_refreshed_list();
+            let gpu_manager = Arc::new(GpuManager::new());
 
-            eprintln!("[System] ✓ Initialized in {:?}", start.elapsed());
-
-            // Enable UI rendering
+            // Mark data as available
             *metrics.lock().unwrap() = Some(SystemMetrics::default());
 
+            // ── Periodic refresh loop ──
             loop {
                 sys.refresh_cpu_usage();
                 sys.refresh_memory();
@@ -75,16 +195,19 @@ impl SystemPanel {
 
                 let mut guard = metrics.lock().unwrap();
                 if let Some(ref mut m) = *guard {
+                    // CPU
                     m.cpu_usage = sys.global_cpu_usage();
 
-                    let total_mem = sys.total_memory();
-                    m.mem_usage = if total_mem > 0 {
-                        (sys.used_memory() as f64 / total_mem as f64 * 100.0) as f32
+                    // Memory
+                    let total = sys.total_memory();
+                    m.mem_usage = if total > 0 {
+                        (sys.used_memory() as f64 / total as f64 * 100.0) as f32
                     } else {
                         0.0
                     };
 
-                    let (disk_used, disk_total) = disks.list().iter().fold(
+                    // Disk
+                    let (used, total) = disks.list().iter().fold(
                         (0u64, 0u64),
                         |(u, t), d| {
                             let total = d.total_space();
@@ -93,21 +216,23 @@ impl SystemPanel {
                         },
                     );
 
-                    m.disk_usage = if disk_total > 0 {
-                        (disk_used as f64 / disk_total as f64 * 100.0) as f32
+                    m.disk_usage = if total > 0 {
+                        (used as f64 / total as f64 * 100.0) as f32
                     } else {
                         0.0
                     };
 
-                    let net_total: u64 = networks
+                    // Network
+                    let net: u64 = networks
                         .iter()
                         .map(|(_, n)| n.received() + n.transmitted())
                         .sum();
 
-                    m.net_usage = (net_total as f64 / 10_000_000.0 * 100.0)
+                    m.net_usage = (net as f64 / 10_000_000.0 * 100.0)
                         .min(100.0) as f32;
 
-                    let gpus = Self::get_gpu_usage_cached();
+                    // GPU (cached)
+                    let gpus = gpu_manager.get_gpu_usage_cached();
                     m.gpu_usage = gpus[0];
                     m.gpu1_usage = gpus[1];
                 }
@@ -118,53 +243,19 @@ impl SystemPanel {
         });
     }
 
-    fn get_gpu_usage_cached() -> Vec<f32> {
-        use std::sync::OnceLock;
-
-        static CACHE: OnceLock<Mutex<(Vec<f32>, Instant)>> = OnceLock::new();
-        let cache = CACHE.get_or_init(|| {
-            Mutex::new((vec![0.0, 0.0], Instant::now() - Duration::from_secs(10)))
-        });
-
-        let mut guard = cache.lock().unwrap();
-        if guard.1.elapsed() > Duration::from_secs(4) {
-            guard.0 = Self::get_gpu_usage();
-            guard.1 = Instant::now();
-        }
-
-        guard.0.clone()
-    }
-
-    fn get_gpu_usage() -> Vec<f32> {
-        let mut gpu_usages = vec![0.0, 0.0];
-
-        let output = std::process::Command::new("timeout")
-            .args([
-                "1",
-                "nvidia-smi",
-                "--query-gpu=utilization.gpu",
-                "--format=csv,noheader,nounits",
-            ])
-            .output();
-
-        if let Ok(o) = output {
-            if let Ok(text) = String::from_utf8(o.stdout) {
-                for (i, line) in text.lines().take(2).enumerate() {
-                    if let Ok(v) = line.trim().parse::<f32>() {
-                        gpu_usages[i] = v;
-                    }
-                }
-            }
-        }
-
-        gpu_usages
-    }
-
+    /// Non-blocking read for UI / consumers
     pub fn metrics(&self) -> Option<SystemMetrics> {
         self.metrics.lock().unwrap().clone()
     }
 }
 
+
+// ─────────────────────────────────────────────
+// UI View (Unchanged)
+// ─────────────────────────────────────────────
+
+
+/// Creates a vertical bar visualization for a metric
 #[inline]
 fn vertical_bar<'a>(
     label: &'a str,
@@ -181,27 +272,40 @@ fn vertical_bar<'a>(
         .width(Length::Fill)
         .center();
 
-    let ratio = (value / 100.0).clamp(0.0, 1.0);
-    let filled = (ratio * 1000.0).round() as u16;
-    let empty = 1000u16.saturating_sub(filled);
+    let bar_height_ratio = (value / 100.0).clamp(0.0, 1.0);
+
+    // Calculate layout portions (Total = 1000)
+    let filled_portion = (bar_height_ratio * 1000.0).round() as u16;
+    let empty_portion = 1000u16.saturating_sub(filled_portion);
 
     let bar_visual = container(
         column![
+            // Empty portion (top)
             container(Space::new())
                 .width(Length::Fixed(BAR_WIDTH))
-                .height(Length::FillPortion(empty))
+                .height(if empty_portion > 0 {
+                    Length::FillPortion(empty_portion)
+                } else {
+                    Length::Fixed(0.0)
+                })
                 .style(move |_| container::Style {
                     background: Some(theme.color11.into()),
                     ..Default::default()
                 }),
+            // Filled portion (bottom)
             container(Space::new())
                 .width(Length::Fixed(BAR_WIDTH))
-                .height(Length::FillPortion(filled))
+                .height(if filled_portion > 0 {
+                    Length::FillPortion(filled_portion)
+                } else {
+                    Length::Fixed(0.0)
+                })
                 .style(move |_| container::Style {
                     background: Some(theme.color6.into()),
                     ..Default::default()
                 }),
         ]
+        .spacing(0)
         .width(Length::Fixed(BAR_WIDTH))
     )
     .width(Length::Fill)
@@ -229,91 +333,150 @@ pub fn system_panel_view<'a>(
     system_panel: &'a SystemPanel,
     theme: &'a Theme,
     bg_with_alpha: Color,
-    font: Font,
+    font: iced::Font,
     font_size: f32,
 ) -> Element<'a, Message> {
-    let metrics = system_panel.metrics();
+    let metrics_guard = system_panel.metrics.lock().unwrap();
 
-    if metrics.is_none() {
+    // ✅ Handle None case (system still initializing)
+    if metrics_guard.is_none() {
+        drop(metrics_guard);
+
         return container(
+            container(
+                stack![
+                    container(
+                        container(
+                            text("Loading system info...")
+                                .font(font)
+                                .size(font_size)
+                                .color(theme.color6)
+                                .center()
+                        )
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .center_x(Length::Fill)
+                        .center_y(Length::Fill)
+                        .padding(iced::padding::top(25))
+                        .style(move |_| container::Style {
+                            background: None,
+                            border: Border {
+                                color: theme.color3,
+                                width: 2.0,
+                                radius: 0.0.into(),
+                            },
+                            ..Default::default()
+                        })
+                    )
+                    .padding(iced::padding::top(15))
+                    .width(Length::Fill)
+                    .height(Length::Fill),
+
+                    container(
+                        container(
+                            text(" System ")
+                                .color(theme.color6)
+                                .font(font)
+                                .size(font_size)
+                        )
+                        .width(Length::Shrink)
+                        .height(Length::Shrink)
+                        .style(move |_| container::Style {
+                            background: Some(bg_with_alpha.into()),
+                            ..Default::default()
+                        })
+                    )
+                    .padding(iced::padding::left(8).top(5))
+                    .width(Length::Shrink)
+                    .height(Length::Shrink),
+                ]
+            )
+            .width(Length::Fill)
+            .height(Length::Fill)
+        )
+        .width(Length::Fill)
+        .height(Length::FillPortion(1))
+        .into();
+    }
+
+    let metrics = metrics_guard.as_ref().unwrap().clone();
+    drop(metrics_guard);
+
+    let metrics_data = [
+        ("CPU", metrics.cpu_usage),
+        ("MEM", metrics.mem_usage),
+        ("NET", metrics.net_usage),
+        ("DISK", metrics.disk_usage),
+        ("GPU0", metrics.gpu_usage),
+        ("GPU1", metrics.gpu1_usage),
+    ];
+
+    let bars_row = row(
+        metrics_data
+            .iter()
+            .map(|&(label, value)| vertical_bar(label, value, theme, font))
+            .collect::<Vec<_>>()
+    )
+    .spacing(12)
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .padding(8);
+
+    container(
+        container(
             stack![
                 container(
-                    text("Loading system info...")
-                        .font(font)
-                        .size(font_size)
-                        .color(theme.color6)
-                        .center()
+                    container(bars_row)
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .padding(iced::padding::top(25))
+                        .center_x(Length::Fill)
+                        .center_y(Length::Fill)
+                        .style(move |_| container::Style {
+                            background: None,
+                            border: Border {
+                                color: theme.color3,
+                                width: 2.0,
+                                radius: 0.0.into(),
+                            },
+                            ..Default::default()
+                        })
                 )
+                .padding(iced::padding::top(15))
                 .width(Length::Fill)
-                .height(Length::Fill)
-                .center_x(Length::Fill)
-                .center_y(Length::Fill),
+                .height(Length::Fill),
 
                 container(
-                    text(" System ")
-                        .font(font)
-                        .size(font_size)
-                        .color(theme.color6)
+                    container(
+                        text(" System ")
+                            .color(theme.color6)
+                            .font(font)
+                            .size(font_size)
+                    )
+                    .width(Length::Shrink)
+                    .height(Length::Shrink)
+                    .style(move |_| container::Style {
+                        background: Some(bg_with_alpha.into()),
+                        ..Default::default()
+                    })
                 )
-                .padding([5, 8])
-                .style(move |_| container::Style {
-                    background: Some(bg_with_alpha.into()),
-                    ..Default::default()
-                })
+                .padding(iced::padding::left(8).top(5))
+                .width(Length::Shrink)
+                .height(Length::Shrink),
             ]
         )
         .width(Length::Fill)
         .height(Length::Fill)
-        .into();
-    }
-
-    let m = metrics.unwrap();
-    let data = [
-        ("CPU", m.cpu_usage),
-        ("MEM", m.mem_usage),
-        ("NET", m.net_usage),
-        ("DISK", m.disk_usage),
-        ("GPU0", m.gpu_usage),
-        ("GPU1", m.gpu1_usage),
-    ];
-
-    let bars = row(
-        data.iter()
-            .map(|&(l, v)| vertical_bar(l, v, theme, font))
-            .collect::<Vec<_>>(),
-    )
-    .spacing(12)
-    .padding(8)
-    .width(Length::Fill)
-    .height(Length::Fill);
-
-    container(
-        stack![
-            container(bars)
-                .padding(iced::padding::top(25))
-                .style(move |_| container::Style {
-                    border: Border {
-                        color: theme.color3,
-                        width: 2.0,
-                        radius: 0.0.into(),
-                    },
-                    ..Default::default()
-                }),
-
-            container(
-                text(" System ")
-                    .font(font)
-                    .size(font_size)
-                    .color(theme.color6)
-            )
-            .padding([5, 8])
-            .style(move |_| container::Style {
-                background: Some(bg_with_alpha.into()),
-                ..Default::default()
-            })
-        ]
+        .style(move |_| container::Style {
+            background: None,
+            ..Default::default()
+        }),
     )
     .width(Length::Fill)
-    .height(Length::Fill)
+    .height(Length::FillPortion(1))
+    .style(move |_| container::Style {
+        background: None,
+        ..Default::default()
+    })
     .into()
 }
