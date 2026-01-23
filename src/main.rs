@@ -65,13 +65,8 @@ fn new() -> (Launcher, Command<Message>) {
     let theme = Theme::load_from_config(&config);
 
     let _clipboard_monitor = crate::utils::monitor::start_monitor();
-    
-    // Load theme based on config preferences
-
     let watcher = ColorWatcher::new().ok();
     let search_bar = SearchBar::new();
-    
-    // ★ AppList::new() NOW RETURNS IMMEDIATELY - apps load in background ★
     let app_list = AppList::new();
     
     let weather_panel = WeatherPanel::new();
