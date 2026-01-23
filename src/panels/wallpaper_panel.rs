@@ -46,8 +46,8 @@ pub fn wallpaper_panel_view<'a>(
     container(
         container(
             stack![
-                container(
-                    content
+                container(container(
+                    container(content)
                 )
                 .width(Length::Fill)
                 .height(Length::Fill)
@@ -61,9 +61,16 @@ pub fn wallpaper_panel_view<'a>(
                     },
                     ..Default::default()
                 })
+                .width(Length::Fill)
+                .height(Length::Fill),)
                 .padding(iced::padding::top(15))
                 .width(Length::Fill)
-                .height(Length::Fill),
+                .height(Length::Fill)
+                .style(move |_| container::Style {
+                    background: None,
+                    ..Default::default()
+                }),
+                
 
                 container(
                     container(
