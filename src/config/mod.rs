@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
+use std::io::{self, Write};
 use iced::{Font, Color};
 
 #[derive(Deserialize, Debug, Clone)]
@@ -11,6 +12,9 @@ pub struct ConfigFile {
     pub theme: Option<ThemeConfig>,
     pub title_text: Option<String>,
     pub title_animation: Option<String>,
+
+    // NEW
+    pub wallpaper_dir: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -43,47 +47,120 @@ pub struct Config {
     pub font_size: Option<f32>,
     pub use_pywal: bool,
     pub custom_theme: Option<ThemeConfig>,
-    pub title_text: String,           // ← ADD THIS
-    pub title_animation: String,      // ← ADD THIS
+    pub title_text: String,
+    pub title_animation: String,
+
+    // NEW
+    pub wallpaper_dir: Option<PathBuf>,
 }
 
 impl Config {
     pub fn load() -> Self {
-        let config_path = if let Ok(home) = std::env::var("HOME") {
+        let config_path = Self::config_path();
+
+        let config_file: ConfigFile = if config_path.exists() {
+            let content = fs::read_to_string(&config_path).unwrap_or_default();
+            toml::from_str(&content).unwrap_or_else(|_| Self::default_config_file())
+        } else {
+            Self::default_config_file()
+        };
+
+        let wallpaper_dir = match config_file.wallpaper_dir {
+            Some(path) => {
+                let pb = PathBuf::from(path);
+                if pb.exists() {
+                    Some(pb)
+                } else {
+                    None // ❗ silently ignore invalid paths
+                }
+            }
+            None => {
+                // Ask user ONCE
+                let path = Self::prompt_wallpaper_dir();
+                if let Some(ref p) = path {
+                    Self::write_wallpaper_dir(&config_path, p);
+                }
+                path
+            }
+        };
+
+        Config {
+            font_name: config_file.font,
+            font_size: config_file.font_size,
+            use_pywal: config_file.use_pywal.unwrap_or(false),
+            custom_theme: config_file.theme,
+            title_text: config_file
+                .title_text
+                .unwrap_or_else(|| " sierra-launcher ".to_string()),
+            title_animation: config_file
+                .title_animation
+                .unwrap_or_else(|| "Wave".to_string()),
+            wallpaper_dir,
+        }
+    }
+
+    fn config_path() -> PathBuf {
+        if let Ok(home) = std::env::var("HOME") {
             PathBuf::from(home).join(".config/sierra/Sierra")
         } else {
             PathBuf::from("config/Sierra")
+        }
+    }
+
+    fn default_config_file() -> ConfigFile {
+        ConfigFile {
+            font: Some("Monospace".to_string()),
+            font_size: Some(14.0),
+            use_pywal: Some(false),
+            theme: None,
+            title_text: Some(" sierra-launcher ".to_string()),
+            title_animation: Some("Wave".to_string()),
+            wallpaper_dir: None,
+        }
+    }
+
+    fn prompt_wallpaper_dir() -> Option<PathBuf> {
+        println!("Enter wallpaper directory path (leave empty to skip):");
+        print!("> ");
+        io::stdout().flush().ok();
+
+        let mut input = String::new();
+        if io::stdin().read_line(&mut input).is_err() {
+            return None;
+        }
+
+        let input = input.trim();
+        if input.is_empty() {
+            return None;
+        }
+
+        let path = PathBuf::from(input);
+        if path.exists() {
+            Some(path)
+        } else {
+            None // ❗ no error, no panic
+        }
+    }
+
+    fn write_wallpaper_dir(config_path: &PathBuf, dir: &PathBuf) {
+        let mut content = if config_path.exists() {
+            fs::read_to_string(config_path).unwrap_or_default()
+        } else {
+            String::new()
         };
 
-        if config_path.exists() {
-            let content = fs::read_to_string(&config_path)
-                .unwrap_or_else(|_| "".to_string());
-            
-            let config_file: ConfigFile = toml::from_str(&content).unwrap_or_else(|e| {
-                eprintln!("Failed to parse config: {}", e);
-                eprintln!("Using default configuration");
-                ConfigFile {
-                    font: Some("Monospace".to_string()),
-                    font_size: Some(14.0),
-                    use_pywal: Some(false),
-                    theme: None,
-                    title_text: Some(" sierra-launcher ".to_string()),      // ← ADD THIS
-                    title_animation: Some("Wave".to_string()),              // ← ADD THIS
-                }
-            });
-
-            Config {
-                font_name: config_file.font,
-                font_size: config_file.font_size,
-                use_pywal: config_file.use_pywal.unwrap_or(false),
-                custom_theme: config_file.theme,
-                title_text: config_file.title_text.unwrap_or_else(|| " sierra-launcher ".to_string()),        // ← ADD THIS
-                title_animation: config_file.title_animation.unwrap_or_else(|| "Wave".to_string()),           // ← ADD THIS
-            }
-        } else {
-            eprintln!("Config not found at {:?}, using defaults", config_path);
-            Self::default()
+        if !content.contains("wallpaper_dir") {
+            content.push_str(&format!(
+                "\nwallpaper_dir = \"{}\"\n",
+                dir.display()
+            ));
         }
+
+        if let Some(parent) = config_path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+
+        let _ = fs::write(config_path, content);
     }
 
     pub fn get_font(&self) -> Font {
@@ -96,10 +173,9 @@ impl Config {
             .unwrap_or(Font::default())
     }
 
-    /// Get the AnimationMode from config string
     pub fn get_animation_mode(&self) -> crate::panels::title_color::AnimationMode {
         use crate::panels::title_color::AnimationMode;
-        
+
         match self.title_animation.as_str() {
             "Rainbow" => AnimationMode::Rainbow,
             "Wave" => AnimationMode::Wave,
@@ -107,17 +183,13 @@ impl Config {
             "Pulse" => AnimationMode::Pulse,
             "Sparkle" => AnimationMode::Sparkle,
             "Gradient" => AnimationMode::Gradient,
-            _ => {
-                eprintln!("Unknown animation mode '{}', using Wave", self.title_animation);
-                AnimationMode::Wave
-            }
+            _ => AnimationMode::Wave,
         }
     }
 
-    /// Convert hex color string to iced Color
     pub fn hex_to_color(hex: &str) -> Color {
         let hex = hex.trim_start_matches('#');
-        
+
         if hex.len() == 6 {
             if let (Ok(r), Ok(g), Ok(b)) = (
                 u8::from_str_radix(&hex[0..2], 16),
@@ -131,8 +203,7 @@ impl Config {
                 );
             }
         }
-        
-        // Fallback to white if parsing fails
+
         Color::WHITE
     }
 }
@@ -146,6 +217,7 @@ impl Default for Config {
             custom_theme: None,
             title_text: " sierra-launcher ".to_string(),
             title_animation: "Wave".to_string(),
+            wallpaper_dir: None,
         }
     }
 }
