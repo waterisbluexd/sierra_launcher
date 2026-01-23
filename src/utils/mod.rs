@@ -4,3 +4,4 @@ pub mod monitor;
 pub mod copy;
 pub mod theme;
 pub mod watcher;
+pub mod wallpaper_manager;

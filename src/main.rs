@@ -10,9 +10,12 @@ use iced_layershell::application;
 use iced::{Task as Command, Color};
 use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
 use iced_layershell::settings::{LayerShellSettings, Settings};
+
 use crate::utils::theme::Theme;
 use crate::utils::watcher::ColorWatcher;
+use crate::utils::wallpaper_manager::{WallpaperManager, WallpaperIndex};
 use crate::config::Config;
+
 use crate::panels::search_bar::SearchBar;
 use crate::panels::app_list::AppList;
 use crate::panels::mpris_player::MusicPlayer;
@@ -20,55 +23,63 @@ use crate::panels::system::SystemPanel;
 use crate::panels::services::ServicesPanel;
 use crate::panels::weather::WeatherPanel;
 use crate::panels::title_color::TitleAnimator;
+
 use std::time::Instant;
 
 fn main() -> Result<(), iced_layershell::Error> {
     eprintln!("[Main] ========== STARTUP ==========");
-    let app_start = std::time::Instant::now();
+    let app_start = Instant::now();
     eprintln!("[Main] Starting at: {:?}", app_start);
-    application(
-        new,
-        namespace,
-        update,
-        view,
-    )
-    .settings(Settings {
-        layer_settings: LayerShellSettings {
-            size: Some((484, 714)),
-            anchor: Anchor::Bottom,
-            keyboard_interactivity: KeyboardInteractivity::Exclusive,
-            margin: (0, 0, 4, 0),
+
+    application(new, namespace, update, view)
+        .settings(Settings {
+            layer_settings: LayerShellSettings {
+                size: Some((484, 714)),
+                anchor: Anchor::Bottom,
+                keyboard_interactivity: KeyboardInteractivity::Exclusive,
+                margin: (0, 0, 4, 0),
+                ..Default::default()
+            },
             ..Default::default()
-        },
-        ..Default::default()
-    })
-    .style(|_theme, _id| iced::theme::Style {
-        background_color: Color::TRANSPARENT,
-        text_color: Color::WHITE,
-    })
-    .subscription(|_| app::subscription::subscription())
-    .run()?;
+        })
+        .style(|_theme, _id| iced::theme::Style {
+            background_color: Color::TRANSPARENT,
+            text_color: Color::WHITE,
+        })
+        .subscription(|_| app::subscription::subscription())
+        .run()?;
 
     Ok(())
 }
 
 fn new() -> (Launcher, Command<Message>) {
-
-    let start = std::time::Instant::now();
-    eprintln!("[Main] Starting initialization...");
+    let start = Instant::now();
+    eprintln!("[Main] Initializing launcher...");
 
     crate::utils::data::init();
     eprintln!("[Main] Clipboard init: {:?}", start.elapsed());
 
     let config = Config::load();
     eprintln!("[Main] Config load: {:?}", start.elapsed());
+
+    let wallpaper_index: Option<WallpaperIndex> =
+        if let Some(wallpaper_dir) = config.wallpaper_dir.clone() {
+            let manager = WallpaperManager::new(wallpaper_dir);
+            manager.ensure_cache();
+            manager.load_index()
+        } else {
+            None
+        };
+
+    eprintln!("[Main] Wallpaper cache ready: {:?}", start.elapsed());
+
     let theme = Theme::load_from_config(&config);
 
     let _clipboard_monitor = crate::utils::monitor::start_monitor();
     let watcher = ColorWatcher::new().ok();
+
     let search_bar = SearchBar::new();
     let app_list = AppList::new();
-    
     let weather_panel = WeatherPanel::new();
     let music_player = MusicPlayer::new();
     let system_panel = SystemPanel::new();
@@ -78,26 +89,32 @@ fn new() -> (Launcher, Command<Message>) {
         .with_mode(config.get_animation_mode())
         .with_speed(80);
 
-    (Launcher { 
-        theme, 
-        watcher, 
-        config, 
-        search_bar, 
-        app_list, 
-        current_panel: Panel::Clock,
-        weather_panel,
-        music_player,
-        system_panel,
-        services_panel,
-        last_color_check: Instant::now(),
-        last_services_refresh: Instant::now(),
-        frame_count: 0,
-        title_animator,
-        control_center_visible: false,
-        clipboard_visible: false,
-        clipboard_selected_index: 0,
-        is_first_frame: true,
-    }, Command::none())
+    (
+        Launcher {
+            theme,
+            watcher,
+            config,
+            search_bar,
+            app_list,
+            current_panel: Panel::Clock,
+            weather_panel,
+            music_player,
+            system_panel,
+            services_panel,
+            last_color_check: Instant::now(),
+            last_services_refresh: Instant::now(),
+            frame_count: 0,
+            title_animator,
+            control_center_visible: false,
+            clipboard_visible: false,
+            clipboard_selected_index: 0,
+            is_first_frame: true,
+
+            // ✅ NEW — wallpaper data now lives in state
+            wallpaper_index,
+        },
+        Command::none(),
+    )
 }
 
 fn namespace() -> String {

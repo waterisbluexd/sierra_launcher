@@ -2,6 +2,7 @@
 use crate::panels::title_color::TitleAnimator;
 use crate::utils::theme::Theme;
 use crate::utils::watcher::ColorWatcher;
+use crate::utils::wallpaper_manager::WallpaperIndex;
 use crate::config::Config;
 use crate::panels::search_bar::SearchBar;
 use crate::panels::app_list::AppList;
@@ -41,6 +42,7 @@ pub struct Launcher {
     pub clipboard_visible: bool,
     pub clipboard_selected_index: usize,
     pub is_first_frame: bool,
+    pub wallpaper_index: Option<WallpaperIndex>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
