@@ -52,8 +52,6 @@
   - `wl-paste`
 
 ### System Controls  
-*(Required for the Services panel)*
-
 - **brightnessctl**  
   Screen brightness control
 
@@ -71,8 +69,6 @@
   - `sensors`
 
 ### Wallpaper Features  
-*(Required for the Wallpaper panel)*
-
 - **gslapper**  
   Wallpaper daemon for image & video wallpapers  
 
@@ -81,6 +77,12 @@
   yay -S gslapper
   # or
   paru -S gslapper
+
+### Font
+It is better to use Monocraft due to UI and how everything fits 
+```bash
+https://github.com/IdreesInc/Monocraft
+```
 ---
 
 <p align="center">
