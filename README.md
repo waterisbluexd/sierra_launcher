@@ -46,6 +46,7 @@
 
 - **Wayland compositor** (Hyprland, Sway, etc.)
 - **Linux** system :)
+
 ---
 
 <p align="center">
@@ -55,3 +56,20 @@
     width="1000"
   />
 </p>
+
+##  Features
+
+- **Application Launcher** - Fast fuzzy search to launch any installed application
+- **Clipboard Manager** - Access and manage clipboard history
+- **System Monitor** - Real-time CPU, memory, and disk usage visualization
+- **Media Controls** - Control music playback via MPRIS
+- **Wallpaper Manager** - Quick wallpaper switching with preview
+- **Weather Widget** - Live weather information display
+- **System Services** - Quick controls for WiFi, Bluetooth, audio, and brightness
+
+##  Theming & Customization
+
+- **Pywal Integration** - Dynamic theme generation from your wallpaper colors also can be turned off
+- **Custom Themes** - Define your own color schemes via TOML config or just change it from config
+- **Title Animations** - Multiple animation styles for the launcher title
+- **Font Customization** - Configure fonts and sizes for UI elements
