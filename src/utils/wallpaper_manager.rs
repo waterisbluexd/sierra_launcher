@@ -191,12 +191,20 @@ impl WallpaperManager {
 
     /// Set wallpaper using gSlapper and update pywal colors
     pub fn set_wallpaper(&self, entry: &WallpaperEntry) {
+        // KILL ALL EXISTING gSlapper INSTANCES FIRST
+        let _ = Command::new("pkill")
+            .arg("gslapper")
+            .output();
+        
+        // Wait a moment for processes to die
+        std::thread::sleep(std::time::Duration::from_millis(100));
+
         let wallpaper_path = entry.path.to_string_lossy();
         let thumbnail_path = entry.thumbnail.to_string_lossy();
 
         // Set wallpaper with gSlapper
         let gslapper_args = match entry.kind {
-            WallpaperKind::Video => vec!["-o", "loop fill", "*", &wallpaper_path],
+            WallpaperKind::Video => vec!["-o", "loop no-audio", "*", &wallpaper_path],
             WallpaperKind::Image => vec!["-o", "fill", "*", &wallpaper_path],
         };
 
@@ -216,7 +224,6 @@ impl WallpaperManager {
     fn generate_image_thumbnail(source: &PathBuf, thumbnail: &PathBuf) {
         use image::ImageReader;
         
-        // Try to open and decode image
         let img = match ImageReader::open(source) {
             Ok(reader) => match reader.decode() {
                 Ok(img) => img,
@@ -230,11 +237,7 @@ impl WallpaperManager {
                 return;
             }
         };
-
-        // Resize to 480x270 (16:9 thumbnail - fast preview)
         let thumb = img.resize(480, 270, image::imageops::FilterType::Lanczos3);
-
-        // Save as JPEG with 85% quality
         if let Err(e) = thumb.save_with_format(thumbnail, image::ImageFormat::Jpeg) {
             eprintln!("[Wallpaper] Failed to save thumbnail {:?}: {}", thumbnail, e);
         } else {

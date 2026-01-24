@@ -336,6 +336,8 @@ pub fn update(launcher: &mut Launcher, message: Message) -> Command<Message> {
                 } else {
                     launcher.wallpaper_selected_index = index.wallpapers.len() - 1;
                 }
+                let new_index = launcher.wallpaper_selected_index;
+                return Command::perform(async move { new_index }, Message::SetWallpaper);
             }
             Command::none()
         }
@@ -347,6 +349,8 @@ pub fn update(launcher: &mut Launcher, message: Message) -> Command<Message> {
                 } else {
                     launcher.wallpaper_selected_index = 0;
                 }
+                let new_index = launcher.wallpaper_selected_index;
+                return Command::perform(async move { new_index }, Message::SetWallpaper);
             }
             Command::none()
         }

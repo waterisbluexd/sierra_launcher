@@ -81,37 +81,6 @@ pub fn wallpaper_panel_view<'a>(
         .width(Length::FillPortion(2))
         .height(Length::Fill),
 
-    // APPLY BUTTON
-    container(
-        button(
-            container(
-                text("Apply")
-                    .font(font)
-                    .size(font_size)
-                    .color(theme.color6)
-            )
-            .width(Length::Shrink)
-            .height(Length::Shrink)
-            .center_x(Length::Shrink)
-            .center_y(Length::Shrink)
-        )
-        .on_press(Message::SetWallpaper(selected))
-        .style(move |_, _| button::Style {
-            background: Some(Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
-            border: Border {
-                color: theme.color4,
-                width: 2.0,
-                radius: 0.0.into(),
-            },
-            ..Default::default()
-        }),
-    )
-    .width(Length::Shrink)
-    .height(Length::Shrink)
-    .center_x(Length::Shrink)
-    .center_y(Length::Fill)
-    .padding(10),
-
     container(text(""))
         .width(Length::FillPortion(2))
         .height(Length::Fill),
