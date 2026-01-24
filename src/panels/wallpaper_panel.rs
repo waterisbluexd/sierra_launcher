@@ -1,5 +1,5 @@
 use iced::widget::{container, text, stack, image, row, button};
-use iced::{Element, Color, Length, Border};
+use iced::{Element, Color, Length, Border, ContentFit};
 
 use crate::utils::theme::Theme;
 use crate::utils::wallpaper_manager::WallpaperIndex;
@@ -23,6 +23,7 @@ pub fn wallpaper_panel_view<'a>(
             image(image::Handle::from_path(path))
                 .width(Length::Fill)
                 .height(Length::Fill)
+                .content_fit(ContentFit::Cover)
                 .into()
         } else {
             container(text("No wallpaper"))
@@ -76,32 +77,31 @@ pub fn wallpaper_panel_view<'a>(
             .height(Length::Fill),
         container(controls)
             .width(Length::Fill)
-            .height(Length::Fill)
+            .height(Length::Fill),
     ];
 
     container(
         container(
-            stack![container(
+            stack![
                 container(
-                    content
+                    container(content)
+                        .padding(10)
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .style(move |_| container::Style {
+                            background: None,
+                            border: Border {
+                                color: theme.color3,
+                                width: 2.0,
+                                radius: 0.0.into(),
+                            },
+                            ..Default::default()
+                        })
                 )
-                .padding(10)
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .style(move |_| container::Style {
-                    background: None,
-                    border: Border {
-                        color: theme.color3,
-                        width: 2.0,
-                        radius: 0.0.into(),
-                    },
-                    ..Default::default()
-                }),
-            )
-            .padding(iced::padding::top(15))
+                .padding(iced::padding::top(15))
                 .width(Length::Fill)
                 .height(Length::Fill),
-                
+
                 container(
                     container(
                         text(" Wallpapers ")
