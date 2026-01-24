@@ -46,7 +46,41 @@
 
 - **Wayland compositor** (Hyprland, Sway, etc.)
 - **Linux** system :)
+- **wl-clipboard**  
+  Clipboard support  
+  - `wl-copy`
+  - `wl-paste`
 
+### System Controls  
+*(Required for the Services panel)*
+
+- **brightnessctl**  
+  Screen brightness control
+
+- **PulseAudio or PipeWire**  
+  Volume control via `pactl`
+
+- **NetworkManager**  
+  WiFi management via `nmcli`
+
+- **BlueZ**  
+  Bluetooth control via `bluetoothctl`
+
+- **lm_sensors**  
+  Hardware monitoring (CPU temperature & fan speeds)  
+  - `sensors`
+
+### Wallpaper Features  
+*(Required for the Wallpaper panel)*
+
+- **gslapper**  
+  Wallpaper daemon for image & video wallpapers  
+
+  **Arch Linux**
+  ```bash
+  yay -S gslapper
+  # or
+  paru -S gslapper
 ---
 
 <p align="center">
@@ -73,3 +107,72 @@
 - **Custom Themes** - Define your own color schemes via TOML config or just change it from config
 - **Title Animations** - Multiple animation styles for the launcher title
 - **Font Customization** - Configure fonts and sizes for UI elements
+
+##  Installation
+```bash
+git clone https://github.com/waterisbluexd/sierra_launcher.git
+cd sierra_launcher
+chmod +x install.sh
+./install.sh
+```
+
+After installation, launch Sierra by running `sierra-launcher` or bind it to a keyboard shortcut in your compositor config like "bind = $mainMod, F, exec, sierra-launcher" for Hyprland.
+
+##  Configuration
+
+Configuration file: `~/.config/sierra/Sierra`
+
+### Example Configuration
+```toml
+# Font Settings
+font = "Monocraft"
+font_size = 14.0
+
+# Title Animation
+title_text = " sierra-launcher "
+title_animation = "Wave"  # Options: Rainbow, Wave, InOutWave, Pulse, Sparkle, Gradient
+
+# Wallpaper Directory
+wallpaper_dir = "~/Pictures/Wallpapers"
+
+# Theme Mode
+use_pywal = false  # Set to true to use pywal colors
+
+# Custom Theme (only used if use_pywal = false)
+[theme]
+background = "#1a1b26"
+foreground = "#c0caf5"
+border     = "#7aa2f7"
+accent     = "#7dcfff"
+
+color0  = "#15161e"
+color1  = "#f7768e"
+color2  = "#9ece6a"
+color3  = "#e0af68"
+color4  = "#7aa2f7"
+color5  = "#bb9af7"
+color6  = "#7dcfff"
+color7  = "#a9b1d6"
+color8  = "#414868"
+color9  = "#f7768e"
+color10 = "#9ece6a"
+color11 = "#e0af68"
+color12 = "#7aa2f7"
+color13 = "#bb9af7"
+color14 = "#7dcfff"
+color15 = "#c0caf5"
+```
+---
+### Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Esc` | Exit launcher |
+| `Enter` | Launch selected app / Paste clipboard item |
+| `↑` / `↓` | Navigate apps / clipboard history |
+| `←` / `→` | Cycle panels (Clock → Weather → Music → Wallpaper → System → Services) |
+| `Shift + ←/→` | Toggle clipboard panel |
+| `Type` | Search applications (auto-focus) |
+| `Backspace` | Clear search |
+| `Ctrl + D` | Delete clipboard item (in clipboard mode) |
+| `Right Click` | Toggle control center (Power/Restart/Sleep) |
