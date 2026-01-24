@@ -26,9 +26,10 @@
   />
 </p>
 <p align="center">
-  <a href="#-features">Features</a> •
-  <a href="#-installation">Installation</a> •
-  <a href="#-configuration">Configuration</a>
+  <a href="#features">Features</a> •
+<a href="#installation">Installation</a> •
+<a href="#configuration">Configuration</a>
+
 </p>
 
 ---
