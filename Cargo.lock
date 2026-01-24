@@ -4232,6 +4232,7 @@ dependencies = [
  "gio",
  "iced",
  "iced_layershell",
+ "image",
  "lazy_static",
  "mpris",
  "notify",

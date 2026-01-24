@@ -15,42 +15,65 @@ pub fn wallpaper_panel_view<'a>(
 ) -> Element<'a, Message> {
     let wallpaper_view: Element<'a, Message> = if let Some(index) = wallpapers {
         if let Some(entry) = index.wallpapers.get(selected) {
-            let path = entry
-                .thumbnail
-                .as_ref()
-                .unwrap_or(&entry.path);
+            // ✅ ALWAYS use thumbnail (now ALL entries have thumbnails)
+            let thumb_path = &entry.thumbnail;
 
-            image(image::Handle::from_path(path))
+            image(image::Handle::from_path(thumb_path))
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .content_fit(ContentFit::Cover)
                 .into()
         } else {
-            container(text("No wallpaper"))
-                .center_x(Length::Fill)
-                .center_y(Length::Fill)
-                .into()
-        }
-    } else {
-        container(text("No wallpapers"))
+            container(
+                text("No wallpaper")
+                    .font(font)
+                    .size(font_size)
+                    .color(theme.color6)
+            )
             .center_x(Length::Fill)
             .center_y(Length::Fill)
             .into()
+        }
+    } else {
+        container(
+            text("No wallpapers found")
+                .font(font)
+                .size(font_size)
+                .color(theme.color6)
+        )
+        .center_x(Length::Fill)
+        .center_y(Length::Fill)
+        .into()
     };
 
     let controls = row![
         container(
             button(
-                text("◀")
-                    .font(font)
-                    .size(font_size * 1.6)
-                    .color(theme.color6)
+                container(
+                    text("◀")
+                        .font(font)
+                        .size(font_size * 1.6)
+                        .color(theme.color6)
+                )
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .center_x(Length::Fill)
+                .center_y(Length::Fill)
             )
             .on_press(Message::PrevWallpaper)
+            .style(move |_, _| button::Style {
+                background: Some(Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
+                border: Border {
+                    color: theme.color4,
+                    width: 2.0,
+                    radius: 0.0.into(),
+                },
+                ..Default::default()
+            }),
         )
         .width(Length::FillPortion(1))
-        .center_x(Length::Fill)
-        .center_y(Length::Fill),
+        .height(Length::Fill)
+        .padding(10),
 
         container(text(""))
             .width(Length::FillPortion(3))
@@ -58,16 +81,31 @@ pub fn wallpaper_panel_view<'a>(
 
         container(
             button(
-                text("▶")
-                    .font(font)
-                    .size(font_size * 1.6)
-                    .color(theme.color6)
+                container(
+                    text("▶")
+                        .font(font)
+                        .size(font_size * 1.6)
+                        .color(theme.color6)
+                )
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .center_x(Length::Fill)
+                .center_y(Length::Fill)
             )
             .on_press(Message::NextWallpaper)
+            .style(move |_, _| button::Style {
+                background: Some(Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
+                border: Border {
+                    color: theme.color4,
+                    width: 2.0,
+                    radius: 0.0.into(),
+                },
+                ..Default::default()
+            }),
         )
         .width(Length::FillPortion(1))
-        .center_x(Length::Fill)
-        .center_y(Length::Fill),
+        .height(Length::Fill)
+        .padding(10),
     ]
     .height(Length::Fill);
 
