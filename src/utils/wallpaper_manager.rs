@@ -139,11 +139,54 @@ impl WallpaperManager {
         }
     }
 
-    /// Load index.json from cache
+    /// Load index.json from cache, or None if cache is invalid/outdated
     pub fn load_index(&self) -> Option<WallpaperIndex> {
         let index_path = self.cache_dir.join("index.json");
         let content = fs::read_to_string(&index_path).ok()?;
-        serde_json::from_str(&content).ok()
+        let index: WallpaperIndex = serde_json::from_str(&content).ok()?;
+
+        // Validate cache: check if wallpapers still exist and no new ones added
+        if !self.is_cache_valid(&index) {
+            eprintln!("[Wallpaper] Cache outdated - wallpapers changed");
+            return None;
+        }
+
+        Some(index)
+    }
+
+    /// Check if cached index matches current wallpaper directory
+    fn is_cache_valid(&self, index: &WallpaperIndex) -> bool {
+        // Get current wallpaper files
+        let Ok(entries) = fs::read_dir(&self.wallpaper_dir) else {
+            return false;
+        };
+
+        let mut current_files: Vec<String> = entries
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_file())
+            .filter_map(|e| {
+                let path = e.path();
+                let ext = path.extension()?.to_str()?.to_lowercase();
+                match ext.as_str() {
+                    "mp4" | "mkv" | "webm" | "avi" | "jpg" | "jpeg" | "png" | "webp" | "bmp" => {
+                        Some(path.file_name()?.to_string_lossy().to_string())
+                    }
+                    _ => None,
+                }
+            })
+            .collect();
+
+        let mut cached_files: Vec<String> = index
+            .wallpapers
+            .iter()
+            .map(|w| w.name.clone())
+            .collect();
+
+        current_files.sort();
+        cached_files.sort();
+
+        // If file lists don't match, cache is invalid
+        current_files == cached_files
     }
 
     /// ✅ NEW: Generate thumbnail from image using `image` crate (FAST)
