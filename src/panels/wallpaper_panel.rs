@@ -55,10 +55,10 @@ pub fn wallpaper_panel_view<'a>(
                         .size(font_size * 1.6)
                         .color(theme.color6)
                 )
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .center_x(Length::Fill)
-                .center_y(Length::Fill)
+                .width(Length::Shrink)
+                .height(Length::Shrink)
+                .center_x(Length::Shrink)
+                .center_y(Length::Shrink)
             )
             .on_press(Message::PrevWallpaper)
             .style(move |_, _| button::Style {
@@ -71,8 +71,10 @@ pub fn wallpaper_panel_view<'a>(
                 ..Default::default()
             }),
         )
-        .width(Length::FillPortion(1))
-        .height(Length::Fill)
+        .width(Length::Shrink)
+        .height(Length::Shrink)
+        .center_x(Length::Shrink)
+        .center_y(Length::Fill)
         .padding(10),
 
         container(text(""))
@@ -87,10 +89,10 @@ pub fn wallpaper_panel_view<'a>(
                         .size(font_size * 1.6)
                         .color(theme.color6)
                 )
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .center_x(Length::Fill)
-                .center_y(Length::Fill)
+                .width(Length::Shrink)
+                .height(Length::Shrink)
+                .center_x(Length::Shrink)
+                .center_y(Length::Shrink)
             )
             .on_press(Message::NextWallpaper)
             .style(move |_, _| button::Style {
@@ -103,8 +105,10 @@ pub fn wallpaper_panel_view<'a>(
                 ..Default::default()
             }),
         )
-        .width(Length::FillPortion(1))
-        .height(Length::Fill)
+        .width(Length::Shrink)
+        .height(Length::Shrink)
+        .center_x(Length::Shrink)
+        .center_y(Length::Fill)
         .padding(10),
     ]
     .height(Length::Fill);
