@@ -32,6 +32,7 @@ pub fn right_main_panels_view<'a>(
     clipboard_visible: bool,
     clipboard_selected_index: usize,
     wallpaper_index: Option<&'a WallpaperIndex>,
+    wallpaper_selected_index: usize,
 ) -> Element<'a, Message> {
     let current_view = match current_panel {
         Panel::Clock => clock::clock_panel_view(theme, bg_with_alpha, font, font_size),
@@ -43,6 +44,7 @@ pub fn right_main_panels_view<'a>(
     font,
     font_size,
     wallpaper_index,
+    wallpaper_selected_index,
 ),
 
         Panel::System => system_panel_view(system_panel, theme, bg_with_alpha, font, font_size),

@@ -43,6 +43,7 @@ pub struct Launcher {
     pub clipboard_selected_index: usize,
     pub is_first_frame: bool,
     pub wallpaper_index: Option<WallpaperIndex>,
+    pub wallpaper_selected_index: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

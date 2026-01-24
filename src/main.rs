@@ -112,6 +112,7 @@ fn new() -> (Launcher, Command<Message>) {
 
             // ✅ NEW — wallpaper data now lives in state
             wallpaper_index,
+            wallpaper_selected_index: 0,
         },
         Command::none(),
     )

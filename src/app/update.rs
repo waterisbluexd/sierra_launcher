@@ -329,6 +329,28 @@ pub fn update(launcher: &mut Launcher, message: Message) -> Command<Message> {
             Command::none()
         }
 
+        Message::PrevWallpaper => {
+            if let Some(index) = &launcher.wallpaper_index {
+                if launcher.wallpaper_selected_index > 0 {
+                    launcher.wallpaper_selected_index -= 1;
+                } else {
+                    launcher.wallpaper_selected_index = index.wallpapers.len() - 1;
+                }
+            }
+            Command::none()
+        }
+
+        Message::NextWallpaper => {
+            if let Some(index) = &launcher.wallpaper_index {
+                if launcher.wallpaper_selected_index < index.wallpapers.len() - 1 {
+                    launcher.wallpaper_selected_index += 1;
+                } else {
+                    launcher.wallpaper_selected_index = 0;
+                }
+            }
+            Command::none()
+        }
+
         Message::NoOp => Command::none(),
     }
 }

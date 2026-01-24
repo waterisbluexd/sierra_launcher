@@ -74,6 +74,7 @@ pub fn view(launcher: &Launcher) -> Element<'_, Message> {
                         launcher.clipboard_visible,
                         launcher.clipboard_selected_index,
                         launcher.wallpaper_index.as_ref(),
+                        launcher.wallpaper_selected_index,
                     ))
                     .height(Length::Fill)
                     .width(Length::Fill),

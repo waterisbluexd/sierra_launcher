@@ -31,6 +31,8 @@ pub enum Message {
     ClipboardArrowDown,
     ClipboardSelect,
     ClipboardDelete,
+    PrevWallpaper,
+    NextWallpaper,
     NoOp,
 }
 
