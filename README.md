@@ -26,3 +26,11 @@
     height="714"
   />
 </p>
+
+<p align="center">
+  <img
+    src="https://github.com/user-attachments/assets/51c56096-dfe2-4472-8531-ac1da684d05a"
+    alt="Sierra titles"
+    width="1000"
+  />
+</p>
