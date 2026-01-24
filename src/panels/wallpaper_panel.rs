@@ -81,11 +81,11 @@ pub fn wallpaper_panel_view<'a>(
 
     container(
         container(
-            stack![
+            stack![container(
                 container(
                     content
                 )
-                .padding(iced::padding::top(25))
+                .padding(10)
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .style(move |_| container::Style {
@@ -97,6 +97,11 @@ pub fn wallpaper_panel_view<'a>(
                     },
                     ..Default::default()
                 }),
+            )
+            .padding(iced::padding::top(15))
+                .width(Length::Fill)
+                .height(Length::Fill),
+                
                 container(
                     container(
                         text(" Wallpapers ")
