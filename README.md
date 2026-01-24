@@ -128,7 +128,7 @@ Configuration file: `~/.config/sierra/Sierra`
 ### Example Configuration
 ```toml
 # Font Settings
-font = "Monocraft"
+font = "Monospace"
 font_size = 14.0
 
 # Title Animation
