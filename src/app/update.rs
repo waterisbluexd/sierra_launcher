@@ -350,6 +350,15 @@ pub fn update(launcher: &mut Launcher, message: Message) -> Command<Message> {
             }
             Command::none()
         }
+        Message::SetWallpaper(idx) => {
+            if let Some(index) = &launcher.wallpaper_index {
+                if let Some(entry) = index.wallpapers.get(idx) {
+                    let manager = crate::utils::wallpaper_manager::WallpaperManager::new(index.wallpaper_dir.clone());
+                    manager.set_wallpaper(entry);
+                }
+            }
+            Command::none()
+        }
 
         Message::NoOp => Command::none(),
     }

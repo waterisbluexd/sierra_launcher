@@ -189,6 +189,29 @@ impl WallpaperManager {
         current_files == cached_files
     }
 
+    /// Set wallpaper using gSlapper and update pywal colors
+    pub fn set_wallpaper(&self, entry: &WallpaperEntry) {
+        let wallpaper_path = entry.path.to_string_lossy();
+        let thumbnail_path = entry.thumbnail.to_string_lossy();
+
+        // Set wallpaper with gSlapper
+        let gslapper_args = match entry.kind {
+            WallpaperKind::Video => vec!["-o", "loop fill", "*", &wallpaper_path],
+            WallpaperKind::Image => vec!["-o", "fill", "*", &wallpaper_path],
+        };
+
+        let _ = Command::new("gslapper")
+            .args(&gslapper_args)
+            .spawn();
+
+        // Update pywal colors from thumbnail (faster than full image)
+        let _ = Command::new("wal")
+            .args(&["-i", &thumbnail_path, "-n"])
+            .spawn();
+
+        eprintln!("[Wallpaper] Set to: {:?}", entry.name);
+    }
+
     /// ✅ NEW: Generate thumbnail from image using `image` crate (FAST)
     fn generate_image_thumbnail(source: &PathBuf, thumbnail: &PathBuf) {
         use image::ImageReader;

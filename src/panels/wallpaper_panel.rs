@@ -47,71 +47,106 @@ pub fn wallpaper_panel_view<'a>(
     };
 
     let controls = row![
-        container(
-            button(
-                container(
-                    text("◀")
-                        .font(font)
-                        .size(font_size * 1.6)
-                        .color(theme.color6)
-                )
-                .width(Length::Shrink)
-                .height(Length::Shrink)
-                .center_x(Length::Shrink)
-                .center_y(Length::Shrink)
+    container(
+        button(
+            container(
+                text("◀")
+                    .font(font)
+                    .size(font_size * 1.6)
+                    .color(theme.color6)
             )
-            .on_press(Message::PrevWallpaper)
-            .style(move |_, _| button::Style {
-                background: Some(Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
-                border: Border {
-                    color: theme.color4,
-                    width: 2.0,
-                    radius: 0.0.into(),
-                },
-                ..Default::default()
-            }),
+            .width(Length::Shrink)
+            .height(Length::Shrink)
+            .center_x(Length::Shrink)
+            .center_y(Length::Shrink)
         )
-        .width(Length::Shrink)
-        .height(Length::Shrink)
-        .center_x(Length::Shrink)
-        .center_y(Length::Fill)
-        .padding(10),
+        .on_press(Message::PrevWallpaper)
+        .style(move |_, _| button::Style {
+            background: Some(Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
+            border: Border {
+                color: theme.color4,
+                width: 2.0,
+                radius: 0.0.into(),
+            },
+            ..Default::default()
+        }),
+    )
+    .width(Length::Shrink)
+    .height(Length::Shrink)
+    .center_x(Length::Shrink)
+    .center_y(Length::Fill)
+    .padding(10),
 
-        container(text(""))
-            .width(Length::FillPortion(3))
-            .height(Length::Fill),
+    container(text(""))
+        .width(Length::FillPortion(2))
+        .height(Length::Fill),
 
-        container(
-            button(
-                container(
-                    text("▶")
-                        .font(font)
-                        .size(font_size * 1.6)
-                        .color(theme.color6)
-                )
-                .width(Length::Shrink)
-                .height(Length::Shrink)
-                .center_x(Length::Shrink)
-                .center_y(Length::Shrink)
+    // APPLY BUTTON
+    container(
+        button(
+            container(
+                text("Apply")
+                    .font(font)
+                    .size(font_size)
+                    .color(theme.color6)
             )
-            .on_press(Message::NextWallpaper)
-            .style(move |_, _| button::Style {
-                background: Some(Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
-                border: Border {
-                    color: theme.color4,
-                    width: 2.0,
-                    radius: 0.0.into(),
-                },
-                ..Default::default()
-            }),
+            .width(Length::Shrink)
+            .height(Length::Shrink)
+            .center_x(Length::Shrink)
+            .center_y(Length::Shrink)
         )
-        .width(Length::Shrink)
-        .height(Length::Shrink)
-        .center_x(Length::Shrink)
-        .center_y(Length::Fill)
-        .padding(10),
-    ]
-    .height(Length::Fill);
+        .on_press(Message::SetWallpaper(selected))
+        .style(move |_, _| button::Style {
+            background: Some(Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
+            border: Border {
+                color: theme.color4,
+                width: 2.0,
+                radius: 0.0.into(),
+            },
+            ..Default::default()
+        }),
+    )
+    .width(Length::Shrink)
+    .height(Length::Shrink)
+    .center_x(Length::Shrink)
+    .center_y(Length::Fill)
+    .padding(10),
+
+    container(text(""))
+        .width(Length::FillPortion(2))
+        .height(Length::Fill),
+
+    container(
+        button(
+            container(
+                text("▶")
+                    .font(font)
+                    .size(font_size * 1.6)
+                    .color(theme.color6)
+            )
+            .width(Length::Shrink)
+            .height(Length::Shrink)
+            .center_x(Length::Shrink)
+            .center_y(Length::Shrink)
+        )
+        .on_press(Message::NextWallpaper)
+        .style(move |_, _| button::Style {
+            background: Some(Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
+            border: Border {
+                color: theme.color4,
+                width: 2.0,
+                radius: 0.0.into(),
+            },
+            ..Default::default()
+        }),
+    )
+    .width(Length::Shrink)
+    .height(Length::Shrink)
+    .center_x(Length::Shrink)
+    .center_y(Length::Fill)
+    .padding(10),
+]
+.height(Length::Fill);
 
     let content = stack![
         container(wallpaper_view)
