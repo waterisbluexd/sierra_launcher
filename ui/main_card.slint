@@ -6,15 +6,14 @@ export component Island inherits Window {
     height: 714px;
     background: transparent;
 
-    callback request_hide();
+    callback request_hide();  // ← fire this on Esc
 
     FocusScope {
-        key-pressed(event) => {
-            if (event.text == "Escape") {
-                root.request_hide();
-                return accept;
+        key-released(event) => {
+            if event.text == Key.Escape {
+                root.request_hide();  // ← call the callback
             }
-            return reject;
+            accept
         }
 
         Rectangle {

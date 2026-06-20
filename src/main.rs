@@ -33,6 +33,8 @@ fn main() -> layer_shika::Result<()> {
         .width(SHOWN_WIDTH)
         .height(SHOWN_HEIGHT)
         .anchor(AnchorEdges::empty().with_bottom())
+        .keyboard_interactivity(KeyboardInteractivity::Exclusive) // grabs keyboard
+        .layer(Layer::Overlay)
         .exclusive_zone(0)
         .margin(2)
         .build()?;
