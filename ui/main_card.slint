@@ -1,14 +1,28 @@
 import { Theme } from "theme.slint";
 export { Theme }
+
 export component Island inherits Window {
     width: 486px;
     height: 714px;
     background: transparent;
-    Rectangle {
-        width: parent.width;
-        height: parent.height;
-        background: Theme.background.with-alpha(0.7);
-        border-width: 2px;
-        border-color: Theme.color4;
+
+    callback request_hide();
+
+    FocusScope {
+        key-pressed(event) => {
+            if (event.text == "Escape") {
+                root.request_hide();
+                return accept;
+            }
+            return reject;
+        }
+
+        Rectangle {
+            width: parent.width;
+            height: parent.height;
+            background: Theme.background.with-alpha(0.7);
+            border-width: 2px;
+            border-color: Theme.color4;
+        }
     }
 }

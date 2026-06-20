@@ -1,6 +1,5 @@
 use crate::theme::Theme;
 use layer_shika::calloop::channel;
-use layer_shika::slint::ComponentHandle;
 use layer_shika::slint_interpreter::{ComponentInstance, Value};
 use notify::{Config, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 
