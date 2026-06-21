@@ -6,12 +6,14 @@ export component Island inherits Window {
     height: 714px;
     background: transparent;
 
-    callback request_hide();  // ← fire this on Esc
+    callback request_hide();
 
-    FocusScope {
+    forward-focus: scope;
+
+    scope := FocusScope {
         key-released(event) => {
             if event.text == Key.Escape {
-                root.request_hide();  // ← call the callback
+                root.request_hide();
             }
             accept
         }
@@ -23,5 +25,9 @@ export component Island inherits Window {
             border-width: 2px;
             border-color: Theme.color4;
         }
+    }
+
+    init => {
+        scope.focus();
     }
 }

@@ -6,6 +6,7 @@ use crate::themer::notify::apply_theme;
 use layer_shika::prelude::*;
 use layer_shika::slint_interpreter::Value;
 use layer_shika_adapters::AppState;
+use std::path::PathBuf;
 use std::thread;
 
 const ISLAND: &str = "Island";
@@ -17,6 +18,32 @@ pub enum DaemonMsg {
     Toggle,
 }
 
+fn find_ui_file() -> PathBuf {
+    let dev = PathBuf::from("ui/main_card.slint");
+    if dev.exists() {
+        return dev;
+    }
+
+    if let Ok(data_home) = std::env::var("XDG_DATA_HOME") {
+        let p = PathBuf::from(data_home).join("sierra_launcher/ui/main_card.slint");
+        if p.exists() {
+            return p;
+        }
+    } else if let Ok(home) = std::env::var("HOME") {
+        let p = PathBuf::from(home).join(".local/share/sierra_launcher/ui/main_card.slint");
+        if p.exists() {
+            return p;
+        }
+    }
+
+    let p = PathBuf::from("/usr/local/share/sierra_launcher/ui/main_card.slint");
+    if p.exists() {
+        return p;
+    }
+
+    PathBuf::from("/usr/share/sierra_launcher/ui/main_card.slint")
+}
+
 fn main() -> layer_shika::Result<()> {
     let socket_path = ipc::socket_path();
     if ipc::notify_running_instance(&socket_path) {
@@ -25,7 +52,9 @@ fn main() -> layer_shika::Result<()> {
 
     let listener = ipc::bind_listener(&socket_path).expect("Failed to bind IPC socket");
 
-    let mut shell = Shell::from_file("ui/main_card.slint")
+    let ui = find_ui_file();
+
+    let mut shell = Shell::from_file(ui.to_str().unwrap())
         .surface(ISLAND)
         .width(SHOWN_WIDTH)
         .height(SHOWN_HEIGHT)
