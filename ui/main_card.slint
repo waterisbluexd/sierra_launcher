@@ -7,7 +7,6 @@ export component Island inherits Window {
     background: transparent;
 
     callback request_hide();
-
     forward-focus: scope;
 
     scope := FocusScope {
@@ -17,13 +16,26 @@ export component Island inherits Window {
             }
             accept
         }
-
         Rectangle {
-            width: parent.width;
-            height: parent.height;
             background: Theme.background.with-alpha(0.7);
             border-width: 2px;
-            border-color: Theme.color4;
+            border-color: Theme.color4.with-alpha(0.7);
+
+            HorizontalLayout {
+                padding: 12px;
+                spacing: 8px;
+                Rectangle {
+                    width: 20px;
+                    border-width: 2px;
+                    border-color: Theme.color4.with-alpha(0.7);
+                }
+
+                Rectangle {
+                    height: 200px;
+                    border-width: 2px;
+                    border-color: Theme.color4.with-alpha(0.7);
+                }
+            }
         }
     }
 
