@@ -1,10 +1,14 @@
 import { Theme } from "theme.slint";
+import { Clock } from "cards/clock.slint";
 export { Theme }
 
 export component Island inherits Window {
     width: 486px;
     height: 714px;
     background: transparent;
+
+    in property <string> clock-time: "00:00";
+    in property <string> clock-date: "01 Jan, Monday";
 
     callback request_hide();
     forward-focus: scope;
@@ -16,6 +20,7 @@ export component Island inherits Window {
             }
             accept
         }
+
         Rectangle {
             background: Theme.background.with-alpha(0.7);
             border-width: 2px;
@@ -23,18 +28,28 @@ export component Island inherits Window {
 
             HorizontalLayout {
                 padding: 12px;
-                spacing: 8px;
-                Rectangle {
-                    width: 20px;
+                spacing: 0px;
+
+                Rectangle { //sierra launcher fountain
+                    width: 0px;
                     border-width: 2px;
                     border-color: Theme.color4.with-alpha(0.7);
                 }
 
-                Rectangle {
-                    height: 200px;
-                    border-width: 2px;
-                    border-color: Theme.color4.with-alpha(0.7);
-                    //clock.slint here call
+                VerticalLayout {
+                    spacing: 8px;
+
+                    Rectangle {
+                        height: 200px;
+                        border-width: 2px;
+                        border-color: Theme.color4.with-alpha(0.7);
+
+                        Clock {
+                            time: root.clock-time;
+                            date: root.clock-date;
+                            height: 120px;
+                        }
+                    }
                 }
             }
         }

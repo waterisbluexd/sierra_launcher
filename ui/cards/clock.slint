@@ -1,2 +1,28 @@
-//slint clock login
-//
+import { Theme } from "../theme.slint";
+
+export component Clock inherits Rectangle {
+    in property <string> time: "00:00";
+    in property <string> date: "01 Jan, Monday";
+
+    VerticalLayout {
+        alignment: center;
+        spacing: 4px;
+
+        Text {
+            text: root.time;
+            color: Theme.foreground;
+            font-size: 48px;
+            font-weight: 700;
+            font-family: "FF";
+            horizontal-alignment: center;
+        }
+
+        Text {
+            text: root.date;
+            color: Theme.foreground.with-alpha(0.7);
+            font-size: 14px;
+            font-family: "Monocraft";
+            horizontal-alignment: center;
+        }
+    }
+}
