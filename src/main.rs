@@ -4,22 +4,21 @@ mod theme;
 mod themer;
 
 use crate::themer::notify::apply_theme;
-use cards::clock;
+use cards::wallpaper;
 use layer_shika::prelude::*;
 use layer_shika::slint_interpreter::Value;
 use layer_shika_adapters::AppState;
+use slint::Image;
 use std::path::PathBuf;
 use std::thread;
-use std::time::Duration;
 
 const ISLAND: &str = "Island";
-const SHOWN_WIDTH: u32 = 486;
-const SHOWN_HEIGHT: u32 = 714;
+const SHOWN_WIDTH: u32 = 420;
+const SHOWN_HEIGHT: u32 = 630;
 
 pub enum DaemonMsg {
     ReloadTheme,
     Toggle,
-    Tick,
 }
 
 fn find_ui_file() -> PathBuf {
@@ -84,18 +83,6 @@ fn main() -> layer_shika::Result<()> {
             DaemonMsg::Toggle => {
                 std::process::exit(0);
             }
-            DaemonMsg::Tick => {
-                let time = clock::current_time();
-                let date = clock::current_date();
-                for surface in app_state.surfaces_by_name_mut(ISLAND) {
-                    let instance = surface.component_instance();
-                    let _ = instance.set_property("clock-time", Value::String(time.clone().into()));
-                    let _ = instance.set_property("clock-date", Value::String(date.clone().into()));
-                }
-                for surface in app_state.all_outputs() {
-                    let _ = surface.render_frame_if_dirty();
-                }
-            }
         })?
     };
 
@@ -105,10 +92,8 @@ fn main() -> layer_shika::Result<()> {
             let theme = theme::Theme::load();
             apply_theme(instance, &theme);
 
-            let time = clock::current_time();
-            let date = clock::current_date();
-            let _ = instance.set_property("clock-time", Value::String(time.into()));
-            let _ = instance.set_property("clock-date", Value::String(date.into()));
+            let wallpaper_image: Image = wallpaper::current_wallpaper_image();
+            let _ = instance.set_property("wallpaper-image", Value::Image(wallpaper_image));
 
             let inner_sender = esc_sender.clone();
             let _ = instance.set_callback("request_hide", move |_args: &[Value]| {
@@ -117,14 +102,6 @@ fn main() -> layer_shika::Result<()> {
             });
         });
     }
-
-    let tick_sender = sender.clone();
-    thread::spawn(move || {
-        loop {
-            thread::sleep(Duration::from_secs(1));
-            let _ = tick_sender.send(DaemonMsg::Tick);
-        }
-    });
 
     thread::spawn(move || {
         ipc::serve(listener, move || {
