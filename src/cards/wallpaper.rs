@@ -15,6 +15,93 @@ pub fn current_wallpaper_image_blurred() -> slint::Image {
         .unwrap_or_default()
 }
 
+pub struct WallpaperManager {
+    paths: Vec<PathBuf>,
+    index: usize,
+}
+
+impl WallpaperManager {
+    pub fn load() -> Self {
+        let mut paths = wallpapers_dir_all_images().unwrap_or_default();
+
+        let current = current_wallpaper_path();
+        if let Some(cur) = &current {
+            if !paths.iter().any(|p| p == cur) {
+                paths.insert(0, cur.clone());
+            }
+        }
+
+        let index = current
+            .and_then(|cur| paths.iter().position(|p| p == &cur))
+            .unwrap_or(0);
+
+        Self { paths, index }
+    }
+
+    fn wrapped(&self, offset: isize) -> usize {
+        let len = self.paths.len() as isize;
+        if len == 0 {
+            return 0;
+        }
+        (((self.index as isize + offset) % len) + len) as usize % len as usize
+    }
+
+    pub fn current_path(&self) -> Option<&PathBuf> {
+        self.paths.get(self.index)
+    }
+
+    pub fn prev_path(&self) -> Option<&PathBuf> {
+        self.paths.get(self.wrapped(-1))
+    }
+
+    pub fn next_path(&self) -> Option<&PathBuf> {
+        self.paths.get(self.wrapped(1))
+    }
+
+    pub fn select_prev(&mut self) {
+        self.index = self.wrapped(-1);
+    }
+
+    pub fn select_next(&mut self) {
+        self.index = self.wrapped(1);
+    }
+
+    fn load_image(path: Option<&PathBuf>) -> slint::Image {
+        path.and_then(|p| slint::Image::load_from_path(p).ok())
+            .unwrap_or_default()
+    }
+
+    pub fn current_image(&self) -> slint::Image {
+        Self::load_image(self.current_path())
+    }
+
+    pub fn current_image_blurred(&self) -> slint::Image {
+        self.current_path()
+            .and_then(|p| blurred_image(p))
+            .unwrap_or_default()
+    }
+
+    pub fn prev_image(&self) -> slint::Image {
+        Self::load_image(self.prev_path())
+    }
+
+    pub fn next_image(&self) -> slint::Image {
+        Self::load_image(self.next_path())
+    }
+}
+
+fn wallpapers_dir_all_images() -> Option<Vec<PathBuf>> {
+    let home = env::var_os("HOME")?;
+    let dir = PathBuf::from(home).join("Wallpapers");
+    let mut images: Vec<PathBuf> = fs::read_dir(&dir)
+        .ok()?
+        .filter_map(|entry| entry.ok().map(|e| e.path()))
+        .filter(|path| path.is_file() && is_supported_image(path))
+        .collect();
+    images.sort();
+    Some(images)
+}
+
 fn boost_saturation(img: &mut image::RgbaImage, factor: f32) {
     for pixel in img.pixels_mut() {
         let [r, g, b, a] = pixel.0;

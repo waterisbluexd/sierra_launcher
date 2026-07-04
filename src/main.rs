@@ -2,14 +2,15 @@ mod cards;
 mod ipc;
 mod theme;
 mod themer;
-
 use crate::themer::notify::apply_theme;
-use cards::wallpaper;
+use cards::wallpaper::WallpaperManager;
 use layer_shika::prelude::*;
-use layer_shika::slint_interpreter::Value;
+use layer_shika::slint_interpreter::{ComponentInstance, Value};
+use slint::ComponentHandle;
 use layer_shika_adapters::AppState;
-use slint::Image;
+use std::cell::RefCell;
 use std::path::PathBuf;
+use std::rc::Rc;
 use std::thread;
 
 const ISLAND: &str = "Island";
@@ -26,7 +27,6 @@ fn find_ui_file() -> PathBuf {
     if dev.exists() {
         return dev;
     }
-
     if let Ok(data_home) = std::env::var("XDG_DATA_HOME") {
         let p = PathBuf::from(data_home).join("sierra_launcher/ui/main_card.slint");
         if p.exists() {
@@ -38,13 +38,21 @@ fn find_ui_file() -> PathBuf {
             return p;
         }
     }
-
     let p = PathBuf::from("/usr/local/share/sierra_launcher/ui/main_card.slint");
     if p.exists() {
         return p;
     }
-
     PathBuf::from("/usr/share/sierra_launcher/ui/main_card.slint")
+}
+
+fn push_wallpaper_state(instance: &ComponentInstance, mgr: &WallpaperManager) {
+    let _ = instance.set_property("wallpaper-image", Value::Image(mgr.current_image()));
+    let _ = instance.set_property(
+        "wallpaper-image-blurred",
+        Value::Image(mgr.current_image_blurred()),
+    );
+    let _ = instance.set_property("wallpaper-prev-image", Value::Image(mgr.prev_image()));
+    let _ = instance.set_property("wallpaper-next-image", Value::Image(mgr.next_image()));
 }
 
 fn main() -> layer_shika::Result<()> {
@@ -52,11 +60,8 @@ fn main() -> layer_shika::Result<()> {
     if ipc::notify_running_instance(&socket_path) {
         return Ok(());
     }
-
     let listener = ipc::bind_listener(&socket_path).expect("Failed to bind IPC socket");
-
     let ui = find_ui_file();
-
     let mut shell = Shell::from_file(ui.to_str().unwrap())
         .surface(ISLAND)
         .width(SHOWN_WIDTH)
@@ -68,7 +73,6 @@ fn main() -> layer_shika::Result<()> {
         .build()?;
 
     let loop_handle = shell.event_loop_handle();
-
     let (_token, sender) = {
         loop_handle.add_channel::<DaemonMsg, _>(move |msg, app_state: &mut AppState| match msg {
             DaemonMsg::ReloadTheme => {
@@ -92,10 +96,28 @@ fn main() -> layer_shika::Result<()> {
             let theme = theme::Theme::load();
             apply_theme(instance, &theme);
 
-            let wallpaper_image: Image = wallpaper::current_wallpaper_image();
-            let wallpaper_blurred: Image = wallpaper::current_wallpaper_image_blurred();
-            let _ = instance.set_property("wallpaper-image", Value::Image(wallpaper_image));
-            let _ = instance.set_property("wallpaper-image-blurred", Value::Image(wallpaper_blurred));
+            let manager = Rc::new(RefCell::new(WallpaperManager::load()));
+            push_wallpaper_state(instance, &manager.borrow());
+
+            let weak_prev = instance.as_weak();
+            let manager_prev = manager.clone();
+            let _ = instance.set_callback("request_select_prev", move |_args: &[Value]| {
+                manager_prev.borrow_mut().select_prev();
+                if let Some(inst) = weak_prev.upgrade() {
+                    push_wallpaper_state(&inst, &manager_prev.borrow());
+                }
+                Value::Void
+            });
+
+            let weak_next = instance.as_weak();
+            let manager_next = manager.clone();
+            let _ = instance.set_callback("request_select_next", move |_args: &[Value]| {
+                manager_next.borrow_mut().select_next();
+                if let Some(inst) = weak_next.upgrade() {
+                    push_wallpaper_state(&inst, &manager_next.borrow());
+                }
+                Value::Void
+            });
 
             let inner_sender = esc_sender.clone();
             let _ = instance.set_callback("request_hide", move |_args: &[Value]| {
@@ -110,7 +132,6 @@ fn main() -> layer_shika::Result<()> {
             let _ = sender.send(DaemonMsg::Toggle);
         });
     });
-
     shell.run()?;
     Ok(())
 }

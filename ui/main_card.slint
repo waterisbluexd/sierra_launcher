@@ -1,15 +1,159 @@
 import { Theme } from "theme.slint";
 export { Theme }
 
+component WallpaperCarousel inherits Rectangle {
+    in property <image> current-image;
+    in property <image> prev-image;
+    in property <image> next-image;
+    callback select-prev();
+    callback select-next();
+
+    in-out property <bool> selection-mode: false;
+    property <length> side-width: 90px;
+    property <length> gap: 10px;
+    property <length> center-width: root.selection-mode ? root.width * 0.8 : root.width;
+    property <length> center-height: root.selection-mode ? root.height * 0.8 : root.height;
+    property <length> shift-amount: root.side-width + root.gap;
+    property <int> slide-dir: 0;
+    property <length> track-offset: 0px;
+
+    clip: false;
+
+    states [
+        shift-next when root.slide-dir == 1: {
+            track-offset: -root.shift-amount;
+            in {
+                animate track-offset {
+                    duration: 300ms;
+                    easing: cubic-bezier(0.25, 1.1, 0.4, 1);
+                }
+            }
+            out {
+                animate track-offset { duration: 0ms; }
+            }
+        }
+        shift-prev when root.slide-dir == -1: {
+            track-offset: root.shift-amount;
+            in {
+                animate track-offset {
+                    duration: 300ms;
+                    easing: cubic-bezier(0.25, 1.1, 0.4, 1);
+                }
+            }
+            out {
+                animate track-offset { duration: 0ms; }
+            }
+        }
+    ]
+    center-image := Image {
+        source: root.current-image;
+        image-fit: cover;
+        width: root.center-width;
+        height: root.center-height;
+        x: (root.width - self.width) / 2 + root.track-offset;
+        y: (root.height - self.height) / 2;
+        animate width, height, y {
+            duration: 300ms;
+            easing: cubic-bezier(0.25, 1.1, 0.4, 1);
+        }
+    }
+
+    left-image := Image {
+        source: root.prev-image;
+        image-fit: cover;
+        width: root.side-width;
+        height: root.center-height;
+        x: root.selection-mode ? center-image.x - root.gap - self.width : center-image.x - self.width;
+        y: (root.height - self.height) / 2;
+        opacity: root.selection-mode ? 1 : 0;
+        animate x, y, opacity {
+            duration: 300ms;
+            easing: cubic-bezier(0.25, 1.1, 0.4, 1);
+        }
+    }
+
+    right-image := Image {
+        source: root.next-image;
+        image-fit: cover;
+        width: root.side-width;
+        height: root.center-height;
+        x: root.selection-mode ? center-image.x + center-image.width + root.gap : center-image.x + center-image.width;
+        y: (root.height - self.height) / 2;
+        opacity: root.selection-mode ? 1 : 0;
+        animate x, y, opacity {
+            duration: 300ms;
+            easing: cubic-bezier(0.25, 1.1, 0.4, 1);
+        }
+    }
+
+    left-area := TouchArea {
+        x: left-image.x;
+        width: left-image.width;
+        height: left-image.height;
+        enabled: root.selection-mode;
+        clicked => {
+            root.go-prev();
+        }
+    }
+
+    right-area := TouchArea {
+        x: right-image.x;
+        width: right-image.width;
+        height: right-image.height;
+        enabled: root.selection-mode;
+        clicked => {
+            root.go-next();
+        }
+    }
+
+    center-area := TouchArea {
+        x: center-image.x;
+        width: center-image.width;
+        height: center-image.height;
+        double-clicked => {
+            root.selection-mode = !root.selection-mode;
+        }
+    }
+
+    function go-prev() {
+        if !settle-timer.running {
+            root.slide-dir = -1;
+            settle-timer.running = true;
+        }
+    }
+    function go-next() {
+        if !settle-timer.running {
+            root.slide-dir = 1;
+            settle-timer.running = true;
+        }
+    }
+
+    settle-timer := Timer {
+        interval: 300ms;
+        running: false;
+        triggered => {
+            self.running = false;
+            if root.slide-dir < 0 {
+                root.select-prev();
+            } else if root.slide-dir > 0 {
+                root.select-next();
+            }
+            root.slide-dir = 0;
+        }
+    }
+}
+
 export component Island inherits Window {
     width: 420px;
     height: 630px;
     background: transparent;
-
     in property <image> wallpaper-image;
     in property <image> wallpaper-image-blurred;
-
+    in property <image> wallpaper-prev-image;
+    in property <image> wallpaper-next-image;
     callback request_hide();
+    callback request_select_prev();
+    callback request_select_next();
     forward-focus: scope;
 
     scope := FocusScope {
@@ -19,17 +163,14 @@ export component Island inherits Window {
             }
             accept
         }
-
         Rectangle {
             background: Theme.background.with-alpha(0.7);
             border-width: 2px;
             border-color: Theme.color4.with-alpha(0.7);
-
             HorizontalLayout {
                 padding: 1px;
                 spacing: 0px;
-
-                Rectangle { //sierra launcher fountain
+                Rectangle {
                     width: 0px;
                     border-width: 2px;
                     border-color: Theme.color4.with-alpha(0.7);
@@ -37,21 +178,24 @@ export component Island inherits Window {
 
                 VerticalLayout {
                     spacing: 8px;
-
                     Rectangle {
                         height: 220px;
                         border-width: 2px;
                         border-color: Theme.color4.with-alpha(0.7);
                         clip: true;
 
-                        Image {
-                            source: root.wallpaper-image;
-                            width: parent.width;
-                            height: parent.height;
-                            image-fit: cover;
-                            horizontal-alignment: center;
-                            vertical-alignment: center;
-                            opacity: 0.8;
+                        carousel := WallpaperCarousel {
+                            width: 100%;
+                            height: 100%;
+                            current-image: root.wallpaper-image;
+                            prev-image: root.wallpaper-prev-image;
+                            next-image: root.wallpaper-next-image;
+                            select-prev => {
+                                root.request_select_prev();
+                            }
+                            select-next => {
+                                root.request_select_next();
+                            }
                         }
 
                         Image {
@@ -59,7 +203,7 @@ export component Island inherits Window {
                             width: parent.width;
                             height: parent.height;
                             image-fit: cover;
-                            opacity: hover-area.has-hover ? 0 : 1;
+                            opacity: (hover-area.has-hover || carousel.selection-mode) ? 0 : 1;
                             animate opacity {
                                 duration: 200ms;
                                 easing: ease-in-out;
@@ -68,14 +212,19 @@ export component Island inherits Window {
 
                         Rectangle {
                             background: white.with-alpha(0.06);
-                            opacity: hover-area.has-hover ? 0 : 1;
+                            opacity: (hover-area.has-hover || carousel.selection-mode) ? 0 : 1;
                             animate opacity {
                                 duration: 200ms;
                                 easing: ease-in-out;
                             }
                         }
 
-                        hover-area := TouchArea { }
+                        hover-area := TouchArea {
+                            enabled: !carousel.selection-mode;
+                            double-clicked => {
+                                carousel.selection-mode = !carousel.selection-mode;
+                            }
+                        }
                     }
                 }
             }
