@@ -9,23 +9,29 @@ component WallpaperCarousel inherits Rectangle {
     callback select-next();
 
     in-out property <bool> selection-mode: false;
-    property <length> side-width: 90px;
-    property <length> gap: 10px;
-    property <length> center-width: root.selection-mode ? root.width * 0.8 : root.width;
-    property <length> center-height: root.selection-mode ? root.height * 0.8 : root.height;
-    property <length> shift-amount: root.side-width + root.gap;
+    property <length> center-width: root.selection-mode ? root.width * 0.62 : root.width;
+    property <length> center-height: root.selection-mode ? root.height * 0.88 : root.height;
+    property <length> side-width: root.selection-mode ? root.width * 0.18 : 0px;
+    property <length> side-height: root.selection-mode ? root.height * 0.6 : 0px;
+    property <length> gap: 14px;
+    property <length> move-distance: root.center-width + root.gap;
     property <int> slide-dir: 0;
+    property <length> base-x: root.selection-mode ? (root.width - (root.side-width * 2 + root.center-width + root.gap * 2)) / 2 : 0px;
     property <length> track-offset: 0px;
+    property <bool> is-dragging: false;
+    property <length> drag-start-x: 0px;
+    property <length> drag-offset: 0px;
 
-    clip: false;
+    clip: true;
+    background: transparent;
 
     states [
         shift-next when root.slide-dir == 1: {
-            track-offset: -root.shift-amount;
+            track-offset: -root.move-distance;
             in {
                 animate track-offset {
-                    duration: 300ms;
-                    easing: cubic-bezier(0.25, 1.1, 0.4, 1);
+                    duration: 400ms;
+                    easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
                 }
             }
             out {
@@ -33,11 +39,11 @@ component WallpaperCarousel inherits Rectangle {
             }
         }
         shift-prev when root.slide-dir == -1: {
-            track-offset: root.shift-amount;
+            track-offset: root.move-distance;
             in {
                 animate track-offset {
-                    duration: 300ms;
-                    easing: cubic-bezier(0.25, 1.1, 0.4, 1);
+                    duration: 400ms;
+                    easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
                 }
             }
             out {
@@ -45,73 +51,150 @@ component WallpaperCarousel inherits Rectangle {
             }
         }
     ]
-    center-image := Image {
+
+    center-only := Image {
         source: root.current-image;
         image-fit: cover;
         width: root.center-width;
         height: root.center-height;
-        x: (root.width - self.width) / 2 + root.track-offset;
+        x: (root.width - self.width) / 2;
         y: (root.height - self.height) / 2;
-        animate width, height, y {
+        opacity: root.selection-mode ? 0 : 1;
+        animate x, width, height, opacity, y {
             duration: 300ms;
-            easing: cubic-bezier(0.25, 1.1, 0.4, 1);
+            easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
     }
 
-    left-image := Image {
-        source: root.prev-image;
-        image-fit: cover;
-        width: root.side-width;
-        height: root.center-height;
-        x: root.selection-mode ? center-image.x - root.gap - self.width : center-image.x - self.width;
-        y: (root.height - self.height) / 2;
-        opacity: root.selection-mode ? 1 : 0;
-        animate x, y, opacity {
-            duration: 300ms;
-            easing: cubic-bezier(0.25, 1.1, 0.4, 1);
-        }
-    }
-
-    right-image := Image {
-        source: root.next-image;
-        image-fit: cover;
-        width: root.side-width;
-        height: root.center-height;
-        x: root.selection-mode ? center-image.x + center-image.width + root.gap : center-image.x + center-image.width;
-        y: (root.height - self.height) / 2;
-        opacity: root.selection-mode ? 1 : 0;
-        animate x, y, opacity {
-            duration: 300ms;
-            easing: cubic-bezier(0.25, 1.1, 0.4, 1);
-        }
-    }
-
-    left-area := TouchArea {
-        x: left-image.x;
-        width: left-image.width;
-        height: left-image.height;
-        enabled: root.selection-mode;
+    center-only-touch := TouchArea {
+        width: 100%;
+        height: 100%;
+        enabled: !root.selection-mode;
         clicked => {
-            root.go-prev();
+            root.selection-mode = true;
+            root.drag-offset = 0px;
+            root.track-offset = 0px;
         }
-    }
-
-    right-area := TouchArea {
-        x: right-image.x;
-        width: right-image.width;
-        height: right-image.height;
-        enabled: root.selection-mode;
-        clicked => {
-            root.go-next();
-        }
-    }
-
-    center-area := TouchArea {
-        x: center-image.x;
-        width: center-image.width;
-        height: center-image.height;
         double-clicked => {
-            root.selection-mode = !root.selection-mode;
+            root.selection-mode = true;
+            root.drag-offset = 0px;
+            root.track-offset = 0px;
+        }
+    }
+
+    film-strip := Rectangle {
+        width: root.side-width * 2 + root.center-width + root.gap * 2;
+        height: root.center-height;
+        background: transparent;
+        x: root.base-x + root.track-offset + (root.is-dragging ? root.drag-offset : 0px);
+        y: (root.height - self.height) / 2;
+        opacity: root.selection-mode ? 1 : 0;
+        animate x, opacity {
+            duration: root.is-dragging ? 0ms : 400ms;
+            easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        prev-frame := Image {
+            source: root.prev-image;
+            image-fit: cover;
+            width: root.side-width;
+            height: root.side-height;
+            x: 0px;
+            y: (self.height - self.height) / 2;
+        }
+
+        current-frame := Image {
+            source: root.current-image;
+            image-fit: cover;
+            width: root.center-width;
+            height: root.center-height;
+            x: root.side-width + root.gap;
+            y: 0px;
+        }
+
+        next-frame := Image {
+            source: root.next-image;
+            image-fit: cover;
+            width: root.side-width;
+            height: root.side-height;
+            x: root.side-width + root.gap + root.center-width + root.gap;
+            y: (self.height - self.height) / 2;
+        }
+    }
+
+    interaction-area := TouchArea {
+        width: 100%;
+        height: 100%;
+        enabled: root.selection-mode;
+
+        moved => {
+            if self.pressed && !root.is-dragging {
+                root.is-dragging = true;
+                root.drag-start-x = self.mouse-x;
+            }
+            if self.pressed && root.is-dragging {
+                root.drag-offset = self.mouse-x - root.drag-start-x;
+            }
+        }
+
+        clicked => {
+            if root.is-dragging {
+                root.is-dragging = false;
+                let threshold = root.center-width * 0.18;
+                if root.drag-offset > threshold {
+                    root.slide-dir = -1;
+                    root.track-offset = 0px;
+                    settle-timer.running = true;
+                } else if root.drag-offset < -threshold {
+                    root.slide-dir = 1;
+                    root.track-offset = 0px;
+                    settle-timer.running = true;
+                } else {
+                    root.drag-offset = 0px;
+                }
+            }
+        }
+    }
+
+    prev-touch := TouchArea {
+        x: root.base-x;
+        y: (root.height - root.side-height) / 2;
+        width: root.side-width;
+        height: root.side-height;
+        enabled: root.selection-mode;
+        clicked => {
+            root.slide-dir = -1;
+            settle-timer.running = true;
+        }
+    }
+
+    next-touch := TouchArea {
+        x: root.base-x + root.side-width + root.gap + root.center-width + root.gap;
+        y: (root.height - root.side-height) / 2;
+        width: root.side-width;
+        height: root.side-height;
+        enabled: root.selection-mode;
+        clicked => {
+            root.slide-dir = 1;
+            settle-timer.running = true;
+        }
+    }
+
+    center-touch := TouchArea {
+        x: root.base-x + root.side-width + root.gap;
+        y: (root.height - root.center-height) / 2;
+        width: root.center-width;
+        height: root.center-height;
+        enabled: root.selection-mode;
+        clicked => {
+            root.selection-mode = false;
+            root.drag-offset = 0px;
+            root.track-offset = 0px;
+        }
+        double-clicked => {
+            root.selection-mode = false;
+            root.drag-offset = 0px;
+            root.track-offset = 0px;
         }
     }
 
@@ -121,6 +204,7 @@ component WallpaperCarousel inherits Rectangle {
             settle-timer.running = true;
         }
     }
+
     function go-next() {
         if !settle-timer.running {
             root.slide-dir = 1;
@@ -129,7 +213,7 @@ component WallpaperCarousel inherits Rectangle {
     }
 
     settle-timer := Timer {
-        interval: 300ms;
+        interval: 420ms;
         running: false;
         triggered => {
             self.running = false;
@@ -139,6 +223,8 @@ component WallpaperCarousel inherits Rectangle {
                 root.select-next();
             }
             root.slide-dir = 0;
+            root.track-offset = 0px;
+            root.drag-offset = 0px;
         }
     }
 }

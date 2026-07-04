@@ -91,8 +91,7 @@ impl WallpaperManager {
 }
 
 fn wallpapers_dir_all_images() -> Option<Vec<PathBuf>> {
-    let home = env::var_os("HOME")?;
-    let dir = PathBuf::from(home).join("Wallpapers");
+    let dir = wallpaper_directory()?;
     let mut images: Vec<PathBuf> = fs::read_dir(&dir)
         .ok()?
         .filter_map(|entry| entry.ok().map(|e| e.path()))
@@ -100,6 +99,48 @@ fn wallpapers_dir_all_images() -> Option<Vec<PathBuf>> {
         .collect();
     images.sort();
     Some(images)
+}
+
+fn wallpaper_directory() -> Option<PathBuf> {
+    config_wallpaper_dir().or_else(default_wallpaper_dir)
+}
+
+fn config_wallpaper_dir() -> Option<PathBuf> {
+    let contents = read_config_file()?;
+    for line in contents.lines() {
+        let t = line.trim();
+        if t.is_empty() || t.starts_with('#') {
+            continue;
+        }
+
+        let eq = if let Some(eq) = t.find('=') {
+            eq
+        } else {
+            continue;
+        };
+
+        let key = t[..eq].trim();
+        if key != "wallpaper_dir" {
+            continue;
+        }
+
+        let value = t[eq + 1..].trim();
+        let path = expand_path(value)?;
+        if path.exists() && path.is_dir() {
+            return Some(path);
+        }
+    }
+    None
+}
+
+fn default_wallpaper_dir() -> Option<PathBuf> {
+    let home = env::var_os("HOME")?;
+    let dir = PathBuf::from(home).join("Wallpapers");
+    if dir.exists() && dir.is_dir() {
+        Some(dir)
+    } else {
+        None
+    }
 }
 
 fn boost_saturation(img: &mut image::RgbaImage, factor: f32) {
@@ -158,27 +199,24 @@ fn current_wallpaper_path() -> Option<PathBuf> {
 }
 
 fn config_wallpaper_path() -> Option<PathBuf> {
-    let home = env::var_os("HOME")?;
-    let cfg = PathBuf::from(home).join(".config/sierra_launcher/sierra.config");
-    if !cfg.exists() {
-        return None;
-    }
-
-    let contents = fs::read_to_string(cfg).ok()?;
+    let contents = read_config_file()?;
     for line in contents.lines() {
         let t = line.trim();
         if t.is_empty() || t.starts_with('#') {
             continue;
         }
-        let value = if let Some(eq) = t.find('=') {
-            &t[eq + 1..].trim()
+
+        let path_value = if let Some(eq) = t.find('=') {
+            let key = t[..eq].trim();
+            if key != "wallpaper_dir" {
+                continue;
+            }
+            t[eq + 1..].trim()
         } else {
             t
         };
-        if value.is_empty() {
-            continue;
-        }
-        let path = PathBuf::from(value);
+
+        let path = expand_path(path_value)?;
         if path.exists() {
             if path.is_file() && is_supported_image(&path) {
                 return Some(path);
@@ -189,6 +227,47 @@ fn config_wallpaper_path() -> Option<PathBuf> {
         }
     }
     None
+}
+
+fn config_cache_dir() -> Option<PathBuf> {
+    let contents = read_config_file()?;
+    for line in contents.lines() {
+        let t = line.trim();
+        if t.is_empty() || t.starts_with('#') {
+            continue;
+        }
+
+        if let Some(eq) = t.find('=') {
+            let key = t[..eq].trim();
+            if key != "cache_dir" {
+                continue;
+            }
+            let value = t[eq + 1..].trim();
+            return expand_path(value);
+        }
+    }
+    None
+}
+
+fn read_config_file() -> Option<String> {
+    let home = env::var_os("HOME")?;
+    let cfg = PathBuf::from(home).join(".config/sierra_launcher/sierra");
+    fs::read_to_string(cfg).ok()
+}
+
+fn expand_path(value: &str) -> Option<PathBuf> {
+    let mut value = value.trim();
+    if (value.starts_with('"') && value.ends_with('"')) || (value.starts_with('\'') && value.ends_with('\'')) {
+        value = &value[1..value.len() - 1];
+    }
+    if value.starts_with("~/") {
+        let home = env::var_os("HOME")?;
+        return Some(PathBuf::from(home).join(&value[2..]));
+    }
+    if value == "~" {
+        return env::var_os("HOME").map(PathBuf::from);
+    }
+    Some(PathBuf::from(value))
 }
 
 fn first_image_in_dir(dir: &Path) -> Option<PathBuf> {
@@ -202,8 +281,7 @@ fn first_image_in_dir(dir: &Path) -> Option<PathBuf> {
 }
 
 fn pywal_wallpaper() -> Option<PathBuf> {
-    let home = env::var_os("HOME")?;
-    let cache_dir = PathBuf::from(home).join(".cache/wal");
+    let cache_dir = config_cache_dir().unwrap_or_else(default_cache_dir);
 
     if let Some(path) = pywal_colors_json(&cache_dir) {
         return Some(path);
@@ -214,6 +292,11 @@ fn pywal_wallpaper() -> Option<PathBuf> {
     }
 
     None
+}
+
+fn default_cache_dir() -> PathBuf {
+    let home = env::var_os("HOME").unwrap_or_default();
+    PathBuf::from(home).join(".cache/wal")
 }
 
 fn pywal_colors_json(cache_dir: &Path) -> Option<PathBuf> {
@@ -244,8 +327,7 @@ fn pywal_wal_file(cache_dir: &Path) -> Option<PathBuf> {
 }
 
 fn wallpapers_dir_wallpaper() -> Option<PathBuf> {
-    let home = env::var_os("HOME")?;
-    let wallpapers_dir = PathBuf::from(home).join("Wallpapers");
+    let wallpapers_dir = wallpaper_directory()?;
     let entries = fs::read_dir(&wallpapers_dir).ok()?;
 
     let mut images: Vec<PathBuf> = entries
@@ -258,8 +340,7 @@ fn wallpapers_dir_wallpaper() -> Option<PathBuf> {
 }
 
 fn wallpapers_dir_match(path: &Path) -> Option<PathBuf> {
-    let home = env::var_os("HOME")?;
-    let wallpapers_dir = PathBuf::from(home).join("Wallpapers");
+    let wallpapers_dir = wallpaper_directory()?;
     let basename = path.file_name()?;
 
     fs::read_dir(&wallpapers_dir)

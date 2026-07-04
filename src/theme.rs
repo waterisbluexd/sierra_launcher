@@ -67,10 +67,8 @@ impl Default for Theme {
 
 impl Theme {
     pub fn path() -> PathBuf {
-        PathBuf::from(env::var("HOME").expect("HOME environment variable not set"))
-            .join(".cache")
-            .join("wal")
-            .join("colors.json")
+        let cache_dir = config_cache_dir().unwrap_or_else(default_cache_dir);
+        cache_dir.join("colors.json")
     }
 
     pub fn load() -> Self {
@@ -96,4 +94,49 @@ impl Theme {
             }
         }
     }
+}
+
+fn config_cache_dir() -> Option<PathBuf> {
+    let contents = read_config_file()?;
+    for line in contents.lines() {
+        let t = line.trim();
+        if t.is_empty() || t.starts_with('#') {
+            continue;
+        }
+
+        if let Some(eq) = t.find('=') {
+            let key = t[..eq].trim();
+            if key != "cache_dir" {
+                continue;
+            }
+            return expand_path(t[eq + 1..].trim());
+        }
+    }
+    None
+}
+
+fn read_config_file() -> Option<String> {
+    let home = env::var_os("HOME")?;
+    let cfg = PathBuf::from(home).join(".config/sierra_launcher/sierra");
+    fs::read_to_string(cfg).ok()
+}
+
+fn expand_path(value: &str) -> Option<PathBuf> {
+    let mut value = value.trim();
+    if (value.starts_with('"') && value.ends_with('"')) || (value.starts_with('\'') && value.ends_with('\'')) {
+        value = &value[1..value.len() - 1];
+    }
+    if value.starts_with("~/") {
+        let home = env::var_os("HOME")?;
+        return Some(PathBuf::from(home).join(&value[2..]));
+    }
+    if value == "~" {
+        return env::var_os("HOME").map(PathBuf::from);
+    }
+    Some(PathBuf::from(value))
+}
+
+fn default_cache_dir() -> PathBuf {
+    let home = env::var_os("HOME").expect("HOME environment variable not set");
+    PathBuf::from(home).join(".cache").join("wal")
 }
