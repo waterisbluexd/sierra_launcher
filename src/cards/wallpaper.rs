@@ -2,7 +2,6 @@ use serde_json::Value as JsonValue;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 pub fn current_wallpaper_image() -> slint::Image {
     current_wallpaper_path()
@@ -35,8 +34,8 @@ fn darken_image(img: &mut image::RgbaImage, factor: f32) {
 
 fn blurred_image(path: &Path) -> Option<slint::Image> {
     let img = image::open(path).ok()?;
-    let small = img.resize_to_fill(420, 200, image::imageops::FilterType::Triangle);
-    let mut blurred = small.blur(3.0).into_rgba8();
+    let small = img.resize_to_fill(420, 220, image::imageops::FilterType::Triangle);
+    let mut blurred = small.blur(6.0).into_rgba8();
     boost_saturation(&mut blurred, 1.1);
     darken_image(&mut blurred, 0.84);
     let buffer = slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(
@@ -55,11 +54,64 @@ fn current_wallpaper_path() -> Option<PathBuf> {
         }
     }
 
-    pywal_wallpaper()
-        .or_else(wallpapers_dir_wallpaper)
-        .or_else(gnome_wallpaper)
-        .or_else(kde_wallpaper)
-        .or_else(xfce_wallpaper)
+    if let Some(p) = config_wallpaper_path() {
+        return Some(p);
+    }
+
+    if let Some(home) = env::var_os("HOME") {
+        let candidate_dir = PathBuf::from(home).join("Wallpaper");
+        if candidate_dir.exists() && candidate_dir.is_dir() {
+            if let Some(p) = first_image_in_dir(&candidate_dir) {
+                return Some(p);
+            }
+        }
+    }
+
+    pywal_wallpaper().or_else(wallpapers_dir_wallpaper)
+}
+
+fn config_wallpaper_path() -> Option<PathBuf> {
+    let home = env::var_os("HOME")?;
+    let cfg = PathBuf::from(home).join(".config/sierra_launcher/sierra.config");
+    if !cfg.exists() {
+        return None;
+    }
+
+    let contents = fs::read_to_string(cfg).ok()?;
+    for line in contents.lines() {
+        let t = line.trim();
+        if t.is_empty() || t.starts_with('#') {
+            continue;
+        }
+        let value = if let Some(eq) = t.find('=') {
+            &t[eq + 1..].trim()
+        } else {
+            t
+        };
+        if value.is_empty() {
+            continue;
+        }
+        let path = PathBuf::from(value);
+        if path.exists() {
+            if path.is_file() && is_supported_image(&path) {
+                return Some(path);
+            }
+            if path.is_dir() {
+                return first_image_in_dir(&path);
+            }
+        }
+    }
+    None
+}
+
+fn first_image_in_dir(dir: &Path) -> Option<PathBuf> {
+    let mut images: Vec<PathBuf> = fs::read_dir(dir)
+        .ok()?
+        .filter_map(|entry| entry.ok().map(|e| e.path()))
+        .filter(|path| path.is_file() && is_supported_image(path))
+        .collect();
+    images.sort();
+    images.into_iter().next()
 }
 
 fn pywal_wallpaper() -> Option<PathBuf> {
@@ -139,65 +191,4 @@ fn is_supported_image(path: &Path) -> bool {
             )
         })
         .unwrap_or(false)
-}
-
-fn parse_file_uri(value: &str) -> Option<PathBuf> {
-    let stripped = value.trim().trim_matches(|c| c == '"' || c == '\'');
-    let stripped = stripped.strip_prefix("file://").unwrap_or(stripped);
-    let path = PathBuf::from(stripped);
-    if path.exists() { Some(path) } else { None }
-}
-
-fn gnome_wallpaper() -> Option<PathBuf> {
-    let output = Command::new("gsettings")
-        .args(["get", "org.gnome.desktop.background", "picture-uri"])
-        .output()
-        .ok()?;
-
-    if !output.status.success() {
-        return None;
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    parse_file_uri(&stdout)
-}
-
-fn kde_wallpaper() -> Option<PathBuf> {
-    let home = env::var_os("HOME")?;
-    let config_path = PathBuf::from(home).join(".config/plasma-org.kde.plasma.desktop-appletsrc");
-    let contents = fs::read_to_string(config_path).ok()?;
-
-    for line in contents.lines() {
-        if let Some(start) = line.find("Image=file://") {
-            let value = &line[start + "Image=".len()..];
-            if let Some(path) = parse_file_uri(value) {
-                return Some(path);
-            }
-        }
-    }
-
-    None
-}
-
-fn xfce_wallpaper() -> Option<PathBuf> {
-    let home = env::var_os("HOME")?;
-    let config_path = PathBuf::from(home).join(".config/xfce4/xfconf/xfce4-desktop.xml");
-    let contents = fs::read_to_string(config_path).ok()?;
-
-    for line in contents.lines() {
-        if line.contains("image-path") || line.contains("last-image") {
-            if let Some(start) = line.find("value=\"") {
-                let rest = &line[start + 7..];
-                if let Some(end) = rest.find('"') {
-                    let candidate = &rest[..end];
-                    let path = PathBuf::from(candidate);
-                    if path.exists() {
-                        return Some(path);
-                    }
-                }
-            }
-        }
-    }
-
-    None
 }
