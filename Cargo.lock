@@ -4201,6 +4201,7 @@ name = "sierra_launcher"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "image",
  "layer-shika",
  "layer-shika-adapters",
  "notify",

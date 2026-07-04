@@ -93,7 +93,9 @@ fn main() -> layer_shika::Result<()> {
             apply_theme(instance, &theme);
 
             let wallpaper_image: Image = wallpaper::current_wallpaper_image();
+            let wallpaper_blurred: Image = wallpaper::current_wallpaper_image_blurred();
             let _ = instance.set_property("wallpaper-image", Value::Image(wallpaper_image));
+            let _ = instance.set_property("wallpaper-image-blurred", Value::Image(wallpaper_blurred));
 
             let inner_sender = esc_sender.clone();
             let _ = instance.set_callback("request_hide", move |_args: &[Value]| {

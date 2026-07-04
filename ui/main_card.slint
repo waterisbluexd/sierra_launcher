@@ -7,6 +7,7 @@ export component Island inherits Window {
     background: transparent;
 
     in property <image> wallpaper-image;
+    in property <image> wallpaper-image-blurred;
 
     callback request_hide();
     forward-focus: scope;
@@ -42,14 +43,38 @@ export component Island inherits Window {
                         border-width: 2px;
                         border-color: Theme.color4.with-alpha(0.7);
                         clip: true;
+
                         Image {
                             source: root.wallpaper-image;
                             width: parent.width;
                             height: parent.height;
+                            image-fit: cover;
                             horizontal-alignment: center;
                             vertical-alignment: center;
-                            opacity: 0.9;
                         }
+
+                        Image {
+                            source: root.wallpaper-image-blurred;
+                            width: parent.width;
+                            height: parent.height;
+                            image-fit: cover;
+                            opacity: hover-area.has-hover ? 0 : 1;
+                            animate opacity {
+                                duration: 200ms;
+                                easing: ease-in-out;
+                            }
+                        }
+
+                        Rectangle {
+                            background: white.with-alpha(0.06);
+                            opacity: hover-area.has-hover ? 0 : 1;
+                            animate opacity {
+                                duration: 200ms;
+                                easing: ease-in-out;
+                            }
+                        }
+
+                        hover-area := TouchArea { }
                     }
                 }
             }

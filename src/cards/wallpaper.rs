@@ -10,6 +10,43 @@ pub fn current_wallpaper_image() -> slint::Image {
         .unwrap_or_default()
 }
 
+pub fn current_wallpaper_image_blurred() -> slint::Image {
+    current_wallpaper_path()
+        .and_then(|path| blurred_image(&path))
+        .unwrap_or_default()
+}
+
+fn boost_saturation(img: &mut image::RgbaImage, factor: f32) {
+    for pixel in img.pixels_mut() {
+        let [r, g, b, a] = pixel.0;
+        let luma = 0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32;
+        let boost = |c: u8| ((luma + (c as f32 - luma) * factor).clamp(0.0, 255.0)) as u8;
+        pixel.0 = [boost(r), boost(g), boost(b), a];
+    }
+}
+
+fn darken_image(img: &mut image::RgbaImage, factor: f32) {
+    for pixel in img.pixels_mut() {
+        pixel.0[0] = ((pixel.0[0] as f32 * factor).clamp(0.0, 255.0)) as u8;
+        pixel.0[1] = ((pixel.0[1] as f32 * factor).clamp(0.0, 255.0)) as u8;
+        pixel.0[2] = ((pixel.0[2] as f32 * factor).clamp(0.0, 255.0)) as u8;
+    }
+}
+
+fn blurred_image(path: &Path) -> Option<slint::Image> {
+    let img = image::open(path).ok()?;
+    let small = img.resize_to_fill(420, 200, image::imageops::FilterType::Triangle);
+    let mut blurred = small.blur(3.0).into_rgba8();
+    boost_saturation(&mut blurred, 1.1);
+    darken_image(&mut blurred, 0.84);
+    let buffer = slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(
+        blurred.as_raw(),
+        blurred.width(),
+        blurred.height(),
+    );
+    Some(slint::Image::from_rgba8(buffer))
+}
+
 fn current_wallpaper_path() -> Option<PathBuf> {
     if let Some(wallpaper) = env::var_os("SIERRA_LAUNCHER_WALLPAPER") {
         let path = PathBuf::from(wallpaper);
@@ -18,7 +55,11 @@ fn current_wallpaper_path() -> Option<PathBuf> {
         }
     }
 
-    pywal_wallpaper().or_else(wallpapers_dir_wallpaper).or_else(gnome_wallpaper).or_else(kde_wallpaper).or_else(xfce_wallpaper)
+    pywal_wallpaper()
+        .or_else(wallpapers_dir_wallpaper)
+        .or_else(gnome_wallpaper)
+        .or_else(kde_wallpaper)
+        .or_else(xfce_wallpaper)
 }
 
 fn pywal_wallpaper() -> Option<PathBuf> {
@@ -91,7 +132,12 @@ fn wallpapers_dir_match(path: &Path) -> Option<PathBuf> {
 fn is_supported_image(path: &Path) -> bool {
     path.extension()
         .and_then(|ext| ext.to_str())
-        .map(|ext| matches!(ext.to_lowercase().as_str(), "png" | "jpg" | "jpeg" | "webp" | "bmp" | "gif" | "svg"))
+        .map(|ext| {
+            matches!(
+                ext.to_lowercase().as_str(),
+                "png" | "jpg" | "jpeg" | "webp" | "bmp" | "gif" | "svg"
+            )
+        })
         .unwrap_or(false)
 }
 
@@ -99,11 +145,7 @@ fn parse_file_uri(value: &str) -> Option<PathBuf> {
     let stripped = value.trim().trim_matches(|c| c == '"' || c == '\'');
     let stripped = stripped.strip_prefix("file://").unwrap_or(stripped);
     let path = PathBuf::from(stripped);
-    if path.exists() {
-        Some(path)
-    } else {
-        None
-    }
+    if path.exists() { Some(path) } else { None }
 }
 
 fn gnome_wallpaper() -> Option<PathBuf> {
