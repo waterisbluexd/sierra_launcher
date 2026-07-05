@@ -13,11 +13,11 @@ component WallpaperCarousel inherits Rectangle {
     in-out property <bool> selection-mode: false;
 
     // Tape dimensions (Fixed from float/length and parent errors)
-    property <length> center-w: root.selection-mode ? root.width * 0.78 : root.width;
+    property <length> center-w: root.selection-mode ? root.width * 0.34 : root.width;
     property <length> center-h: root.selection-mode ? root.height * 0.86 : root.height;
     property <length> side-w: root.selection-mode ? root.width * 0.18 : 0px;
     property <length> side-h: root.selection-mode ? root.height * 0.64 : 0px;
-    property <length> gap: root.selection-mode ? 10px : 0px;
+    property <length> gap: root.selection-mode ? 6px : 0px;
 
     // Physics (Changed from float to length to match mouse coordinates)
     property <length> drag-x: 0px;
