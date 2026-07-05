@@ -20,12 +20,9 @@ component WallpaperCarousel inherits Rectangle {
     property <length> pitch: root.side-w / 2 + root.center-w / 2 + 6px;
 
     property <length> drag-x: 0px;
+    property <length> anchor-x: 0px;
     property <bool> is-dragging: false;
     property <bool> was-dragging: false;
-    property <bool> committing: false;
-    property <int> commit-dir: 0; // -1 prev, 1 next
-
-    // continuous position: -1 = prev slot fully centered, 0 = current centered, +1 = next fully centered
     property <float> d: root.pitch > 0px ? -(root.drag-x / root.pitch) : 0.0;
 
     function slot-w(dist: float) -> length {
@@ -122,49 +119,27 @@ component WallpaperCarousel inherits Rectangle {
         }
     }
 
-    commit-timer := Timer {
-        interval: 350ms;
-        running: root.committing;
-        triggered => {
-            root.committing = false;
-            if root.commit-dir == -1 {
-                root.select-prev();
-            } else if root.commit-dir == 1 {
-                root.select-next();
-            }
-            root.commit-dir = 0;
-            root.is-dragging = true;
-            root.drag-x = 0px;
-        }
-    }
-
     gesture-area := TouchArea {
         width: 100%;
         height: 100%;
-        enabled: root.selection-mode && !root.committing;
+        enabled: root.selection-mode;
 
         pointer-event(event) => {
             if event.kind == PointerEventKind.down {
                 root.is-dragging = false;
                 root.was-dragging = false;
+                root.anchor-x = self.mouse-x;
             }
             if event.kind == PointerEventKind.up {
                 if root.is-dragging {
                     root.was-dragging = true;
                     let threshold = root.pitch * 0.3;
                     if root.drag-x > threshold && root.can-select-prev {
-                        root.is-dragging = false;
-                        root.drag-x = root.pitch;   // finish the reveal, don't snap back
-                        root.committing = true;
-                        root.commit-dir = -1;
+                        root.select-prev();
                     } else if root.drag-x < -threshold && root.can-select-next {
-                        root.is-dragging = false;
-                        root.drag-x = -root.pitch;
-                        root.committing = true;
-                        root.commit-dir = 1;
-                    } else {
-                        root.drag-x = 0px; // didn't cross threshold, cancel
+                        root.select-next();
                     }
+                    root.drag-x = 0px;
                 } else if !root.was-dragging {
                     root.selection-mode = false;
                     root.drag-x = 0px;
@@ -174,18 +149,37 @@ component WallpaperCarousel inherits Rectangle {
         }
 
         moved => {
-            if self.pressed {
-                let delta = self.mouse-x - self.pressed-x;
-                if delta > 0px && !root.can-select-prev {
-                    root.drag-x = delta * 0.25;
-                } else if delta < 0px && !root.can-select-next {
-                    root.drag-x = delta * 0.25;
-                } else {
-                    root.drag-x = delta;
-                }
-                if !root.is-dragging && (root.drag-x > 4px || root.drag-x < -4px) {
-                    root.is-dragging = true;
-                }
+            if !self.pressed {
+                return;
+            }
+            let raw = self.mouse-x - root.anchor-x;
+            if raw > 0px && !root.can-select-prev {
+                root.drag-x = raw * 0.25;
+            } else if raw < 0px && !root.can-select-next {
+                root.drag-x = raw * 0.25;
+            } else {
+                root.drag-x = raw;
+            }
+            if !root.is-dragging && (root.drag-x > 4px || root.drag-x < -4px) {
+                root.is-dragging = true;
+            }
+            if root.drag-x >= root.pitch && root.can-select-prev {
+                root.select-prev();
+                root.anchor-x += root.pitch;
+                root.drag-x -= root.pitch;
+            } else if root.drag-x <= -root.pitch && root.can-select-next {
+                root.select-next();
+                root.anchor-x -= root.pitch;
+                root.drag-x += root.pitch;
+            }
+            if root.drag-x >= root.pitch && root.can-select-prev {
+                root.select-prev();
+                root.anchor-x += root.pitch;
+                root.drag-x -= root.pitch;
+            } else if root.drag-x <= -root.pitch && root.can-select-next {
+                root.select-next();
+                root.anchor-x -= root.pitch;
+                root.drag-x += root.pitch;
             }
         }
     }
@@ -264,13 +258,11 @@ export component Island inherits Window {
                             }
                         }
 
-                        // The blurred background hiding behind the tape roll
                         Image {
                             source: root.wallpaper-image-blurred;
                             width: parent.width;
                             height: parent.height;
                             image-fit: cover;
-                            // Fades out perfectly when entering selection mode
                             opacity: carousel.selection-mode ? 0 : 1;
                             animate opacity {
                                 duration: 200ms;

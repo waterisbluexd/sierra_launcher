@@ -121,6 +121,13 @@ fn main() -> layer_shika::Result<()> {
     };
 
     {
+        let sender = sender.clone();
+        manager.borrow().spawn_full_preload(move || {
+            let _ = sender.send(DaemonMsg::WallpaperLoaded);
+        });
+    }
+
+    {
         let esc_sender = sender.clone();
         let manager_init = manager.clone();
         shell.with_component(ISLAND, move |instance| {

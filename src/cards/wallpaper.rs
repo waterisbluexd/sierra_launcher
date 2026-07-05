@@ -1,4 +1,5 @@
 use serde_json::Value as JsonValue;
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
@@ -135,6 +136,41 @@ impl WallpaperManager {
             }
             pending.lock().unwrap().remove(&path);
             on_loaded();
+        });
+    }
+
+    pub fn spawn_full_preload(&self, on_loaded: impl Fn() + Send + Sync + 'static) {
+        let n = self.paths.len() as isize;
+        let start = self.index as isize;
+        let mut seen = HashSet::new();
+        let mut order: Vec<PathBuf> = Vec::new();
+        for radius in 0..n {
+            for cand in [start - radius, start + radius] {
+                if cand >= 0 && cand < n && seen.insert(cand) {
+                    order.push(self.paths[cand as usize].clone());
+                }
+            }
+        }
+
+        let image_cache = self.image_cache.clone();
+        let pending = self.pending.clone();
+        std::thread::spawn(move || {
+            for path in order {
+                {
+                    let mut pend = pending.lock().unwrap();
+                    if image_cache.lock().unwrap().map.contains_key(&path) || pend.contains(&path) {
+                        continue;
+                    }
+                    pend.insert(path.clone());
+                }
+                if let Some(raw) = process_full_raw(&path) {
+                    if let Ok(mut cache) = image_cache.lock() {
+                        cache.map.insert(path.clone(), raw);
+                    }
+                }
+                pending.lock().unwrap().remove(&path);
+                on_loaded();
+            }
         });
     }
 
