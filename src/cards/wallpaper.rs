@@ -77,35 +77,47 @@
             }
         }
     
-        fn wrapped(&self, offset: isize) -> usize {
-            let len = self.paths.len() as isize;
-            if len == 0 {
-                return 0;
+        fn offset_index(&self, offset: isize) -> Option<usize> {
+            let idx = self.index as isize + offset;
+            if idx < 0 || idx >= self.paths.len() as isize {
+                None
+            } else {
+                Some(idx as usize)
             }
-            (((self.index as isize + offset) % len) + len) as usize % len as usize
         }
-    
+
         pub fn current_path(&self) -> Option<&PathBuf> {
             self.paths.get(self.index)
         }
         pub fn prev_path(&self) -> Option<&PathBuf> {
-            self.paths.get(self.wrapped(-1))
+            self.offset_index(-1).and_then(|i| self.paths.get(i))
         }
         pub fn next_path(&self) -> Option<&PathBuf> {
-            self.paths.get(self.wrapped(1))
+            self.offset_index(1).and_then(|i| self.paths.get(i))
         }
         pub fn prev_prev_path(&self) -> Option<&PathBuf> {
-            self.paths.get(self.wrapped(-2))
+            self.offset_index(-2).and_then(|i| self.paths.get(i))
         }
         pub fn next_next_path(&self) -> Option<&PathBuf> {
-            self.paths.get(self.wrapped(2))
+            self.offset_index(2).and_then(|i| self.paths.get(i))
         }
-    
+
         pub fn select_prev(&mut self) {
-            self.index = self.wrapped(-1);
+            if self.index > 0 {
+                self.index -= 1;
+            }
         }
         pub fn select_next(&mut self) {
-            self.index = self.wrapped(1);
+            if self.index + 1 < self.paths.len() {
+                self.index += 1;
+            }
+        }
+
+        pub fn can_select_prev(&self) -> bool {
+            self.index > 0
+        }
+        pub fn can_select_next(&self) -> bool {
+            self.index + 1 < self.paths.len()
         }
     
         fn load_image(path: Option<&PathBuf>) -> slint::Image {

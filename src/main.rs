@@ -55,6 +55,8 @@ fn push_wallpaper_state(instance: &ComponentInstance, mgr: &WallpaperManager) {
     let _ = instance.set_property("wallpaper-next-image", Value::Image(mgr.next_image()));
     let _ = instance.set_property("wallpaper-prev-prev-image", Value::Image(mgr.prev_prev_image()));
     let _ = instance.set_property("wallpaper-next-next-image", Value::Image(mgr.next_next_image()));
+    let _ = instance.set_property("can-select-prev", Value::Bool(mgr.can_select_prev()));
+    let _ = instance.set_property("can-select-next", Value::Bool(mgr.can_select_next()));
 }
 
 fn main() -> layer_shika::Result<()> {

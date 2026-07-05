@@ -10,6 +10,9 @@ component WallpaperCarousel inherits Rectangle {
     callback select-prev();
     callback select-next();
 
+    in property <bool> can-select-prev: true;
+    in property <bool> can-select-next: true;
+
     in-out property <bool> selection-mode: false;
 
     // Tape dimensions (Fixed from float/length and parent errors)
@@ -136,17 +139,14 @@ component WallpaperCarousel inherits Rectangle {
             if event.kind == PointerEventKind.up {
                 if root.is-dragging {
                     root.was-dragging = true;
-                    // If dragged more than 15% of the center image width, switch
                     let threshold = root.center-w * 0.15;
-                    if root.drag-x > threshold {
+                    if root.drag-x > threshold && root.can-select-prev {
                         root.select-prev();
-                    } else if root.drag-x < -threshold {
+                    } else if root.drag-x < -threshold && root.can-select-next {
                         root.select-next();
                     }
-                    // Snap back to center (animated because is-dragging becomes false)
                     root.drag-x = 0px;
                 } else if !root.was-dragging {
-                    // Tap on center: close selection mode
                     root.selection-mode = false;
                     root.drag-x = 0px;
                 }
@@ -156,9 +156,16 @@ component WallpaperCarousel inherits Rectangle {
 
         moved => {
             if self.pressed {
-                // drag-x is now a length, so it works perfectly with mouse-x
-                root.drag-x += self.mouse-x - self.pressed-x;
-                // Prevent tiny accidental drags from registering
+                let delta = self.mouse-x - self.pressed-x;
+
+                if delta > 0px && !root.can-select-prev {
+                    root.drag-x = delta * 0.25;
+                } else if delta < 0px && !root.can-select-next {
+                    root.drag-x = delta * 0.25;
+                } else {
+                    root.drag-x = delta;
+                }
+
                 if !root.is-dragging && (root.drag-x > 4px || root.drag-x < -4px) {
                     root.is-dragging = true;
                 }
@@ -188,6 +195,8 @@ export component Island inherits Window {
     in property <image> wallpaper-next-image;
     in property <image> wallpaper-prev-prev-image;
     in property <image> wallpaper-next-next-image;
+    in property <bool> can-select-prev: true;
+    in property <bool> can-select-next: true;
     callback request_hide();
     callback request_select_prev();
     callback request_select_next();
@@ -229,6 +238,8 @@ export component Island inherits Window {
                             next-image: root.wallpaper-next-image;
                             prev-prev-image: root.wallpaper-prev-prev-image;
                             next-next-image: root.wallpaper-next-next-image;
+                            can-select-prev: root.can-select-prev;
+                            can-select-next: root.can-select-next;
                             select-prev => {
                                 root.request_select_prev();
                             }
