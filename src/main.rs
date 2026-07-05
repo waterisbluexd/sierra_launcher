@@ -8,8 +8,9 @@ use layer_shika::prelude::*;
 use layer_shika::slint_interpreter::{ComponentInstance, Value};
 use layer_shika_adapters::AppState;
 use slint::ComponentHandle;
+use std::cell::RefCell;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::rc::Rc;
 use std::thread;
 
 const ISLAND: &str = "Island";
@@ -19,6 +20,7 @@ const SHOWN_HEIGHT: u32 = 630;
 pub enum DaemonMsg {
     ReloadTheme,
     Toggle,
+    WallpaperLoaded,
 }
 
 fn find_ui_file() -> PathBuf {
@@ -64,22 +66,11 @@ fn push_wallpaper_state(instance: &ComponentInstance, mgr: &WallpaperManager) {
     let _ = instance.set_property("can-select-next", Value::Bool(mgr.can_select_next()));
 }
 
-fn kick_loads(instance: &ComponentInstance, manager: &Arc<Mutex<WallpaperManager>>) {
-    let weak = instance.as_weak();
-    let manager_for_notify = manager.clone();
-    manager
-        .lock()
-        .unwrap()
-        .ensure_window_loaded(2, move || {
-            let weak = weak.clone();
-            let manager_for_notify = manager_for_notify.clone();
-            let _ = slint::invoke_from_event_loop(move || {
-                if let Some(inst) = weak.upgrade() {
-                    let mgr = manager_for_notify.lock().unwrap();
-                    push_wallpaper_state(&inst, &mgr);
-                }
-            });
-        });
+fn kick_loads(
+    manager: &Rc<RefCell<WallpaperManager>>,
+    on_loaded: impl Fn() + Send + Sync + Clone + 'static,
+) {
+    manager.borrow().ensure_window_loaded(2, on_loaded);
 }
 
 fn main() -> layer_shika::Result<()> {
@@ -99,8 +90,11 @@ fn main() -> layer_shika::Result<()> {
         .exclusive_zone(0)
         .build()?;
 
+    let manager = Rc::new(RefCell::new(WallpaperManager::load()));
+
     let loop_handle = shell.event_loop_handle();
     let (_token, sender) = {
+        let manager_for_channel = manager.clone();
         loop_handle.add_channel::<DaemonMsg, _>(move |msg, app_state: &mut AppState| match msg {
             DaemonMsg::ReloadTheme => {
                 let theme = theme::Theme::load();
@@ -114,38 +108,64 @@ fn main() -> layer_shika::Result<()> {
             DaemonMsg::Toggle => {
                 std::process::exit(0);
             }
+            DaemonMsg::WallpaperLoaded => {
+                let mgr = manager_for_channel.borrow();
+                for surface in app_state.surfaces_by_name_mut(ISLAND) {
+                    push_wallpaper_state(surface.component_instance(), &mgr);
+                }
+                for surface in app_state.all_outputs() {
+                    let _ = surface.render_frame_if_dirty();
+                }
+            }
         })?
     };
 
     {
         let esc_sender = sender.clone();
+        let manager_init = manager.clone();
         shell.with_component(ISLAND, move |instance| {
             let theme = theme::Theme::load();
             apply_theme(instance, &theme);
 
-            let manager = Arc::new(Mutex::new(WallpaperManager::load()));
-            push_wallpaper_state(instance, &manager.lock().unwrap());
-            kick_loads(instance, &manager);
+            push_wallpaper_state(instance, &manager_init.borrow());
+            {
+                let sender = esc_sender.clone();
+                kick_loads(&manager_init, move || {
+                    let _ = sender.send(DaemonMsg::WallpaperLoaded);
+                });
+            }
 
             let weak_prev = instance.as_weak();
-            let manager_prev = manager.clone();
+            let manager_prev = manager_init.clone();
+            let sender_prev = esc_sender.clone();
             let _ = instance.set_callback("request_select_prev", move |_args: &[Value]| {
-                manager_prev.lock().unwrap().select_prev();
+                manager_prev.borrow_mut().select_prev();
                 if let Some(inst) = weak_prev.upgrade() {
-                    push_wallpaper_state(&inst, &manager_prev.lock().unwrap());
+                    push_wallpaper_state(&inst, &manager_prev.borrow());
                 }
-                kick_loads(&weak_prev.upgrade().unwrap(), &manager_prev);
+                {
+                    let sender = sender_prev.clone();
+                    kick_loads(&manager_prev, move || {
+                        let _ = sender.send(DaemonMsg::WallpaperLoaded);
+                    });
+                }
                 Value::Void
             });
 
             let weak_next = instance.as_weak();
-            let manager_next = manager.clone();
+            let manager_next = manager_init.clone();
+            let sender_next = esc_sender.clone();
             let _ = instance.set_callback("request_select_next", move |_args: &[Value]| {
-                manager_next.lock().unwrap().select_next();
+                manager_next.borrow_mut().select_next();
                 if let Some(inst) = weak_next.upgrade() {
-                    push_wallpaper_state(&inst, &manager_next.lock().unwrap());
+                    push_wallpaper_state(&inst, &manager_next.borrow());
                 }
-                kick_loads(&weak_next.upgrade().unwrap(), &manager_next);
+                {
+                    let sender = sender_next.clone();
+                    kick_loads(&manager_next, move || {
+                        let _ = sender.send(DaemonMsg::WallpaperLoaded);
+                    });
+                }
                 Value::Void
             });
 
