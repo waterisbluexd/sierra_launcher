@@ -1,5 +1,4 @@
 use serde_json::Value as JsonValue;
-use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
@@ -215,6 +214,12 @@ impl WallpaperManager {
     }
     pub fn can_select_next(&self) -> bool {
         self.index + 1 < self.paths.len()
+    }
+
+    pub fn set_current_as_wallpaper(&self) {
+        if let Some(path) = self.current_path() {
+            set_wallpaper(path);
+        }
     }
 
     fn cached_or_placeholder(&self, path: Option<&PathBuf>) -> slint::Image {
@@ -534,6 +539,21 @@ fn wallpapers_dir_match(path: &Path) -> Option<PathBuf> {
         .ok()?
         .filter_map(|entry| entry.ok().map(|e| e.path()))
         .find(|candidate| candidate.file_name() == Some(basename) && is_supported_image(candidate))
+}
+
+pub fn set_wallpaper(path: &Path) {
+    let path_str = path.to_string_lossy().into_owned();
+    unsafe { env::set_var("SIERRA_LAUNCHER_WALLPAPER", &path_str) };
+    let _ = std::process::Command::new("pkill")
+        .arg("-x")
+        .arg("swaybg")
+        .status();
+    let _ = std::process::Command::new("swaybg")
+        .arg("-m")
+        .arg("fill")
+        .arg("-i")
+        .arg(path)
+        .spawn();
 }
 
 fn is_supported_image(path: &Path) -> bool {

@@ -147,6 +147,7 @@ fn main() -> layer_shika::Result<()> {
             let sender_prev = esc_sender.clone();
             let _ = instance.set_callback("request_select_prev", move |_args: &[Value]| {
                 manager_prev.borrow_mut().select_prev();
+                manager_prev.borrow().set_current_as_wallpaper();
                 if let Some(inst) = weak_prev.upgrade() {
                     push_wallpaper_state(&inst, &manager_prev.borrow());
                 }
@@ -164,6 +165,7 @@ fn main() -> layer_shika::Result<()> {
             let sender_next = esc_sender.clone();
             let _ = instance.set_callback("request_select_next", move |_args: &[Value]| {
                 manager_next.borrow_mut().select_next();
+                manager_next.borrow().set_current_as_wallpaper();
                 if let Some(inst) = weak_next.upgrade() {
                     push_wallpaper_state(&inst, &manager_next.borrow());
                 }
