@@ -27,6 +27,18 @@ component WallpaperCarousel inherits Rectangle {
     property <bool> is-dragging: false;
     property <bool> was-dragging: false;
 
+    // Live drag progress: -1 (fully revealing next) .. +1 (fully revealing prev)
+    property <float> drag-t: root.is-dragging
+        ? max(-1.0, min(1.0, (root.drag-x / root.center-w)))
+        : 0.0;
+
+    property <length> prev-live-w: root.side-w + (root.center-w - root.side-w) * max(root.drag-t, 0.0);
+    property <length> prev-live-h: root.side-h + (root.center-h - root.side-h) * max(root.drag-t, 0.0);
+    property <length> next-live-w: root.side-w + (root.center-w - root.side-w) * max(-root.drag-t, 0.0);
+    property <length> next-live-h: root.side-h + (root.center-h - root.side-h) * max(-root.drag-t, 0.0);
+    property <length> center-live-w: root.center-w - (root.center-w - root.side-w) * abs(root.drag-t);
+    property <length> center-live-h: root.center-h - (root.center-h - root.side-h) * abs(root.drag-t);
+
     clip: true;
     background: transparent;
 
@@ -64,20 +76,20 @@ component WallpaperCarousel inherits Rectangle {
         Image {
             source: root.prev-image;
             image-fit: cover;
-            width: root.side-w;
-            height: root.side-h;
+            width: root.prev-live-w;
+            height: root.prev-live-h;
             y: (root.center-h - self.height) / 2;
             opacity: root.selection-mode ? 0.85 : 0;
             animate width, height, opacity {
-                duration: 350ms;
+                duration: root.is-dragging ? 0ms : 350ms;
                 easing: ease-out;
             }
         }
 
         // Frame 0 (Center) - Fixed the self.parent error
         center-frame := Rectangle {
-            width: root.center-w;
-            height: root.center-h;
+            width: root.center-live-w;
+            height: root.center-live-h;
             clip: true;
 
             Image {
@@ -92,7 +104,7 @@ component WallpaperCarousel inherits Rectangle {
             border-width: 2px;
             border-color: Theme.color4.with-alpha(root.selection-mode ? 0.5 : 0.0);
             animate width, height, border-color {
-                duration: 350ms;
+                duration: root.is-dragging ? 0ms : 350ms;
                 easing: ease-out;
             }
         }
@@ -101,12 +113,12 @@ component WallpaperCarousel inherits Rectangle {
         Image {
             source: root.next-image;
             image-fit: cover;
-            width: root.side-w;
-            height: root.side-h;
+            width: root.next-live-w;
+            height: root.next-live-h;
             y: (root.center-h - self.height) / 2;
             opacity: root.selection-mode ? 0.85 : 0;
             animate width, height, opacity {
-                duration: 350ms;
+                duration: root.is-dragging ? 0ms : 350ms;
                 easing: ease-out;
             }
         }
