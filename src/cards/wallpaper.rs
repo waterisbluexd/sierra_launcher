@@ -58,6 +58,14 @@ impl WallpaperManager {
         self.paths.get(self.wrapped(1))
     }
 
+    pub fn prev_prev_path(&self) -> Option<&PathBuf> {
+        self.paths.get(self.wrapped(-2))
+    }
+
+    pub fn next_next_path(&self) -> Option<&PathBuf> {
+        self.paths.get(self.wrapped(2))
+    }
+
     pub fn select_prev(&mut self) {
         self.index = self.wrapped(-1);
     }
@@ -87,6 +95,14 @@ impl WallpaperManager {
 
     pub fn next_image(&self) -> slint::Image {
         Self::load_image(self.next_path())
+    }
+
+    pub fn prev_prev_image(&self) -> slint::Image {
+        Self::load_image(self.prev_prev_path())
+    }
+
+    pub fn next_next_image(&self) -> slint::Image {
+        Self::load_image(self.next_next_path())
     }
 }
 
