@@ -544,6 +544,11 @@ fn wallpapers_dir_match(path: &Path) -> Option<PathBuf> {
 pub fn set_wallpaper(path: &Path) {
     let path_str = path.to_string_lossy().into_owned();
     unsafe { env::set_var("SIERRA_LAUNCHER_WALLPAPER", &path_str) };
+    let _ = std::process::Command::new("wal")
+        .arg("-i")
+        .arg(path)
+        .arg("-n")
+        .status();
     let _ = std::process::Command::new("pkill")
         .arg("-x")
         .arg("swaybg")
@@ -554,11 +559,6 @@ pub fn set_wallpaper(path: &Path) {
         .arg("-i")
         .arg(path)
         .spawn();
-    let _ = std::process::Command::new("wal")
-        .arg("-i")
-        .arg(path)
-        .arg("-n")
-        .status();
 }
 
 fn is_supported_image(path: &Path) -> bool {
