@@ -137,10 +137,23 @@
         pub fn prev_prev_image(&self) -> slint::Image {
             Self::load_image(self.prev_prev_path())
         }
-        pub fn next_next_image(&self) -> slint::Image {
+pub fn next_next_image(&self) -> slint::Image {
             Self::load_image(self.next_next_path())
         }
-    
+
+        pub fn window_images(&self, radius: isize) -> Vec<slint::Image> {
+            (-radius..=radius)
+                .map(|off| {
+                    let idx = self.index as isize + off;
+                    if idx < 0 || idx >= self.paths.len() as isize {
+                        slint::Image::default()
+                    } else {
+                        Self::load_image(self.paths.get(idx as usize))
+                    }
+                })
+                .collect()
+        }
+
         pub fn current_image_blurred(&self) -> slint::Image {
             if let Some(path) = self.current_path() {
                 // Check cache first (creates the slint::Image on the main thread)

@@ -52,8 +52,12 @@ component WallpaperCarousel inherits Rectangle {
         x: root.slot-x(-2.0 - root.d);
         y: (root.height - self.height) / 2;
         opacity: root.slot-opacity(-2.0 - root.d);
-        animate x, width, height, opacity { duration: root.is-dragging ? 0ms : 350ms; easing: ease-out; }
+        animate x, width, height, opacity {
+            duration: root.is-dragging ? 0ms : 350ms;
+            easing: ease-out;
+        }
     }
+
     Image {
         source: root.prev-image;
         image-fit: cover;
@@ -62,8 +66,12 @@ component WallpaperCarousel inherits Rectangle {
         x: root.slot-x(-1.0 - root.d);
         y: (root.height - self.height) / 2;
         opacity: root.slot-opacity(-1.0 - root.d);
-        animate x, width, height, opacity { duration: root.is-dragging ? 0ms : 350ms; easing: ease-out; }
+        animate x, width, height, opacity {
+            duration: root.is-dragging ? 0ms : 350ms;
+            easing: ease-out;
+        }
     }
+
     center-frame := Rectangle {
         width: root.slot-w(0.0 - root.d);
         height: root.slot-h(0.0 - root.d);
@@ -76,11 +84,16 @@ component WallpaperCarousel inherits Rectangle {
             width: 100%;
             height: 100%;
         }
+
         background: transparent;
         border-width: 2px;
         border-color: Theme.color4.with-alpha(root.selection-mode ? 0.5 : 0.0);
-        animate x, width, height, border-color { duration: root.is-dragging ? 0ms : 350ms; easing: ease-out; }
+        animate x, width, height, border-color {
+            duration: root.is-dragging ? 0ms : 350ms;
+            easing: ease-out;
+        }
     }
+
     Image {
         source: root.next-image;
         image-fit: cover;
@@ -89,8 +102,12 @@ component WallpaperCarousel inherits Rectangle {
         x: root.slot-x(1.0 - root.d);
         y: (root.height - self.height) / 2;
         opacity: root.slot-opacity(1.0 - root.d);
-        animate x, width, height, opacity { duration: root.is-dragging ? 0ms : 350ms; easing: ease-out; }
+        animate x, width, height, opacity {
+            duration: root.is-dragging ? 0ms : 350ms;
+            easing: ease-out;
+        }
     }
+
     Image {
         source: root.next-next-image;
         image-fit: cover;
@@ -99,7 +116,10 @@ component WallpaperCarousel inherits Rectangle {
         x: root.slot-x(2.0 - root.d);
         y: (root.height - self.height) / 2;
         opacity: root.slot-opacity(2.0 - root.d);
-        animate x, width, height, opacity { duration: root.is-dragging ? 0ms : 350ms; easing: ease-out; }
+        animate x, width, height, opacity {
+            duration: root.is-dragging ? 0ms : 350ms;
+            easing: ease-out;
+        }
     }
 
     commit-timer := Timer {
@@ -113,9 +133,8 @@ component WallpaperCarousel inherits Rectangle {
                 root.select-next();
             }
             root.commit-dir = 0;
-            root.is-dragging = true;   // force instant (0ms) reset, no visual jump
+            root.is-dragging = true;
             root.drag-x = 0px;
-            root.is-dragging = false;
         }
     }
 

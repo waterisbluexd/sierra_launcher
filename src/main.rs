@@ -6,8 +6,9 @@ use crate::themer::notify::apply_theme;
 use cards::wallpaper::WallpaperManager;
 use layer_shika::prelude::*;
 use layer_shika::slint_interpreter::{ComponentInstance, Value};
-use slint::ComponentHandle;
 use layer_shika_adapters::AppState;
+use slint::ComponentHandle;
+use slint::{ModelRc, VecModel};
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -53,10 +54,25 @@ fn push_wallpaper_state(instance: &ComponentInstance, mgr: &WallpaperManager) {
     );
     let _ = instance.set_property("wallpaper-prev-image", Value::Image(mgr.prev_image()));
     let _ = instance.set_property("wallpaper-next-image", Value::Image(mgr.next_image()));
-    let _ = instance.set_property("wallpaper-prev-prev-image", Value::Image(mgr.prev_prev_image()));
-    let _ = instance.set_property("wallpaper-next-next-image", Value::Image(mgr.next_next_image()));
+    let _ = instance.set_property(
+        "wallpaper-prev-prev-image",
+        Value::Image(mgr.prev_prev_image()),
+    );
+    let _ = instance.set_property(
+        "wallpaper-next-next-image",
+        Value::Image(mgr.next_next_image()),
+    );
     let _ = instance.set_property("can-select-prev", Value::Bool(mgr.can_select_prev()));
     let _ = instance.set_property("can-select-next", Value::Bool(mgr.can_select_next()));
+
+    // Windowed image array for the carousel
+    let window: Vec<Value> = mgr
+        .window_images(2) // radius 2 -> 5 images; bump for a bigger buffer
+        .into_iter()
+        .map(Value::Image)
+        .collect();
+    let model = ModelRc::new(VecModel::from(window));
+    let _ = instance.set_property("wallpaper-images", Value::Model(model));
 }
 
 fn main() -> layer_shika::Result<()> {
