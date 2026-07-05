@@ -554,6 +554,11 @@ pub fn set_wallpaper(path: &Path) {
         .arg("-i")
         .arg(path)
         .spawn();
+    let _ = std::process::Command::new("wal")
+        .arg("-i")
+        .arg(path)
+        .arg("-n")
+        .status();
 }
 
 fn is_supported_image(path: &Path) -> bool {
