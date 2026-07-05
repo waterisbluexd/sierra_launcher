@@ -1,5 +1,6 @@
     use serde_json::Value as JsonValue;
     use std::collections::HashMap;
+    use std::collections::HashSet;
     use std::env;
     use std::fs;
     use std::path::{Path, PathBuf};
@@ -35,12 +36,47 @@
                         local_cache.map.insert(path.clone(), (data, w, h));
                     }
                 }
-                // Lock once at the end to dump all pre-loaded raw bytes into the main cache
                 if let Ok(mut cache) = cache.lock() {
                     cache.map.extend(local_cache.map);
                 }
             });
         }
+    }
+
+    // --- FULL-IMAGE CACHE ---
+    const CAROUSEL_MAX_W: u32 = 900;
+    const CAROUSEL_MAX_H: u32 = 500;
+
+    struct ImageCache {
+        map: HashMap<PathBuf, (Vec<u8>, u32, u32)>,
+    }
+
+    impl ImageCache {
+        fn new() -> Self {
+            Self {
+                map: HashMap::new(),
+            }
+        }
+
+        fn get(&self, path: &Path) -> Option<slint::Image> {
+            self.map.get(path).map(|(data, w, h)| {
+                let buffer =
+                    slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(data, *w, *h);
+                slint::Image::from_rgba8(buffer)
+            })
+        }
+    }
+
+    fn process_full_raw(path: &Path) -> Option<(Vec<u8>, u32, u32)> {
+        let img = image::open(path).ok()?;
+        let img = if img.width() > CAROUSEL_MAX_W || img.height() > CAROUSEL_MAX_H {
+            img.resize(CAROUSEL_MAX_W, CAROUSEL_MAX_H, image::imageops::FilterType::Triangle)
+        } else {
+            img
+        };
+        let rgba = img.into_rgba8();
+        let (w, h) = (rgba.width(), rgba.height());
+        Some((rgba.into_raw(), w, h))
     }
     
     // --- MANAGER ---
@@ -48,32 +84,34 @@
         paths: Vec<PathBuf>,
         index: usize,
         blur_cache: Arc<Mutex<BlurCache>>,
+        image_cache: Arc<Mutex<ImageCache>>,
+        pending: Arc<Mutex<HashSet<PathBuf>>>,
     }
-    
+
     impl WallpaperManager {
         pub fn load() -> Self {
             let mut paths = wallpapers_dir_all_images().unwrap_or_default();
-    
+
             let current = current_wallpaper_path();
             if let Some(cur) = &current {
                 if !paths.iter().any(|p| p == cur) {
                     paths.insert(0, cur.clone());
                 }
             }
-    
+
             let index = current
                 .and_then(|cur| paths.iter().position(|p| p == &cur))
                 .unwrap_or(0);
-    
+
             let blur_cache = Arc::new(Mutex::new(BlurCache::new()));
-    
-            // Spawn background thread to pre-cache all blur images immediately on startup
             BlurCache::spawn_preloader(paths.clone(), blur_cache.clone());
-    
+
             Self {
                 paths,
                 index,
                 blur_cache,
+                image_cache: Arc::new(Mutex::new(ImageCache::new())),
+                pending: Arc::new(Mutex::new(HashSet::new())),
             }
         }
     
@@ -120,49 +158,90 @@
             self.index + 1 < self.paths.len()
         }
     
-        fn load_image(path: Option<&PathBuf>) -> slint::Image {
-            path.and_then(|p| slint::Image::load_from_path(p).ok())
-                .unwrap_or_default()
-        }
-    
-        pub fn current_image(&self) -> slint::Image {
-            Self::load_image(self.current_path())
-        }
-        pub fn prev_image(&self) -> slint::Image {
-            Self::load_image(self.prev_path())
-        }
-        pub fn next_image(&self) -> slint::Image {
-            Self::load_image(self.next_path())
-        }
-        pub fn prev_prev_image(&self) -> slint::Image {
-            Self::load_image(self.prev_prev_path())
-        }
-pub fn next_next_image(&self) -> slint::Image {
-            Self::load_image(self.next_next_path())
+        pub fn ensure_window_loaded<F>(&self, radius: isize, notify: F)
+        where
+            F: Fn() + Send + Sync + 'static,
+        {
+            let notify = Arc::new(notify);
+            let start = self.index as isize - radius;
+            let end = self.index as isize + radius;
+            for off in start..=end {
+                if off < 0 || off >= self.paths.len() as isize {
+                    continue;
+                }
+                let path = self.paths[off as usize].clone();
+                self.spawn_load_if_needed(path, notify.clone());
+            }
         }
 
-        pub fn window_images(&self, radius: isize) -> Vec<slint::Image> {
-            (-radius..=radius)
-                .map(|off| {
-                    let idx = self.index as isize + off;
-                    if idx < 0 || idx >= self.paths.len() as isize {
-                        slint::Image::default()
-                    } else {
-                        Self::load_image(self.paths.get(idx as usize))
+        fn spawn_load_if_needed(
+            &self,
+            path: PathBuf,
+            notify: Arc<dyn Fn() + Send + Sync>,
+        ) {
+            if self.image_cache.lock().unwrap().map.contains_key(&path) {
+                return;
+            }
+            {
+                let mut pending = self.pending.lock().unwrap();
+                if pending.contains(&path) {
+                    return;
+                }
+                pending.insert(path.clone());
+            }
+
+            let image_cache = self.image_cache.clone();
+            let pending = self.pending.clone();
+            std::thread::spawn(move || {
+                if let Some(raw) = process_full_raw(&path) {
+                    if let Ok(mut cache) = image_cache.lock() {
+                        cache.map.insert(path.clone(), raw);
                     }
-                })
-                .collect()
+                }
+                pending.lock().unwrap().remove(&path);
+                notify();
+            });
+        }
+
+        fn cached_or_placeholder(&self, path: Option<&PathBuf>) -> slint::Image {
+            if let Some(p) = path {
+                if let Ok(cache) = self.image_cache.lock() {
+                    if let Some(img) = cache.get(p) {
+                        return img;
+                    }
+                }
+                if let Ok(cache) = self.blur_cache.lock() {
+                    if let Some(img) = cache.get(p) {
+                        return img;
+                    }
+                }
+            }
+            slint::Image::default()
+        }
+
+        pub fn current_image(&self) -> slint::Image {
+            self.cached_or_placeholder(self.current_path())
+        }
+        pub fn prev_image(&self) -> slint::Image {
+            self.cached_or_placeholder(self.prev_path())
+        }
+        pub fn next_image(&self) -> slint::Image {
+            self.cached_or_placeholder(self.next_path())
+        }
+        pub fn prev_prev_image(&self) -> slint::Image {
+            self.cached_or_placeholder(self.prev_prev_path())
+        }
+        pub fn next_next_image(&self) -> slint::Image {
+            self.cached_or_placeholder(self.next_next_path())
         }
 
         pub fn current_image_blurred(&self) -> slint::Image {
             if let Some(path) = self.current_path() {
-                // Check cache first (creates the slint::Image on the main thread)
                 if let Ok(cache) = self.blur_cache.lock() {
                     if let Some(img) = cache.get(path) {
                         return img;
                     }
                 }
-                // Fallback if not cached yet
                 if let Some((data, w, h)) = process_blur_raw(path) {
                     let buffer =
                         slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(&data, w, h);

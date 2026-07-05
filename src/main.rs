@@ -8,10 +8,8 @@ use layer_shika::prelude::*;
 use layer_shika::slint_interpreter::{ComponentInstance, Value};
 use layer_shika_adapters::AppState;
 use slint::ComponentHandle;
-use slint::{ModelRc, VecModel};
-use std::cell::RefCell;
 use std::path::PathBuf;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 const ISLAND: &str = "Island";
@@ -64,15 +62,24 @@ fn push_wallpaper_state(instance: &ComponentInstance, mgr: &WallpaperManager) {
     );
     let _ = instance.set_property("can-select-prev", Value::Bool(mgr.can_select_prev()));
     let _ = instance.set_property("can-select-next", Value::Bool(mgr.can_select_next()));
+}
 
-    // Windowed image array for the carousel
-    let window: Vec<Value> = mgr
-        .window_images(2) // radius 2 -> 5 images; bump for a bigger buffer
-        .into_iter()
-        .map(Value::Image)
-        .collect();
-    let model = ModelRc::new(VecModel::from(window));
-    let _ = instance.set_property("wallpaper-images", Value::Model(model));
+fn kick_loads(instance: &ComponentInstance, manager: &Arc<Mutex<WallpaperManager>>) {
+    let weak = instance.as_weak();
+    let manager_for_notify = manager.clone();
+    manager
+        .lock()
+        .unwrap()
+        .ensure_window_loaded(2, move || {
+            let weak = weak.clone();
+            let manager_for_notify = manager_for_notify.clone();
+            let _ = slint::invoke_from_event_loop(move || {
+                if let Some(inst) = weak.upgrade() {
+                    let mgr = manager_for_notify.lock().unwrap();
+                    push_wallpaper_state(&inst, &mgr);
+                }
+            });
+        });
 }
 
 fn main() -> layer_shika::Result<()> {
@@ -116,26 +123,29 @@ fn main() -> layer_shika::Result<()> {
             let theme = theme::Theme::load();
             apply_theme(instance, &theme);
 
-            let manager = Rc::new(RefCell::new(WallpaperManager::load()));
-            push_wallpaper_state(instance, &manager.borrow());
+            let manager = Arc::new(Mutex::new(WallpaperManager::load()));
+            push_wallpaper_state(instance, &manager.lock().unwrap());
+            kick_loads(instance, &manager);
 
             let weak_prev = instance.as_weak();
             let manager_prev = manager.clone();
             let _ = instance.set_callback("request_select_prev", move |_args: &[Value]| {
-                manager_prev.borrow_mut().select_prev();
+                manager_prev.lock().unwrap().select_prev();
                 if let Some(inst) = weak_prev.upgrade() {
-                    push_wallpaper_state(&inst, &manager_prev.borrow());
+                    push_wallpaper_state(&inst, &manager_prev.lock().unwrap());
                 }
+                kick_loads(&weak_prev.upgrade().unwrap(), &manager_prev);
                 Value::Void
             });
 
             let weak_next = instance.as_weak();
             let manager_next = manager.clone();
             let _ = instance.set_callback("request_select_next", move |_args: &[Value]| {
-                manager_next.borrow_mut().select_next();
+                manager_next.lock().unwrap().select_next();
                 if let Some(inst) = weak_next.upgrade() {
-                    push_wallpaper_state(&inst, &manager_next.borrow());
+                    push_wallpaper_state(&inst, &manager_next.lock().unwrap());
                 }
+                kick_loads(&weak_next.upgrade().unwrap(), &manager_next);
                 Value::Void
             });
 
