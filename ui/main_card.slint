@@ -11,87 +11,115 @@ component WallpaperCarousel inherits Rectangle {
     callback select-next();
 
     in-out property <bool> selection-mode: false;
-    property <bool> was-dragging: false;
 
-    property <length> center-width: root.selection-mode ? root.width * 0.60 : root.width;
-    property <length> center-height: root.selection-mode ? root.height * 0.86 : root.height;
-    property <length> side-width: root.selection-mode ? root.width * 0.14 : 0px;
-    property <length> side-height: root.selection-mode ? root.height * 0.62 : 0px;
+    // Tape dimensions (Fixed from float/length and parent errors)
+    property <length> center-w: root.selection-mode ? root.width * 0.78 : root.width;
+    property <length> center-h: root.selection-mode ? root.height * 0.86 : root.height;
+    property <length> side-w: root.selection-mode ? root.width * 0.18 : 0px;
+    property <length> side-h: root.selection-mode ? root.height * 0.64 : 0px;
     property <length> gap: root.selection-mode ? 10px : 0px;
 
-    property <length> strip-width: root.side-width * 2 + root.center-width + root.gap * 2;
-    property <length> base-x: (root.width - root.strip-width) / 2;
-
-    property <int> slide-dir: 0;
-    property <length> track-offset: 0px;
+    // Physics (Changed from float to length to match mouse coordinates)
+    property <length> drag-x: 0px;
     property <bool> is-dragging: false;
-    property <length> drag-offset: 0px;
+    property <bool> was-dragging: false;
 
     clip: true;
     background: transparent;
 
-    states [
-        shift-next when root.slide-dir == 1: {
-            track-offset: -(root.center-width + root.gap);
-            in {
-                animate track-offset { duration: 380ms; easing: cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-            }
-            out {
-                animate track-offset { duration: 0ms; }
-            }
-        }
-        shift-prev when root.slide-dir == -1: {
-            track-offset: root.center-width + root.gap;
-            in {
-                animate track-offset { duration: 380ms; easing: cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-            }
-            out {
-                animate track-offset { duration: 0ms; }
-            }
-        }
-    ]
+    // The Film Roll Track
+    track := HorizontalLayout {
+        spacing: root.gap;
+        // Center the track and apply drag offset
+        x: (root.width - self.width) / 2 + root.drag-x;
+        y: (root.height - root.center-h) / 2;
 
-    strip := Rectangle {
-        width: root.strip-width;
-        height: root.selection-mode ? root.center-height : root.height;
-        background: transparent;
-        x: root.base-x + root.track-offset + (root.is-dragging ? root.drag-offset : 0px);
-        y: (root.height - self.height) / 2;
-        animate width, height, x {
-            duration: root.is-dragging ? 0ms : 380ms;
-            easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        animate x {
+            duration: root.is-dragging ? 0ms : 350ms;
+            easing: ease-out;
+        }
+        animate spacing, y {
+            duration: 350ms;
+            easing: ease-out;
         }
 
-        prev-frame := Image {
+        // Frame -2 (Far Left)
+        Image {
+            source: root.prev-prev-image;
+            image-fit: cover;
+            width: root.side-w;
+            height: root.side-h;
+            y: (root.center-h - self.height) / 2;
+            opacity: root.selection-mode ? 0.6 : 0;
+            animate width, height, opacity {
+                duration: 350ms;
+                easing: ease-out;
+            }
+        }
+
+        // Frame -1 (Left)
+        Image {
             source: root.prev-image;
             image-fit: cover;
-            width: root.side-width;
-            height: root.side-height;
-            x: 0px;
-            y: (parent.height - self.height) / 2;
-            opacity: root.selection-mode ? 1 : 0;
-            animate width, height, opacity { duration: 380ms; easing: cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+            width: root.side-w;
+            height: root.side-h;
+            y: (root.center-h - self.height) / 2;
+            opacity: root.selection-mode ? 0.85 : 0;
+            animate width, height, opacity {
+                duration: 350ms;
+                easing: ease-out;
+            }
         }
 
-        current-frame := Image {
-            source: root.current-image;
-            image-fit: cover;
-            width: root.center-width;
-            height: root.center-height;
-            x: root.side-width + root.gap;
-            y: 0px;
-            animate width, height, x { duration: 380ms; easing: cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        // Frame 0 (Center) - Fixed the self.parent error
+        center-frame := Rectangle {
+            width: root.center-w;
+            height: root.center-h;
+            clip: true;
+
+            Image {
+                source: root.current-image;
+                image-fit: cover;
+                // Use the id of the parent rectangle directly instead of self.parent
+                width: center-frame.width;
+                height: center-frame.height;
+            }
+
+            background: transparent;
+            border-width: 2px;
+            border-color: Theme.color4.with-alpha(root.selection-mode ? 0.5 : 0.0);
+            animate width, height, border-color {
+                duration: 350ms;
+                easing: ease-out;
+            }
         }
 
-        next-frame := Image {
+        // Frame +1 (Right)
+        Image {
             source: root.next-image;
             image-fit: cover;
-            width: root.side-width;
-            height: root.side-height;
-            x: root.side-width + root.gap + root.center-width + root.gap;
-            y: (parent.height - self.height) / 2;
-            opacity: root.selection-mode ? 1 : 0;
-            animate width, height, x, opacity { duration: 380ms; easing: cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+            width: root.side-w;
+            height: root.side-h;
+            y: (root.center-h - self.height) / 2;
+            opacity: root.selection-mode ? 0.85 : 0;
+            animate width, height, opacity {
+                duration: 350ms;
+                easing: ease-out;
+            }
+        }
+
+        // Frame +2 (Far Right)
+        Image {
+            source: root.next-next-image;
+            image-fit: cover;
+            width: root.side-w;
+            height: root.side-h;
+            y: (root.center-h - self.height) / 2;
+            opacity: root.selection-mode ? 0.6 : 0;
+            animate width, height, opacity {
+                duration: 350ms;
+                easing: ease-out;
+            }
         }
     }
 
@@ -103,71 +131,49 @@ component WallpaperCarousel inherits Rectangle {
         pointer-event(event) => {
             if event.kind == PointerEventKind.down {
                 root.is-dragging = false;
-                root.drag-offset = 0px;
                 root.was-dragging = false;
             }
             if event.kind == PointerEventKind.up {
                 if root.is-dragging {
                     root.was-dragging = true;
-                    let threshold = root.center-width * 0.15;
-                    if root.drag-offset > threshold {
-                        root.slide-dir = -1;
-                        settle-timer.running = true;
-                    } else if root.drag-offset < -threshold {
-                        root.slide-dir = 1;
-                        settle-timer.running = true;
-                    } else {
-                        root.drag-offset = 0px;
+                    // If dragged more than 15% of the center image width, switch
+                    let threshold = root.center-w * 0.15;
+                    if root.drag-x > threshold {
+                        root.select-prev();
+                    } else if root.drag-x < -threshold {
+                        root.select-next();
                     }
+                    // Snap back to center (animated because is-dragging becomes false)
+                    root.drag-x = 0px;
                 } else if !root.was-dragging {
-                    // Tap on center image: exit selection mode
+                    // Tap on center: close selection mode
                     root.selection-mode = false;
-                    root.drag-offset = 0px;
-                    root.track-offset = 0px;
+                    root.drag-x = 0px;
                 }
+                root.is-dragging = false;
             }
         }
 
         moved => {
             if self.pressed {
-                root.drag-offset = self.mouse-x - self.pressed-x;
-                if root.drag-offset > 4px || root.drag-offset < -4px {
+                // drag-x is now a length, so it works perfectly with mouse-x
+                root.drag-x += self.mouse-x - self.pressed-x;
+                // Prevent tiny accidental drags from registering
+                if !root.is-dragging && (root.drag-x > 4px || root.drag-x < -4px) {
                     root.is-dragging = true;
                 }
             }
         }
     }
 
+    // Area to catch double click to enter selection mode
     hover-area := TouchArea {
         width: 100%;
         height: 100%;
-        enabled: true;
-        clicked => {
-            if !root.selection-mode {
-                root.selection-mode = true;
-                root.drag-offset = 0px;
-                root.track-offset = 0px;
-            }
-        }
+        enabled: !root.selection-mode;
         double-clicked => {
-            root.selection-mode = !root.selection-mode;
-            root.drag-offset = 0px;
-            root.track-offset = 0px;
-        }
-    }
-
-    settle-timer := Timer {
-        interval: 420ms;
-        running: false;
-        triggered => {
-            self.running = false;
-            if root.slide-dir < 0 {
-                root.select-prev();
-            } else if root.slide-dir > 0 {
-                root.select-next();
-            }
-            root.slide-dir = 0;
-            root.track-offset = 0px;
+            root.selection-mode = true;
+            root.drag-x = 0px;
         }
     }
 }
@@ -204,7 +210,7 @@ export component Island inherits Window {
                 Rectangle {
                     width: 0px;
                     border-width: 2px;
-                    border-color: Theme.color4.with-alpha(0.7);
+                    border-color: Theme.color4.with_alpha(0.7);
                 }
 
                 VerticalLayout {
@@ -212,7 +218,7 @@ export component Island inherits Window {
                     Rectangle {
                         height: 220px;
                         border-width: 2px;
-                        border-color: Theme.color4.with-alpha(0.7);
+                        border-color: Theme.color4.with_alpha(0.7);
                         clip: true;
 
                         carousel := WallpaperCarousel {
@@ -231,12 +237,14 @@ export component Island inherits Window {
                             }
                         }
 
+                        // The blurred background hiding behind the tape roll
                         Image {
                             source: root.wallpaper-image-blurred;
                             width: parent.width;
                             height: parent.height;
                             image-fit: cover;
-                            opacity: (hover-area.has-hover || carousel.selection-mode) ? 0 : 1;
+                            // Fades out perfectly when entering selection mode
+                            opacity: carousel.selection-mode ? 0 : 1;
                             animate opacity {
                                 duration: 200ms;
                                 easing: ease-in-out;
@@ -244,18 +252,11 @@ export component Island inherits Window {
                         }
 
                         Rectangle {
-                            background: white.with-alpha(0.06);
-                            opacity: (hover-area.has-hover || carousel.selection-mode) ? 0 : 1;
+                            background: white.with_alpha(0.06);
+                            opacity: carousel.selection-mode ? 0 : 1;
                             animate opacity {
                                 duration: 200ms;
                                 easing: ease-in-out;
-                            }
-                        }
-
-                        hover-area := TouchArea {
-                            enabled: !carousel.selection-mode;
-                            double-clicked => {
-                                carousel.selection-mode = !carousel.selection-mode;
                             }
                         }
                     }
