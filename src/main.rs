@@ -13,17 +13,21 @@ use slint::ComponentHandle;
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::Duration;
 
 const ISLAND: &str = "Island";
 const SHOWN_WIDTH: u32 = 420;
 const SHOWN_HEIGHT: u32 = 630;
+const COMMIT_DEBOUNCE_MS: u64 = 350;
 
 pub enum DaemonMsg {
     ReloadTheme,
     Toggle,
     WallpaperLoaded,
+    CommitWallpaper(u64),
 }
 
 fn find_ui_file() -> PathBuf {
@@ -76,6 +80,15 @@ fn kick_loads(
     manager.borrow().ensure_window_loaded(2, on_loaded);
 }
 
+fn schedule_commit(commit_gen: &Arc<AtomicU64>, sender: &channel::Sender<DaemonMsg>) {
+    let my_gen = commit_gen.fetch_add(1, Ordering::SeqCst) + 1;
+    let sender = sender.clone();
+    thread::spawn(move || {
+        thread::sleep(Duration::from_millis(COMMIT_DEBOUNCE_MS));
+        let _ = sender.send(DaemonMsg::CommitWallpaper(my_gen));
+    });
+}
+
 fn main() -> layer_shika::Result<()> {
     let socket_path = ipc::socket_path();
     if ipc::notify_running_instance(&socket_path) {
@@ -94,13 +107,15 @@ fn main() -> layer_shika::Result<()> {
         .build()?;
 
     let manager = Rc::new(RefCell::new(WallpaperManager::load()));
+    let commit_gen = Arc::new(AtomicU64::new(0));
 
-    let loop_handle = shell.event_loop_handle();
     let (sender, rx) = channel::channel::<DaemonMsg>();
 
     {
         let manager_for_channel = manager.clone();
-        loop_handle
+        let commit_gen_for_channel = commit_gen.clone();
+        shell
+            .event_loop_handle()
             .insert_source(rx, move |event, _, app_state: &mut AppState| {
                 let msg = match event {
                     Event::Msg(m) => m,
@@ -130,12 +145,18 @@ fn main() -> layer_shika::Result<()> {
                             surface.commit_surface();
                         }
                     }
+                    DaemonMsg::CommitWallpaper(gen_id) => {
+                        if commit_gen_for_channel.load(Ordering::SeqCst) == gen_id {
+                            manager_for_channel.borrow().set_current_as_wallpaper();
+                        }
+                    }
                 }
             })
             .expect("Failed to insert channel source");
     }
 
-    loop_handle
+    shell
+        .event_loop_handle()
         .insert_source(
             Timer::from_duration(Duration::from_millis(500)),
             move |_deadline, _metadata, app_state: &mut AppState| {
@@ -160,6 +181,7 @@ fn main() -> layer_shika::Result<()> {
     {
         let esc_sender = sender.clone();
         let manager_init = manager.clone();
+        let commit_gen_inner = commit_gen.clone();
         shell.with_component(ISLAND, move |instance| {
             let theme = theme::Theme::load();
             apply_theme(instance, &theme);
@@ -175,9 +197,9 @@ fn main() -> layer_shika::Result<()> {
             let weak_prev = instance.as_weak();
             let manager_prev = manager_init.clone();
             let sender_prev = esc_sender.clone();
+            let commit_gen_prev = commit_gen_inner.clone();
             let _ = instance.set_callback("request_select_prev", move |_args: &[Value]| {
                 manager_prev.borrow_mut().select_prev();
-                manager_prev.borrow().set_current_as_wallpaper();
                 if let Some(inst) = weak_prev.upgrade() {
                     push_wallpaper_state(&inst, &manager_prev.borrow());
                 }
@@ -187,15 +209,16 @@ fn main() -> layer_shika::Result<()> {
                         let _ = sender.send(DaemonMsg::WallpaperLoaded);
                     });
                 }
+                schedule_commit(&commit_gen_prev, &sender_prev);
                 Value::Void
             });
 
             let weak_next = instance.as_weak();
             let manager_next = manager_init.clone();
             let sender_next = esc_sender.clone();
+            let commit_gen_next = commit_gen_inner.clone();
             let _ = instance.set_callback("request_select_next", move |_args: &[Value]| {
                 manager_next.borrow_mut().select_next();
-                manager_next.borrow().set_current_as_wallpaper();
                 if let Some(inst) = weak_next.upgrade() {
                     push_wallpaper_state(&inst, &manager_next.borrow());
                 }
@@ -205,6 +228,7 @@ fn main() -> layer_shika::Result<()> {
                         let _ = sender.send(DaemonMsg::WallpaperLoaded);
                     });
                 }
+                schedule_commit(&commit_gen_next, &sender_next);
                 Value::Void
             });
 

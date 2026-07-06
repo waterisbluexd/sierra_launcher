@@ -356,15 +356,16 @@ fn config_wallpaper_dir() -> Option<PathBuf> {
         if t.is_empty() || t.starts_with('#') {
             continue;
         }
-        let eq = t.find('=')?;
-        let key = t[..eq].trim();
-        if key != "wallpaper_dir" {
-            continue;
-        }
-        let value = t[eq + 1..].trim();
-        let path = expand_path(value)?;
-        if path.exists() && path.is_dir() {
-            return Some(path);
+        if let Some(eq) = t.find('=') {
+            let key = t[..eq].trim();
+            if key != "wallpaper_dir" {
+                continue;
+            }
+            let value = t[eq + 1..].trim();
+            let path = expand_path(value)?;
+            if path.exists() && path.is_dir() {
+                return Some(path);
+            }
         }
     }
     None
@@ -372,7 +373,7 @@ fn config_wallpaper_dir() -> Option<PathBuf> {
 
 fn default_wallpaper_dir() -> Option<PathBuf> {
     let home = env::var_os("HOME")?;
-    let dir = PathBuf::from(home).join("Wallpapers");
+    let dir = PathBuf::from(home).join("Pictures/Wallpapers");
     if dir.exists() && dir.is_dir() {
         Some(dir)
     } else {
@@ -387,6 +388,9 @@ fn current_wallpaper_path() -> Option<PathBuf> {
             return Some(path);
         }
     }
+    if let Some(p) = pywal_wallpaper() {
+        return Some(p);
+    }
     if let Some(p) = config_wallpaper_path() {
         return Some(p);
     }
@@ -398,7 +402,7 @@ fn current_wallpaper_path() -> Option<PathBuf> {
             }
         }
     }
-    pywal_wallpaper().or_else(wallpapers_dir_wallpaper)
+    wallpapers_dir_wallpaper()
 }
 
 fn config_wallpaper_path() -> Option<PathBuf> {
