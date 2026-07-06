@@ -1,3 +1,4 @@
+use crate::DaemonMsg;
 use crate::theme::Theme;
 use layer_shika::calloop::channel;
 use layer_shika::slint_interpreter::{ComponentInstance, Value};
@@ -41,10 +42,10 @@ pub fn apply_theme(instance: &ComponentInstance, theme: &Theme) {
     set("color14", &theme.colors.color14);
     set("color15", &theme.colors.color15);
 }
-pub fn start_watcher(sender: channel::Sender<()>) {
+
+pub fn start_watcher(sender: channel::Sender<DaemonMsg>) {
     let theme_path = Theme::path();
     let watch_path = theme_path.clone();
-
     let mut watcher: RecommendedWatcher = Watcher::new(
         move |res: notify::Result<notify::Event>| {
             if let Ok(event) = res {
@@ -52,18 +53,16 @@ pub fn start_watcher(sender: channel::Sender<()>) {
                     && event.paths.iter().any(|p| p == &watch_path)
                 {
                     println!("[Watcher] Pywal change detected.");
-                    let _ = sender.send(());
+                    let _ = sender.send(DaemonMsg::ReloadTheme);
                 }
             }
         },
         Config::default(),
     )
     .expect("Failed to create watcher");
-
     let watch_dir = theme_path.parent().unwrap_or(&theme_path).to_path_buf();
     watcher
         .watch(&watch_dir, RecursiveMode::NonRecursive)
         .expect("Failed to watch directory");
-
     std::mem::forget(watcher);
 }

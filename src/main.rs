@@ -4,6 +4,8 @@ mod theme;
 mod themer;
 use crate::themer::notify::apply_theme;
 use cards::wallpaper::WallpaperManager;
+use layer_shika::calloop::channel::{self, Event};
+use layer_shika::calloop::{TimeoutAction, Timer};
 use layer_shika::prelude::*;
 use layer_shika::slint_interpreter::{ComponentInstance, Value};
 use layer_shika_adapters::AppState;
@@ -12,6 +14,7 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::thread;
+use std::time::Duration;
 
 const ISLAND: &str = "Island";
 const SHOWN_WIDTH: u32 = 420;
@@ -93,32 +96,59 @@ fn main() -> layer_shika::Result<()> {
     let manager = Rc::new(RefCell::new(WallpaperManager::load()));
 
     let loop_handle = shell.event_loop_handle();
-    let (_token, sender) = {
+    let (sender, rx) = channel::channel::<DaemonMsg>();
+
+    {
         let manager_for_channel = manager.clone();
-        loop_handle.add_channel::<DaemonMsg, _>(move |msg, app_state: &mut AppState| match msg {
-            DaemonMsg::ReloadTheme => {
-                let theme = theme::Theme::load();
-                for surface in app_state.surfaces_by_name_mut(ISLAND) {
-                    apply_theme(surface.component_instance(), &theme);
+        loop_handle
+            .insert_source(rx, move |event, _, app_state: &mut AppState| {
+                let msg = match event {
+                    Event::Msg(m) => m,
+                    Event::Closed => return,
+                };
+                match msg {
+                    DaemonMsg::ReloadTheme => {
+                        let theme = theme::Theme::load();
+                        for surface in app_state.surfaces_by_name_mut(ISLAND) {
+                            apply_theme(surface.component_instance(), &theme);
+                        }
+                        for surface in app_state.all_outputs() {
+                            let _ = surface.render_frame_if_dirty();
+                            surface.commit_surface();
+                        }
+                    }
+                    DaemonMsg::Toggle => {
+                        std::process::exit(0);
+                    }
+                    DaemonMsg::WallpaperLoaded => {
+                        let mgr = manager_for_channel.borrow();
+                        for surface in app_state.surfaces_by_name_mut(ISLAND) {
+                            push_wallpaper_state(surface.component_instance(), &mgr);
+                        }
+                        for surface in app_state.all_outputs() {
+                            let _ = surface.render_frame_if_dirty();
+                            surface.commit_surface();
+                        }
+                    }
                 }
+            })
+            .expect("Failed to insert channel source");
+    }
+
+    loop_handle
+        .insert_source(
+            Timer::from_duration(Duration::from_millis(500)),
+            move |_deadline, _metadata, app_state: &mut AppState| {
                 for surface in app_state.all_outputs() {
                     let _ = surface.render_frame_if_dirty();
+                    surface.commit_surface();
                 }
-            }
-            DaemonMsg::Toggle => {
-                std::process::exit(0);
-            }
-            DaemonMsg::WallpaperLoaded => {
-                let mgr = manager_for_channel.borrow();
-                for surface in app_state.surfaces_by_name_mut(ISLAND) {
-                    push_wallpaper_state(surface.component_instance(), &mgr);
-                }
-                for surface in app_state.all_outputs() {
-                    let _ = surface.render_frame_if_dirty();
-                }
-            }
-        })?
-    };
+                TimeoutAction::ToDuration(Duration::from_millis(500))
+            },
+        )
+        .expect("Failed to insert render-pump timer");
+
+    themer::notify::start_watcher(sender.clone());
 
     {
         let sender = sender.clone();
