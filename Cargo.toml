@@ -21,7 +21,7 @@ strip = true
 
 [dependencies]
 layer-shika = "0.3.1"
-slint = "1.14.1"
+slint = "1.17.0"
 notify = "8.1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1"
@@ -30,4 +30,4 @@ chrono = "0.4.45"
 image = "0.25"
 
 [build-dependencies]
-slint-build = "1.14.1"
+slint-build = "1.17.0"
