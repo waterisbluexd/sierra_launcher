@@ -173,9 +173,20 @@ fn main() -> layer_shika::Result<()> {
 
     {
         let sender = sender.clone();
-        manager.borrow().spawn_full_preload(move || {
-            let _ = sender.send(DaemonMsg::WallpaperLoaded);
-        });
+        let manager_preload = manager.clone();
+        shell
+            .event_loop_handle()
+            .insert_source(
+                Timer::from_duration(Duration::from_millis(150)),
+                move |_deadline, _metadata, _app_state: &mut AppState| {
+                    let sender_inner = sender.clone();
+                    manager_preload.borrow().spawn_full_preload(move || {
+                        let _ = sender_inner.send(DaemonMsg::WallpaperLoaded);
+                    });
+                    TimeoutAction::Drop
+                },
+            )
+            .expect("Failed to insert preload timer");
     }
 
     {

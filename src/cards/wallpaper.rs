@@ -5,8 +5,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-const CAROUSEL_MAX_W: u32 = 900;
-const CAROUSEL_MAX_H: u32 = 500;
+const CAROUSEL_MAX_W: u32 = 300;
+const CAROUSEL_MAX_H: u32 = 600;
 
 struct BlurCache {
     map: HashMap<PathBuf, (Vec<u8>, u32, u32)>,
