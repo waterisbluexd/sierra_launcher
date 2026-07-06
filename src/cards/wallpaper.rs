@@ -198,6 +198,14 @@ impl WallpaperManager {
         self.offset_index(2).and_then(|i| self.paths.get(i))
     }
 
+    pub fn current_index(&self) -> usize {
+        self.index
+    }
+
+    pub fn total_count(&self) -> usize {
+        self.paths.len()
+    }
+
     pub fn select_prev(&mut self) {
         if self.index > 0 {
             self.index -= 1;

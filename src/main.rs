@@ -71,6 +71,14 @@ fn push_wallpaper_state(instance: &ComponentInstance, mgr: &WallpaperManager) {
     );
     let _ = instance.set_property("can-select-prev", Value::Bool(mgr.can_select_prev()));
     let _ = instance.set_property("can-select-next", Value::Bool(mgr.can_select_next()));
+    let _ = instance.set_property(
+        "wallpaper-current-index",
+        Value::Number(mgr.current_index() as f64),
+    );
+    let _ = instance.set_property(
+        "wallpaper-total-count",
+        Value::Number(mgr.total_count() as f64),
+    );
 }
 
 fn kick_loads(

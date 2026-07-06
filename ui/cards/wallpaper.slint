@@ -1,11 +1,14 @@
 import { Theme } from "../theme.slint";
 
 export component WallpaperCarousel inherits Rectangle {
-    in property <image> current-image;
-    in property <image> prev-image;
-    in property <image> next-image;
-    in property <image> prev-prev-image;
-    in property <image> next-next-image;
+    in property <image> wallpaper-image;
+    in property <image> wallpaper-prev-image;
+    in property <image> wallpaper-next-image;
+    in property <image> wallpaper-prev-prev-image;
+    in property <image> wallpaper-next-next-image;
+    in property <image> wallpaper-image-blurred;
+    in property <int> wallpaper-current-index: 0;
+    in property <int> wallpaper-total-count: 1;
     callback select-prev();
     callback select-next();
     in-out property <bool> selection-mode: false;
@@ -20,9 +23,12 @@ export component WallpaperCarousel inherits Rectangle {
 
     property <length> drag-x: 0px;
     property <length> anchor-x: 0px;
+    property <length> last-drag-x: 0px;
+    property <length> velocity: 0px;
     property <bool> is-dragging: false;
     property <bool> was-dragging: false;
     property <float> d: root.pitch > 0px ? -(root.drag-x / root.pitch) : 0.0;
+    property <float> press-scale: root.is-dragging ? 0.97 : 1.0;
 
     function slot-w(dist: float) -> length {
         return root.side-w + (root.center-w - root.side-w) * max(0.0, 1.0 - min(abs(dist), 1.0));
@@ -41,41 +47,71 @@ export component WallpaperCarousel inherits Rectangle {
     background: transparent;
 
     Image {
-        source: root.prev-prev-image;
+        source: root.wallpaper-image-blurred;
         image-fit: cover;
+        width: 100%;
+        height: 100%;
+        opacity: root.selection-mode ? 0.5 : 0.0;
+        animate opacity {
+            duration: 400ms;
+            easing: ease-out;
+        }
+    }
+
+    Rectangle {
         width: root.slot-w(-2.0 - root.d);
         height: root.slot-h(-2.0 - root.d);
         x: root.slot-x(-2.0 - root.d);
         y: (root.height - self.height) / 2;
         opacity: root.slot-opacity(-2.0 - root.d);
+        clip: true;
+        border-radius: 0px;
+        Image {
+            source: root.wallpaper-prev-prev-image;
+            image-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+
         animate x, width, height, opacity {
-            duration: root.is-dragging ? 0ms : 350ms;
+            duration: root.is-dragging ? 0ms : 150ms;
             easing: cubic-bezier(0.16, 1, 0.3, 1);
         }
     }
 
-    Image {
-        source: root.prev-image;
-        image-fit: cover;
+    Rectangle {
         width: root.slot-w(-1.0 - root.d);
         height: root.slot-h(-1.0 - root.d);
         x: root.slot-x(-1.0 - root.d);
         y: (root.height - self.height) / 2;
         opacity: root.slot-opacity(-1.0 - root.d);
+        clip: true;
+        border-radius: 0px;
+        Image {
+            source: root.wallpaper-prev-image;
+            image-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+
         animate x, width, height, opacity {
-            duration: root.is-dragging ? 0ms : 350ms;
+            duration: root.is-dragging ? 0ms : 150ms;
             easing: cubic-bezier(0.16, 1, 0.3, 1);
         }
     }
 
     center-frame := Rectangle {
-        width: root.slot-w(0.0 - root.d);
-        height: root.slot-h(0.0 - root.d);
-        x: root.slot-x(0.0 - root.d);
+        width: root.slot-w(0.0 - root.d) * root.press-scale;
+        height: root.slot-h(0.0 - root.d) * root.press-scale;
+        x: root.slot-x(0.0 - root.d) + (root.slot-w(0.0 - root.d) - self.width) / 2;
         y: (root.height - self.height) / 2;
         clip: true;
+        border-radius: 0px;
+        drop-shadow-color: #00000066;
+        drop-shadow-blur: 20px;
+        drop-shadow-offset-y: 8px;
         Image {
-            source: root.current-image;
+            source: root.wallpaper-image;
             image-fit: cover;
             width: 100%;
             height: 100%;
@@ -85,35 +121,49 @@ export component WallpaperCarousel inherits Rectangle {
         border-width: 2px;
         border-color: Theme.color4.with-alpha(root.selection-mode ? 0.5 : 0.0);
         animate x, width, height, border-color {
-            duration: root.is-dragging ? 0ms : 350ms;
+            duration: root.is-dragging ? 0ms : 150ms;
             easing: cubic-bezier(0.16, 1, 0.3, 1);
         }
     }
 
-    Image {
-        source: root.next-image;
-        image-fit: cover;
+    Rectangle {
         width: root.slot-w(1.0 - root.d);
         height: root.slot-h(1.0 - root.d);
         x: root.slot-x(1.0 - root.d);
         y: (root.height - self.height) / 2;
         opacity: root.slot-opacity(1.0 - root.d);
+        clip: true;
+        border-radius: 0px;
+        Image {
+            source: root.wallpaper-next-image;
+            image-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+
         animate x, width, height, opacity {
-            duration: root.is-dragging ? 0ms : 350ms;
+            duration: root.is-dragging ? 0ms : 150ms;
             easing: cubic-bezier(0.16, 1, 0.3, 1);
         }
     }
 
-    Image {
-        source: root.next-next-image;
-        image-fit: cover;
+    Rectangle {
         width: root.slot-w(2.0 - root.d);
         height: root.slot-h(2.0 - root.d);
         x: root.slot-x(2.0 - root.d);
         y: (root.height - self.height) / 2;
         opacity: root.slot-opacity(2.0 - root.d);
+        clip: true;
+        border-radius: 0px;
+        Image {
+            source: root.wallpaper-next-next-image;
+            image-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+
         animate x, width, height, opacity {
-            duration: root.is-dragging ? 0ms : 350ms;
+            duration: root.is-dragging ? 0ms : 150ms;
             easing: cubic-bezier(0.16, 1, 0.3, 1);
         }
     }
@@ -128,14 +178,17 @@ export component WallpaperCarousel inherits Rectangle {
                 root.is-dragging = false;
                 root.was-dragging = false;
                 root.anchor-x = self.mouse-x;
+                root.last-drag-x = 0px;
+                root.velocity = 0px;
             }
             if event.kind == PointerEventKind.up {
                 if root.is-dragging {
                     root.was-dragging = true;
                     let threshold = root.pitch * 0.3;
-                    if root.drag-x > threshold && root.can-select-prev {
+                    let fast = abs(root.velocity) > 6px;
+                    if (root.drag-x > threshold || (fast && root.velocity > 0px)) && root.can-select-prev {
                         root.select-prev();
-                    } else if root.drag-x < -threshold && root.can-select-next {
+                    } else if (root.drag-x < -threshold || (fast && root.velocity < 0px)) && root.can-select-next {
                         root.select-next();
                     }
                     root.drag-x = 0px;
@@ -144,6 +197,7 @@ export component WallpaperCarousel inherits Rectangle {
                     root.drag-x = 0px;
                 }
                 root.is-dragging = false;
+                root.velocity = 0px;
             }
         }
 
@@ -159,6 +213,8 @@ export component WallpaperCarousel inherits Rectangle {
             } else {
                 root.drag-x = raw;
             }
+            root.velocity = root.drag-x - root.last-drag-x;
+            root.last-drag-x = root.drag-x;
             if !root.is-dragging && (root.drag-x > 4px || root.drag-x < -4px) {
                 root.is-dragging = true;
             }
@@ -166,19 +222,23 @@ export component WallpaperCarousel inherits Rectangle {
                 root.select-prev();
                 root.anchor-x += root.pitch;
                 root.drag-x -= root.pitch;
+                root.last-drag-x = root.drag-x;
             } else if root.drag-x <= -root.pitch && root.can-select-next {
                 root.select-next();
                 root.anchor-x -= root.pitch;
                 root.drag-x += root.pitch;
+                root.last-drag-x = root.drag-x;
             }
             if root.drag-x >= root.pitch && root.can-select-prev {
                 root.select-prev();
                 root.anchor-x += root.pitch;
                 root.drag-x -= root.pitch;
+                root.last-drag-x = root.drag-x;
             } else if root.drag-x <= -root.pitch && root.can-select-next {
                 root.select-next();
                 root.anchor-x -= root.pitch;
                 root.drag-x += root.pitch;
+                root.last-drag-x = root.drag-x;
             }
         }
     }
