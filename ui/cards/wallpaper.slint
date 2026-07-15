@@ -74,8 +74,8 @@ export component WallpaperCarousel inherits Rectangle {
         }
 
         animate x, width, height, opacity {
-            duration: root.is-dragging ? 0ms : 150ms;
-            easing: cubic-bezier(0.16, 1, 0.3, 1);
+            duration: root.is-dragging ? 0ms : 220ms;
+            easing: ease-out;
         }
     }
 
@@ -95,8 +95,8 @@ export component WallpaperCarousel inherits Rectangle {
         }
 
         animate x, width, height, opacity {
-            duration: root.is-dragging ? 0ms : 150ms;
-            easing: cubic-bezier(0.16, 1, 0.3, 1);
+            duration: root.is-dragging ? 0ms : 220ms;
+            easing: ease-out;
         }
     }
 
@@ -107,6 +107,7 @@ export component WallpaperCarousel inherits Rectangle {
         y: (root.height - self.height) / 2;
         clip: true;
         border-radius: 0px;
+        background: transparent;
         drop-shadow-color: #00000066;
         drop-shadow-blur: 20px;
         drop-shadow-offset-y: 8px;
@@ -117,12 +118,24 @@ export component WallpaperCarousel inherits Rectangle {
             height: 100%;
         }
 
+        animate x, width, height {
+            duration: root.is-dragging ? 0ms : 220ms;
+            easing: ease-out;
+        }
+    }
+
+    Rectangle {
+        width: center-frame.width;
+        height: center-frame.height;
+        x: center-frame.x;
+        y: center-frame.y;
+        border-radius: 0px;
         background: transparent;
         border-width: 2px;
         border-color: Theme.color4.with-alpha(root.selection-mode ? 0.5 : 0.0);
-        animate x, width, height, border-color {
-            duration: root.is-dragging ? 0ms : 150ms;
-            easing: cubic-bezier(0.16, 1, 0.3, 1);
+        animate border-color {
+            duration: 350ms;
+            easing: ease-out;
         }
     }
 
@@ -142,8 +155,8 @@ export component WallpaperCarousel inherits Rectangle {
         }
 
         animate x, width, height, opacity {
-            duration: root.is-dragging ? 0ms : 150ms;
-            easing: cubic-bezier(0.16, 1, 0.3, 1);
+            duration: root.is-dragging ? 0ms : 220ms;
+            easing: ease-out;
         }
     }
 
@@ -163,8 +176,8 @@ export component WallpaperCarousel inherits Rectangle {
         }
 
         animate x, width, height, opacity {
-            duration: root.is-dragging ? 0ms : 150ms;
-            easing: cubic-bezier(0.16, 1, 0.3, 1);
+            duration: root.is-dragging ? 0ms : 220ms;
+            easing: ease-out;
         }
     }
 
