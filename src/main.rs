@@ -2,16 +2,15 @@ mod cards;
 mod ipc;
 mod theme;
 mod themer;
-use crate::themer::notify::apply_theme;
+mod ui;
 use cards::wallpaper::WallpaperManager;
 use layer_shika::calloop::channel::{self, Event};
 use layer_shika::calloop::{TimeoutAction, Timer};
 use layer_shika::prelude::*;
-use layer_shika::slint_interpreter::{ComponentInstance, Value};
+use layer_shika::slint_interpreter::Value;
 use layer_shika_adapters::AppState;
 use slint::ComponentHandle;
 use std::cell::RefCell;
-use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -22,7 +21,6 @@ use tracing::instrument;
 const ISLAND: &str = "Island";
 const SHOWN_WIDTH: u32 = 420;
 const SHOWN_HEIGHT: u32 = 630;
-const COMMIT_DEBOUNCE_MS: u64 = 350;
 
 pub enum DaemonMsg {
     ReloadTheme,
@@ -32,84 +30,13 @@ pub enum DaemonMsg {
 }
 
 #[instrument]
-fn find_ui_file() -> PathBuf {
-    let dev = PathBuf::from("ui/main_card.slint");
-    if dev.exists() {
-        return dev;
-    }
-    if let Ok(data_home) = std::env::var("XDG_DATA_HOME") {
-        let p = PathBuf::from(data_home).join("sierra_launcher/ui/main_card.slint");
-        if p.exists() {
-            return p;
-        }
-    } else if let Ok(home) = std::env::var("HOME") {
-        let p = PathBuf::from(home).join(".local/share/sierra_launcher/ui/main_card.slint");
-        if p.exists() {
-            return p;
-        }
-    }
-    let p = PathBuf::from("/usr/local/share/sierra_launcher/ui/main_card.slint");
-    if p.exists() {
-        return p;
-    }
-    PathBuf::from("/usr/share/sierra_launcher/ui/main_card.slint")
-}
-
-#[instrument(skip(instance, mgr))]
-fn push_wallpaper_state(instance: &ComponentInstance, mgr: &WallpaperManager) {
-    let _ = instance.set_property("wallpaper-image", Value::Image(mgr.current_image()));
-    let _ = instance.set_property(
-        "wallpaper-image-blurred",
-        Value::Image(mgr.current_image_blurred()),
-    );
-    let _ = instance.set_property("wallpaper-prev-image", Value::Image(mgr.prev_image()));
-    let _ = instance.set_property("wallpaper-next-image", Value::Image(mgr.next_image()));
-    let _ = instance.set_property(
-        "wallpaper-prev-prev-image",
-        Value::Image(mgr.prev_prev_image()),
-    );
-    let _ = instance.set_property(
-        "wallpaper-next-next-image",
-        Value::Image(mgr.next_next_image()),
-    );
-    let _ = instance.set_property("can-select-prev", Value::Bool(mgr.can_select_prev()));
-    let _ = instance.set_property("can-select-next", Value::Bool(mgr.can_select_next()));
-    let _ = instance.set_property(
-        "wallpaper-current-index",
-        Value::Number(mgr.current_index() as f64),
-    );
-    let _ = instance.set_property(
-        "wallpaper-total-count",
-        Value::Number(mgr.total_count() as f64),
-    );
-}
-
-#[instrument(skip(manager, on_loaded))]
-fn kick_loads(
-    manager: &Rc<RefCell<WallpaperManager>>,
-    on_loaded: impl Fn() + Send + Sync + Clone + 'static,
-) {
-    manager.borrow().ensure_window_loaded(2, on_loaded);
-}
-
-#[instrument(skip(commit_gen, sender))]
-fn schedule_commit(commit_gen: &Arc<AtomicU64>, sender: &channel::Sender<DaemonMsg>) {
-    let my_gen = commit_gen.fetch_add(1, Ordering::SeqCst) + 1;
-    let sender = sender.clone();
-    thread::spawn(move || {
-        thread::sleep(Duration::from_millis(COMMIT_DEBOUNCE_MS));
-        let _ = sender.send(DaemonMsg::CommitWallpaper(my_gen));
-    });
-}
-
-#[instrument]
 fn main() -> layer_shika::Result<()> {
     let socket_path = ipc::socket_path();
     if ipc::notify_running_instance(&socket_path) {
         return Ok(());
     }
     let listener = ipc::bind_listener(&socket_path).expect("Failed to bind IPC socket");
-    let ui = find_ui_file();
+    let ui = ui::find_ui_file();
     let mut shell = Shell::from_file(ui.to_str().unwrap())
         .surface(ISLAND)
         .width(SHOWN_WIDTH)
@@ -127,42 +54,42 @@ fn main() -> layer_shika::Result<()> {
     let (sender, rx) = channel::channel::<DaemonMsg>();
 
     {
-        let manager_for_channel = manager.clone();
-        let commit_gen_for_channel = commit_gen.clone();
         shell
             .event_loop_handle()
-            .insert_source(rx, move |event, _, app_state: &mut AppState| {
-                let msg = match event {
-                    Event::Msg(m) => m,
-                    Event::Closed => return,
-                };
-                match msg {
-                    DaemonMsg::ReloadTheme => {
-                        let theme = theme::Theme::load();
-                        for surface in app_state.surfaces_by_name_mut(ISLAND) {
-                            apply_theme(surface.component_instance(), &theme);
+            .insert_source(rx, {
+                let manager_for_channel = manager.clone();
+                let commit_gen_for_channel = commit_gen.clone();
+                move |event, _, app_state: &mut AppState| {
+                    let msg = match event {
+                        Event::Msg(m) => m,
+                        Event::Closed => return,
+                    };
+                    match msg {
+                        DaemonMsg::ReloadTheme => {
+                            let theme = theme::Theme::load();
+                            for surface in app_state.surfaces_by_name_mut(ISLAND) {
+                                themer::notify::apply_theme(surface.component_instance(), &theme);
+                            }
+                            for surface in app_state.all_outputs() {
+                                let _ = surface.render_frame_if_dirty();
+                                surface.commit_surface();
+                            }
                         }
-                        for surface in app_state.all_outputs() {
-                            let _ = surface.render_frame_if_dirty();
-                            surface.commit_surface();
+                        DaemonMsg::Toggle => std::process::exit(0),
+                        DaemonMsg::WallpaperLoaded => {
+                            let mgr = manager_for_channel.borrow();
+                            for surface in app_state.surfaces_by_name_mut(ISLAND) {
+                                ui::push_wallpaper_state(surface.component_instance(), &mgr);
+                            }
+                            for surface in app_state.all_outputs() {
+                                let _ = surface.render_frame_if_dirty();
+                                surface.commit_surface();
+                            }
                         }
-                    }
-                    DaemonMsg::Toggle => {
-                        std::process::exit(0);
-                    }
-                    DaemonMsg::WallpaperLoaded => {
-                        let mgr = manager_for_channel.borrow();
-                        for surface in app_state.surfaces_by_name_mut(ISLAND) {
-                            push_wallpaper_state(surface.component_instance(), &mgr);
-                        }
-                        for surface in app_state.all_outputs() {
-                            let _ = surface.render_frame_if_dirty();
-                            surface.commit_surface();
-                        }
-                    }
-                    DaemonMsg::CommitWallpaper(gen_id) => {
-                        if commit_gen_for_channel.load(Ordering::SeqCst) == gen_id {
-                            manager_for_channel.borrow().set_current_as_wallpaper();
+                        DaemonMsg::CommitWallpaper(gen_id) => {
+                            if commit_gen_for_channel.load(Ordering::SeqCst) == gen_id {
+                                manager_for_channel.borrow().set_current_as_wallpaper();
+                            }
                         }
                     }
                 }
@@ -236,11 +163,10 @@ fn main() -> layer_shika::Result<()> {
         let commit_gen_inner = commit_gen.clone();
         shell.with_component(ISLAND, move |instance| {
             let theme = theme::Theme::load();
-            apply_theme(instance, &theme);
+            themer::notify::apply_theme(instance, &theme);
 
-            push_wallpaper_state(instance, &manager_init.borrow());
+            ui::push_wallpaper_state(instance, &manager_init.borrow());
 
-            // NEW: seed the clock immediately so it's never on defaults
             let _ = instance.set_property(
                 "current-time",
                 Value::String(cards::clock::current_time().into()),
@@ -251,9 +177,9 @@ fn main() -> layer_shika::Result<()> {
             );
 
             {
-                let sender = esc_sender.clone();
-                kick_loads(&manager_init, move || {
-                    let _ = sender.send(DaemonMsg::WallpaperLoaded);
+                let sender_inner = esc_sender.clone();
+                ui::kick_loads(&manager_init, move || {
+                    let _ = sender_inner.send(DaemonMsg::WallpaperLoaded);
                 });
             }
 
@@ -264,15 +190,15 @@ fn main() -> layer_shika::Result<()> {
             let _ = instance.set_callback("request_select_prev", move |_args: &[Value]| {
                 manager_prev.borrow_mut().select_prev();
                 if let Some(inst) = weak_prev.upgrade() {
-                    push_wallpaper_state(&inst, &manager_prev.borrow());
+                    ui::push_wallpaper_state(&inst, &manager_prev.borrow());
                 }
                 {
-                    let sender = sender_prev.clone();
-                    kick_loads(&manager_prev, move || {
-                        let _ = sender.send(DaemonMsg::WallpaperLoaded);
+                    let sender_inner = sender_prev.clone();
+                    ui::kick_loads(&manager_prev, move || {
+                        let _ = sender_inner.send(DaemonMsg::WallpaperLoaded);
                     });
                 }
-                schedule_commit(&commit_gen_prev, &sender_prev);
+                ui::schedule_commit(&commit_gen_prev, &sender_prev);
                 Value::Void
             });
 
@@ -283,15 +209,15 @@ fn main() -> layer_shika::Result<()> {
             let _ = instance.set_callback("request_select_next", move |_args: &[Value]| {
                 manager_next.borrow_mut().select_next();
                 if let Some(inst) = weak_next.upgrade() {
-                    push_wallpaper_state(&inst, &manager_next.borrow());
+                    ui::push_wallpaper_state(&inst, &manager_next.borrow());
                 }
                 {
-                    let sender = sender_next.clone();
-                    kick_loads(&manager_next, move || {
-                        let _ = sender.send(DaemonMsg::WallpaperLoaded);
+                    let sender_inner = sender_next.clone();
+                    ui::kick_loads(&manager_next, move || {
+                        let _ = sender_inner.send(DaemonMsg::WallpaperLoaded);
                     });
                 }
-                schedule_commit(&commit_gen_next, &sender_next);
+                ui::schedule_commit(&commit_gen_next, &sender_next);
                 Value::Void
             });
 
@@ -313,9 +239,10 @@ fn main() -> layer_shika::Result<()> {
         });
     }
 
+    let sender_ipc = sender.clone();
     thread::spawn(move || {
         ipc::serve(listener, move || {
-            let _ = sender.send(DaemonMsg::Toggle);
+            let _ = sender_ipc.send(DaemonMsg::Toggle);
         });
     });
     shell.run()?;

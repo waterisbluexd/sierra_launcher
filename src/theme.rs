@@ -5,8 +5,6 @@ use std::{env, fs, path::PathBuf};
 pub struct Special {
     pub background: String,
     pub foreground: String,
-    #[serde(default)]
-    pub cursor: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -41,7 +39,6 @@ impl Default for Theme {
             special: Special {
                 background: "#1e1e2e".to_string(),
                 foreground: "#cdd6f4".to_string(),
-                cursor: "#cdd6f4".to_string(),
             },
             colors: Colors {
                 color0: "#45475a".to_string(),
@@ -126,9 +123,9 @@ fn expand_path(value: &str) -> Option<PathBuf> {
     if (value.starts_with('"') && value.ends_with('"')) || (value.starts_with('\'') && value.ends_with('\'')) {
         value = &value[1..value.len() - 1];
     }
-    if value.starts_with("~/") {
+    if let Some(stripped) = value.strip_prefix("~/") {
         let home = env::var_os("HOME")?;
-        return Some(PathBuf::from(home).join(&value[2..]));
+        return Some(PathBuf::from(home).join(stripped));
     }
     if value == "~" {
         return env::var_os("HOME").map(PathBuf::from);

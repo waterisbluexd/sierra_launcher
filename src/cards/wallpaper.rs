@@ -75,10 +75,10 @@ impl WallpaperManager {
         let mut paths = wallpapers_dir_all_images().unwrap_or_default();
 
         let current = current_wallpaper_path();
-        if let Some(cur) = &current {
-            if !paths.iter().any(|p| p == cur) {
-                paths.insert(0, cur.clone());
-            }
+        if let Some(cur) = &current
+            && !paths.iter().any(|p| p == cur)
+        {
+            paths.insert(0, cur.clone());
         }
 
         let index = current
@@ -128,10 +128,10 @@ impl WallpaperManager {
         let image_cache = self.image_cache.clone();
         let pending = self.pending.clone();
         std::thread::spawn(move || {
-            if let Some(raw) = process_full_raw(&path) {
-                if let Ok(mut cache) = image_cache.lock() {
-                    cache.map.insert(path.clone(), raw);
-                }
+            if let Some(raw) = process_full_raw(&path)
+                && let Ok(mut cache) = image_cache.lock()
+            {
+                cache.map.insert(path.clone(), raw);
             }
             pending.lock().unwrap().remove(&path);
             on_loaded();
@@ -162,10 +162,10 @@ impl WallpaperManager {
                     }
                     pend.insert(path.clone());
                 }
-                if let Some(raw) = process_full_raw(&path) {
-                    if let Ok(mut cache) = image_cache.lock() {
-                        cache.map.insert(path.clone(), raw);
-                    }
+                if let Some(raw) = process_full_raw(&path)
+                    && let Ok(mut cache) = image_cache.lock()
+                {
+                    cache.map.insert(path.clone(), raw);
                 }
                 pending.lock().unwrap().remove(&path);
                 on_loaded();
@@ -231,17 +231,17 @@ impl WallpaperManager {
     }
 
     fn cached_or_placeholder(&self, path: Option<&PathBuf>) -> slint::Image {
-        if let Some(p) = path {
-            if let Ok(cache) = self.image_cache.lock() {
-                if let Some(img) = cache.get(p) {
-                    return img;
-                }
-            }
-            if let Ok(cache) = self.blur_cache.lock() {
-                if let Some(img) = cache.get(p) {
-                    return img;
-                }
-            }
+        if let Some(p) = path
+            && let Ok(cache) = self.image_cache.lock()
+            && let Some(img) = cache.get(p)
+        {
+            return img;
+        }
+        if let Some(p) = path
+            && let Ok(cache) = self.blur_cache.lock()
+            && let Some(img) = cache.get(p)
+        {
+            return img;
         }
         slint::Image::default()
     }
@@ -263,17 +263,18 @@ impl WallpaperManager {
     }
 
     pub fn current_image_blurred(&self) -> slint::Image {
-        if let Some(path) = self.current_path() {
-            if let Ok(cache) = self.blur_cache.lock() {
-                if let Some(img) = cache.get(path) {
-                    return img;
-                }
-            }
-            if let Some((data, w, h)) = process_blur_raw(path) {
-                let buffer =
-                    slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(&data, w, h);
-                return slint::Image::from_rgba8(buffer);
-            }
+        if let Some(path) = self.current_path()
+            && let Ok(cache) = self.blur_cache.lock()
+            && let Some(img) = cache.get(path)
+        {
+            return img;
+        }
+        if let Some(path) = self.current_path()
+            && let Some((data, w, h)) = process_blur_raw(path)
+        {
+            let buffer =
+                slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(&data, w, h);
+            return slint::Image::from_rgba8(buffer);
         }
         slint::Image::default()
     }
@@ -306,13 +307,6 @@ fn process_full_raw(path: &Path) -> Option<(Vec<u8>, u32, u32)> {
     Some((rgba.into_raw(), w, h))
 }
 
-fn blurred_image(path: &Path) -> Option<slint::Image> {
-    process_blur_raw(path).map(|(data, w, h)| {
-        let buffer = slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(&data, w, h);
-        slint::Image::from_rgba8(buffer)
-    })
-}
-
 fn boost_saturation(img: &mut image::RgbaImage, factor: f32) {
     for pixel in img.pixels_mut() {
         let [r, g, b, a] = pixel.0;
@@ -328,18 +322,6 @@ fn darken_image(img: &mut image::RgbaImage, factor: f32) {
         pixel.0[1] = ((pixel.0[1] as f32 * factor).clamp(0.0, 255.0)) as u8;
         pixel.0[2] = ((pixel.0[2] as f32 * factor).clamp(0.0, 255.0)) as u8;
     }
-}
-
-pub fn current_wallpaper_image() -> slint::Image {
-    current_wallpaper_path()
-        .and_then(|path| slint::Image::load_from_path(&path).ok())
-        .unwrap_or_default()
-}
-
-pub fn current_wallpaper_image_blurred() -> slint::Image {
-    current_wallpaper_path()
-        .and_then(|path| blurred_image(&path))
-        .unwrap_or_default()
 }
 
 fn wallpapers_dir_all_images() -> Option<Vec<PathBuf>> {
@@ -404,10 +386,10 @@ fn current_wallpaper_path() -> Option<PathBuf> {
     }
     if let Some(home) = env::var_os("HOME") {
         let candidate_dir = PathBuf::from(home).join("Wallpaper");
-        if candidate_dir.exists() && candidate_dir.is_dir() {
-            if let Some(p) = first_image_in_dir(&candidate_dir) {
-                return Some(p);
-            }
+        if candidate_dir.exists() && candidate_dir.is_dir()
+            && let Some(p) = first_image_in_dir(&candidate_dir)
+        {
+            return Some(p);
         }
     }
     wallpapers_dir_wallpaper()
@@ -474,9 +456,9 @@ fn expand_path(value: &str) -> Option<PathBuf> {
     {
         value = &value[1..value.len() - 1];
     }
-    if value.starts_with("~/") {
+    if let Some(stripped) = value.strip_prefix("~/") {
         let home = env::var_os("HOME")?;
-        return Some(PathBuf::from(home).join(&value[2..]));
+        return Some(PathBuf::from(home).join(stripped));
     }
     if value == "~" {
         return env::var_os("HOME").map(PathBuf::from);

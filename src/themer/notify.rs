@@ -48,13 +48,12 @@ pub fn start_watcher(sender: channel::Sender<DaemonMsg>) {
     let watch_path = theme_path.clone();
     let mut watcher: RecommendedWatcher = Watcher::new(
         move |res: notify::Result<notify::Event>| {
-            if let Ok(event) = res {
-                if matches!(event.kind, EventKind::Modify(_) | EventKind::Create(_))
-                    && event.paths.iter().any(|p| p == &watch_path)
-                {
-                    println!("[Watcher] Pywal change detected.");
-                    let _ = sender.send(DaemonMsg::ReloadTheme);
-                }
+            if let Ok(event) = res
+                && matches!(event.kind, EventKind::Modify(_) | EventKind::Create(_))
+                && event.paths.iter().any(|p| p == &watch_path)
+            {
+                println!("[Watcher] Pywal change detected.");
+                let _ = sender.send(DaemonMsg::ReloadTheme);
             }
         },
         Config::default(),

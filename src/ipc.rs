@@ -24,11 +24,11 @@ pub fn notify_running_instance(path: &PathBuf) -> bool {
 }
 
 pub fn bind_listener(path: &PathBuf) -> std::io::Result<UnixListener> {
-    if path.exists() {
-        if let Err(e) = fs::remove_file(path) {
+    if path.exists()
+            && let Err(e) = fs::remove_file(path)
+        {
             eprintln!("Warning: Failed to remove old socket file: {}", e);
         }
-    }
 
     UnixListener::bind(path)
 }
@@ -42,10 +42,10 @@ where
             Ok(mut stream) => {
                 let mut buf = [0; 1];
                 // Read 1 byte from the stream
-                if let Ok(1) = stream.read(&mut buf) {
-                    if buf[0] == b'T' {
-                        on_toggle();
-                    }
+                if let Ok(1) = stream.read(&mut buf)
+                    && buf[0] == b'T'
+                {
+                    on_toggle();
                 }
             }
             Err(e) => {
