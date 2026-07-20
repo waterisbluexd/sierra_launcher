@@ -1,0 +1,65 @@
+import { Theme } from "../theme.slint";
+
+export struct AppEntry {
+    name: string,
+    initial: string,
+}
+
+export component AppGrid inherits Rectangle {
+    in property <[AppEntry]> apps: [
+        { name: "Web", initial: "W" }, { name: "Settings", initial: "S" }, { name: "Mail", initial: "M" },
+        { name: "Photos", initial: "P" }, { name: "Calc", initial: "C" }, { name: "Files", initial: "F" },
+        { name: "Games", initial: "G" }, { name: "Messages", initial: "M" }, { name: "Calendar", initial: "C" },
+    ];
+    in property <int> columns: 5;
+    property <length> cell-w: 74px;
+    property <length> cell-h: 84px;
+    property <int> row-count: (root.apps.length + root.columns - 1) / root.columns;
+
+    callback launch(string);
+
+    background: transparent;
+
+    VerticalLayout {
+        spacing: 10px;
+        alignment: start;
+        for row-idx in root.row-count: HorizontalLayout {
+            spacing: 6px;
+            alignment: start;
+            for col-idx in root.columns: Rectangle {
+                width: root.cell-w;
+                height: root.cell-h;
+                property <int> flat-idx: row-idx * root.columns + col-idx;
+                if flat-idx < root.apps.length: VerticalLayout {
+                    spacing: 6px;
+                    alignment: center;
+                    entry-touch := TouchArea {
+                        clicked => { root.launch(root.apps[flat-idx].name); }
+                    }
+                    Rectangle {
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 10px;
+                        background: Theme.color4.with-alpha(0.15);
+                        border-width: 1px;
+                        border-color: Theme.color4.with-alpha(0.2);
+                        Text {
+                            text: root.apps[flat-idx].initial;
+                            color: Theme.color4;
+                            font-size: 14px;
+                            font-weight: 600;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                    }
+                    Text {
+                        text: root.apps[flat-idx].name;
+                        color: Theme.color4;
+                        font-size: 11px;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+}

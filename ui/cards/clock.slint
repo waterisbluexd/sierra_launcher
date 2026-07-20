@@ -3,26 +3,27 @@ import { Theme } from "../theme.slint";
 export component Clock inherits Rectangle {
     in property <string> time: "00:00";
     in property <string> date: "01 Jan, Monday";
+    in property <length> time-font-size: 34px;
+    height: 60px;
 
     VerticalLayout {
-        alignment: center;
-        spacing: 4px;
+        spacing: 2px;
+        alignment: start;
 
         Text {
             text: root.time;
-            color: Theme.foreground;
-            font-size: 48px;
-            font-weight: 700;
-            font-family: "ttyclock";
-            horizontal-alignment: center;
+            color: Theme.color4;
+            font-size: root.time-font-size;
+            font-family: "Monocraft";
+            horizontal-alignment: left;
         }
 
         Text {
             text: root.date;
-            color: Theme.foreground.with-alpha(0.7);
+            color: Theme.color4.with-alpha(0.6);
             font-size: 14px;
             font-family: "Monocraft";
-            horizontal-alignment: center;
+            horizontal-alignment: left;
         }
     }
 }

@@ -1,0 +1,52 @@
+import { Theme } from "../theme.slint";
+
+export component SearchBar inherits Rectangle {
+    in property <string> placeholder-text: "Search...";
+    out property <string> text: input.text;
+    callback edited(string);
+    callback accepted(string);
+    forward-focus: input;
+
+    height: 40px;
+    border-radius: 10px;
+    background: Theme.background.with-alpha(0.6);
+    border-width: 1px;
+    border-color: Theme.color4.with-alpha(0.5);
+    clip: true;
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 6px;
+        alignment: start;
+
+        Text {
+            text: "";
+            vertical-alignment: center;
+            color: Theme.color4.with-alpha(0.7);
+            font-size: 14px;
+        }
+
+        Rectangle {
+            width: 100%;
+            height: 100%;
+            Text {
+                text: root.placeholder-text;
+                visible: input.text == "";
+                color: Theme.color4.with-alpha(0.4);
+                vertical-alignment: center;
+                font-size: 14px;
+            }
+            input := TextInput {
+                width: 100%;
+                height: 100%;
+                color: Theme.color4;
+                font-size: 14px;
+                vertical-alignment: center;
+                single-line: true;
+                edited => { root.edited(root.text); }
+                accepted => { root.accepted(root.text); }
+            }
+        }
+    }
+}

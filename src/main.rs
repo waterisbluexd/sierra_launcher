@@ -17,6 +17,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::Duration;
+use tracing::instrument;
 
 const ISLAND: &str = "Island";
 const SHOWN_WIDTH: u32 = 420;
@@ -30,6 +31,7 @@ pub enum DaemonMsg {
     CommitWallpaper(u64),
 }
 
+#[instrument]
 fn find_ui_file() -> PathBuf {
     let dev = PathBuf::from("ui/main_card.slint");
     if dev.exists() {
@@ -53,6 +55,7 @@ fn find_ui_file() -> PathBuf {
     PathBuf::from("/usr/share/sierra_launcher/ui/main_card.slint")
 }
 
+#[instrument(skip(instance, mgr))]
 fn push_wallpaper_state(instance: &ComponentInstance, mgr: &WallpaperManager) {
     let _ = instance.set_property("wallpaper-image", Value::Image(mgr.current_image()));
     let _ = instance.set_property(
@@ -81,6 +84,7 @@ fn push_wallpaper_state(instance: &ComponentInstance, mgr: &WallpaperManager) {
     );
 }
 
+#[instrument(skip(manager, on_loaded))]
 fn kick_loads(
     manager: &Rc<RefCell<WallpaperManager>>,
     on_loaded: impl Fn() + Send + Sync + Clone + 'static,
@@ -88,6 +92,7 @@ fn kick_loads(
     manager.borrow().ensure_window_loaded(2, on_loaded);
 }
 
+#[instrument(skip(commit_gen, sender))]
 fn schedule_commit(commit_gen: &Arc<AtomicU64>, sender: &channel::Sender<DaemonMsg>) {
     let my_gen = commit_gen.fetch_add(1, Ordering::SeqCst) + 1;
     let sender = sender.clone();
@@ -97,6 +102,7 @@ fn schedule_commit(commit_gen: &Arc<AtomicU64>, sender: &channel::Sender<DaemonM
     });
 }
 
+#[instrument]
 fn main() -> layer_shika::Result<()> {
     let socket_path = ipc::socket_path();
     if ipc::notify_running_instance(&socket_path) {
@@ -116,6 +122,7 @@ fn main() -> layer_shika::Result<()> {
 
     let manager = Rc::new(RefCell::new(WallpaperManager::load()));
     let commit_gen = Arc::new(AtomicU64::new(0));
+    let focused = Rc::new(RefCell::new(false));
 
     let (sender, rx) = channel::channel::<DaemonMsg>();
 
@@ -166,16 +173,42 @@ fn main() -> layer_shika::Result<()> {
     shell
         .event_loop_handle()
         .insert_source(
-            Timer::from_duration(Duration::from_millis(500)),
+            Timer::from_duration(Duration::from_millis(16)),
             move |_deadline, _metadata, app_state: &mut AppState| {
+                let focused = focused.clone();
+                if !*focused.borrow() {
+                    for surface in app_state.surfaces_by_name_mut(ISLAND) {
+                        let _ = surface.component_instance().invoke("focus_search", &[]);
+                    }
+                    *focused.borrow_mut() = true;
+                }
                 for surface in app_state.all_outputs() {
                     let _ = surface.render_frame_if_dirty();
                     surface.commit_surface();
                 }
-                TimeoutAction::ToDuration(Duration::from_millis(500))
+                TimeoutAction::ToDuration(Duration::from_millis(16))
             },
         )
         .expect("Failed to insert render-pump timer");
+
+    shell
+        .event_loop_handle()
+        .insert_source(
+            Timer::from_duration(Duration::from_millis(1000)),
+            move |_deadline, _metadata, app_state: &mut AppState| {
+                let time_str = cards::clock::current_time();
+                let date_str = cards::clock::current_date();
+                for surface in app_state.surfaces_by_name_mut(ISLAND) {
+                    let instance = surface.component_instance();
+                    let _ = instance
+                        .set_property("current-time", Value::String(time_str.clone().into()));
+                    let _ = instance
+                        .set_property("current-date", Value::String(date_str.clone().into()));
+                }
+                TimeoutAction::ToDuration(Duration::from_millis(1000))
+            },
+        )
+        .expect("Failed to insert clock timer");
 
     themer::notify::start_watcher(sender.clone());
 
@@ -206,6 +239,17 @@ fn main() -> layer_shika::Result<()> {
             apply_theme(instance, &theme);
 
             push_wallpaper_state(instance, &manager_init.borrow());
+
+            // NEW: seed the clock immediately so it's never on defaults
+            let _ = instance.set_property(
+                "current-time",
+                Value::String(cards::clock::current_time().into()),
+            );
+            let _ = instance.set_property(
+                "current-date",
+                Value::String(cards::clock::current_date().into()),
+            );
+
             {
                 let sender = esc_sender.clone();
                 kick_loads(&manager_init, move || {
@@ -256,6 +300,16 @@ fn main() -> layer_shika::Result<()> {
                 let _ = inner_sender.send(DaemonMsg::Toggle);
                 Value::Void
             });
+
+            cards::searchbar::wire_search_callbacks(
+                instance,
+                |text| {
+                    println!("search edited: {text}");
+                },
+                |text| {
+                    println!("search accepted: {text}");
+                },
+            );
         });
     }
 
