@@ -31,5 +31,11 @@ image = "0.25"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+[patch.crates-io]
+layer-shika = { path = "/home/waterisblue/dev/layer-shika" }
+layer-shika-adapters = { path = "/home/waterisblue/dev/layer-shika/crates/adapters" }
+layer-shika-composition = { path = "/home/waterisblue/dev/layer-shika/crates/composition" }
+layer-shika-domain = { path = "/home/waterisblue/dev/layer-shika/crates/domain" }
+
 [build-dependencies]
 slint-build = "1.17.0"

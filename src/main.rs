@@ -29,7 +29,6 @@ pub enum DaemonMsg {
     CommitWallpaper(u64),
 }
 
-#[instrument]
 fn main() -> layer_shika::Result<()> {
     let socket_path = ipc::socket_path();
     if ipc::notify_running_instance(&socket_path) {

@@ -2638,8 +2638,6 @@ dependencies = [
 [[package]]
 name = "layer-shika"
 version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7d539f80d417228ef3959aeea80afc40261090a2f6412b9313ff2f4651b59de"
 dependencies = [
  "layer-shika-composition",
 ]
@@ -2647,8 +2645,6 @@ dependencies = [
 [[package]]
 name = "layer-shika-adapters"
 version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e057783889f4600b9aac1109e967f672b5505431d342bd6b0783dee1107dec0d"
 dependencies = [
  "glutin",
  "layer-shika-domain",
@@ -2666,12 +2662,11 @@ dependencies = [
 [[package]]
 name = "layer-shika-composition"
 version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5f06758ddf27758b08d1a0a6a5198e84a5a8a7de9ca997b31bc86049ff3205b"
 dependencies = [
  "layer-shika-adapters",
  "layer-shika-domain",
  "log",
+ "smithay-client-toolkit 0.20.0",
  "spin_on",
  "thiserror 2.0.18",
 ]
@@ -2679,8 +2674,6 @@ dependencies = [
 [[package]]
 name = "layer-shika-domain"
 version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6c8aecb18c7b0265ba3a3f0e28522ac53d4c270517bac3b3bcbe5b72ff56116"
 dependencies = [
  "thiserror 2.0.18",
 ]
