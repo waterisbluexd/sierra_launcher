@@ -90,10 +90,10 @@ export component Island inherits Window {
                             width: parent.width;
                             height: parent.height;
                             image-fit: cover;
-                            opacity: carousel.selection-mode ? 0 : 1;
+                            opacity: carousel.selection-mode ? 0 : (root.wallpaper-image-blurred.width > 0 ? 1.0 : 0.0);
                             animate opacity {
                                 duration: 200ms;
-                                easing: ease-in-out;
+                                easing: ease-out;
                             }
                         }
 
@@ -120,7 +120,8 @@ export component Island inherits Window {
 
                             HorizontalLayout {
                                 alignment: start;
-                                padding-left: 20px;
+                                padding-top: 30px;
+                                padding-left: 24px;
                                 Clock {
                                     time: root.current-time;
                                     date: root.current-date;

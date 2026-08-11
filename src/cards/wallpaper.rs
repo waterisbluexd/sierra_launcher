@@ -9,7 +9,7 @@ const CAROUSEL_MAX_W: u32 = 300;
 const CAROUSEL_MAX_H: u32 = 600;
 
 struct BlurCache {
-    map: HashMap<PathBuf, (Vec<u8>, u32, u32)>,
+    pub map: HashMap<PathBuf, (Vec<u8>, u32, u32)>,
 }
 
 impl BlurCache {
@@ -27,16 +27,34 @@ impl BlurCache {
         })
     }
 
-    fn spawn_preloader(paths: Vec<PathBuf>, cache: Arc<Mutex<BlurCache>>) {
-        std::thread::spawn(move || {
-            let mut local = BlurCache::new();
-            for path in paths.iter() {
-                if let Some((data, w, h)) = process_blur_raw(path) {
-                    local.map.insert(path.clone(), (data, w, h));
+    fn spawn_preloader(
+        paths: Vec<PathBuf>,
+        index: usize,
+        cache: Arc<Mutex<BlurCache>>,
+        on_current_ready: impl Fn() + Send + Sync + 'static,
+    ) {
+        let n = paths.len() as isize;
+        let start = index as isize;
+        let mut seen = std::collections::HashSet::new();
+        let mut order = Vec::new();
+        for radius in 0..n {
+            for cand in [start - radius, start + radius] {
+                if cand >= 0 && cand < n && seen.insert(cand) {
+                    order.push(paths[cand as usize].clone());
                 }
             }
-            if let Ok(mut cache) = cache.lock() {
-                cache.map.extend(local.map);
+        }
+
+        std::thread::spawn(move || {
+            for (i, path) in order.iter().enumerate() {
+                if let Some((data, w, h)) = process_blur_raw(path) {
+                    if let Ok(mut cache) = cache.lock() {
+                        cache.map.insert(path.clone(), (data, w, h));
+                    }
+                }
+                if i == 0 {
+                    on_current_ready();
+                }
             }
         });
     }
@@ -71,7 +89,9 @@ pub struct WallpaperManager {
 }
 
 impl WallpaperManager {
-    pub fn load() -> Self {
+    pub fn load(
+        on_current_ready: impl Fn() + Send + Sync + 'static,
+    ) -> Self {
         let mut paths = wallpapers_dir_all_images().unwrap_or_default();
 
         let current = current_wallpaper_path();
@@ -86,7 +106,16 @@ impl WallpaperManager {
             .unwrap_or(0);
 
         let blur_cache = Arc::new(Mutex::new(BlurCache::new()));
-        BlurCache::spawn_preloader(paths.clone(), blur_cache.clone());
+
+        if let Some(cur_path) = paths.get(index)
+            && let Some(raw) = process_blur_raw(cur_path)
+        {
+            if let Ok(mut cache) = blur_cache.lock() {
+                cache.map.insert(cur_path.clone(), raw);
+            }
+        }
+
+        BlurCache::spawn_preloader(paths.clone(), index, blur_cache.clone(), on_current_ready);
 
         Self {
             paths,
@@ -152,6 +181,7 @@ impl WallpaperManager {
         }
 
         let image_cache = self.image_cache.clone();
+        let blur_cache = self.blur_cache.clone();
         let pending = self.pending.clone();
         std::thread::spawn(move || {
             for path in order {
@@ -166,6 +196,11 @@ impl WallpaperManager {
                     && let Ok(mut cache) = image_cache.lock()
                 {
                     cache.map.insert(path.clone(), raw);
+                }
+                if let Some(blur_raw) = process_blur_raw(&path)
+                    && let Ok(mut cache) = blur_cache.lock()
+                {
+                    cache.map.insert(path.clone(), blur_raw);
                 }
                 pending.lock().unwrap().remove(&path);
                 on_loaded();
@@ -263,18 +298,11 @@ impl WallpaperManager {
     }
 
     pub fn current_image_blurred(&self) -> slint::Image {
-        if let Some(path) = self.current_path()
-            && let Ok(cache) = self.blur_cache.lock()
+        if let Ok(cache) = self.blur_cache.lock()
+            && let Some(path) = self.current_path()
             && let Some(img) = cache.get(path)
         {
             return img;
-        }
-        if let Some(path) = self.current_path()
-            && let Some((data, w, h)) = process_blur_raw(path)
-        {
-            let buffer =
-                slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(&data, w, h);
-            return slint::Image::from_rgba8(buffer);
         }
         slint::Image::default()
     }

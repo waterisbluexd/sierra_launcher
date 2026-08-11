@@ -1,7 +1,10 @@
 use chrono::{Local, Timelike};
+use std::sync::OnceLock;
 
 pub fn current_user_name() -> String {
-    whoami::username().unwrap_or_else(|_| "User".to_string())
+    static NAME: OnceLock<String> = OnceLock::new();
+    NAME.get_or_init(|| whoami::username().unwrap_or_else(|_| "User".to_string()))
+        .clone()
 }
 
 pub fn user_greeting() -> String {

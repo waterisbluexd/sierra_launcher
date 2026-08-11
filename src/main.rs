@@ -45,11 +45,16 @@ fn main() -> layer_shika::Result<()> {
         .exclusive_zone(0)
         .build()?;
 
-    let manager = Rc::new(RefCell::new(WallpaperManager::load()));
-    let commit_gen = Arc::new(AtomicU64::new(0));
-    let focused = Rc::new(RefCell::new(false));
-
     let (sender, rx) = channel::channel::<DaemonMsg>();
+
+    let manager = Rc::new(RefCell::new(WallpaperManager::load({
+        let sender = sender.clone();
+        move || {
+            let _ = sender.send(DaemonMsg::WallpaperLoaded);
+        }
+    })));
+
+    let commit_gen = Arc::new(AtomicU64::new(0));
 
     {
         shell
@@ -98,27 +103,6 @@ fn main() -> layer_shika::Result<()> {
     shell
         .event_loop_handle()
         .insert_source(
-            Timer::from_duration(Duration::from_millis(16)),
-            move |_deadline, _metadata, app_state: &mut AppState| {
-                let focused = focused.clone();
-                if !*focused.borrow() {
-                    for surface in app_state.surfaces_by_name_mut(ISLAND) {
-                        let _ = surface.component_instance().invoke("focus_search", &[]);
-                    }
-                    *focused.borrow_mut() = true;
-                }
-                for surface in app_state.all_outputs() {
-                    let _ = surface.render_frame_if_dirty();
-                    surface.commit_surface();
-                }
-                TimeoutAction::ToDuration(Duration::from_millis(16))
-            },
-        )
-        .expect("Failed to insert render-pump timer");
-
-    shell
-        .event_loop_handle()
-        .insert_source(
             Timer::from_duration(Duration::from_millis(1000)),
             move |_deadline, _metadata, app_state: &mut AppState| {
             let time_str = cards::clock::current_time();
@@ -133,12 +117,21 @@ fn main() -> layer_shika::Result<()> {
                 let _ = instance
                     .set_property("current-greeting", Value::String(greeting_str.clone().into()));
             }
+            for surface in app_state.all_outputs() {
+                let _ = surface.render_frame_if_dirty();
+                surface.commit_surface();
+            }
                 TimeoutAction::ToDuration(Duration::from_millis(1000))
             },
         )
         .expect("Failed to insert clock timer");
 
     themer::notify::start_watcher(sender.clone());
+
+    let theme = theme::Theme::load();
+    let time_str = cards::clock::current_time();
+    let date_str = cards::clock::current_date();
+    let greeting_str = cards::clock::user_greeting();
 
     {
         let sender = sender.clone();
@@ -163,22 +156,21 @@ fn main() -> layer_shika::Result<()> {
         let manager_init = manager.clone();
         let commit_gen_inner = commit_gen.clone();
         shell.with_component(ISLAND, move |instance| {
-            let theme = theme::Theme::load();
             themer::notify::apply_theme(instance, &theme);
 
             ui::push_wallpaper_state(instance, &manager_init.borrow());
 
             let _ = instance.set_property(
                 "current-time",
-                Value::String(cards::clock::current_time().into()),
+                Value::String(time_str.clone().into()),
             );
             let _ = instance.set_property(
                 "current-date",
-                Value::String(cards::clock::current_date().into()),
+                Value::String(date_str.clone().into()),
             );
             let _ = instance.set_property(
                 "current-greeting",
-                Value::String(cards::clock::user_greeting().into()),
+                Value::String(greeting_str.clone().into()),
             );
 
             {
@@ -234,14 +226,29 @@ fn main() -> layer_shika::Result<()> {
 
             cards::searchbar::wire_search_callbacks(
                 instance,
-                |text| {
-                    println!("search edited: {text}");
-                },
-                |text| {
-                    println!("search accepted: {text}");
-                },
+                |_text| {},
+                |_text| {},
             );
         });
+    }
+
+    {
+        shell
+            .event_loop_handle()
+            .insert_source(
+                Timer::from_duration(Duration::from_millis(50)),
+                move |_deadline, _metadata, app_state: &mut AppState| {
+                    for surface in app_state.surfaces_by_name_mut(ISLAND) {
+                        let _ = surface.component_instance().invoke("focus_search", &[]);
+                    }
+                    for surface in app_state.all_outputs() {
+                        let _ = surface.render_frame_if_dirty();
+                        surface.commit_surface();
+                    }
+                    TimeoutAction::Drop
+                },
+            )
+            .expect("Failed to insert focus timer");
     }
 
     let sender_ipc = sender.clone();
