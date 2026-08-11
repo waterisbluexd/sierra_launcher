@@ -5,6 +5,7 @@ export component Clock inherits Rectangle {
     in property <string> date: "01 Jan, Monday";
     in property <length> time-font-size: 34px;
     height: 60px;
+    property <float> aw: 0.8;
 
     VerticalLayout {
         spacing: 2px;
@@ -12,7 +13,7 @@ export component Clock inherits Rectangle {
 
         Text {
             text: root.time;
-            color: Theme.color4;
+            color: Theme.color0.with-alpha(aw);
             font-size: root.time-font-size;
             font-family: "Monocraft";
             horizontal-alignment: left;
@@ -20,7 +21,7 @@ export component Clock inherits Rectangle {
 
         Text {
             text: root.date;
-            color: Theme.color4.with-alpha(0.6);
+            color: Theme.color0.with-alpha(aw);
             font-size: 14px;
             font-family: "Monocraft";
             horizontal-alignment: left;
