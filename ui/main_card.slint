@@ -22,6 +22,7 @@ export component Island inherits Window {
     in property <bool> can-select-next: true;
     in property <string> current-time: "00:00";
     in property <string> current-date: "01 Jan, Monday";
+    in property <string> current-greeting: "Good evening, User!";
     in property <[AppEntry]> apps: [];
 
     callback request_hide();
@@ -107,6 +108,8 @@ export component Island inherits Window {
 
                         VerticalLayout {
                             y: 8px;
+                            padding-top: 10px;
+                            padding-bottom: 18px;
                             width: parent.width;
                             spacing: 4px;
                             opacity: carousel.selection-mode ? 0 : 1;
@@ -116,28 +119,33 @@ export component Island inherits Window {
                             }
 
                             HorizontalLayout {
-                                alignment: end;
-                                padding-right: 14px;
+                                alignment: start;
+                                padding-left: 20px;
                                 Clock {
                                     time: root.current-time;
                                     date: root.current-date;
-                                    time-font-size: 28px;
-                                    height: 60px;
+                                    greeting: root.current-greeting;
+                                    time-font-size: 56px;
                                 }
                             }
 
-SearchBar {
-                                 x: 12px;
-                                 width: parent.width - 24px;
-                                 search-bar := SearchBar {
-                                     edited(t) => {
-                                         root.search_edited(t);
-                                     }
-                                     accepted(t) => {
-                                         root.search_accepted(t);
-                                     }
+
+                            Rectangle {
+                                height: 18px;
+                            }
+
+                        SearchBar {
+                             x: 12px;
+                             width: parent.width - 24px;
+                             search-bar := SearchBar {
+                                 edited(t) => {
+                                     root.search_edited(t);
+                                 }
+                                 accepted(t) => {
+                                     root.search_accepted(t);
                                  }
                              }
+                         }
                         }
                     }
 

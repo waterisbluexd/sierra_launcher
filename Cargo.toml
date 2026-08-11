@@ -30,6 +30,7 @@ chrono = "0.4.45"
 image = "0.25"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+whoami = "2.1.2"
 
 [patch.crates-io]
 layer-shika = { path = "/home/waterisblue/dev/layer-shika" }

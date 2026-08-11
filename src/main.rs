@@ -16,7 +16,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::Duration;
-use tracing::instrument;
 
 const ISLAND: &str = "Island";
 const SHOWN_WIDTH: u32 = 420;
@@ -122,15 +121,18 @@ fn main() -> layer_shika::Result<()> {
         .insert_source(
             Timer::from_duration(Duration::from_millis(1000)),
             move |_deadline, _metadata, app_state: &mut AppState| {
-                let time_str = cards::clock::current_time();
-                let date_str = cards::clock::current_date();
-                for surface in app_state.surfaces_by_name_mut(ISLAND) {
-                    let instance = surface.component_instance();
-                    let _ = instance
-                        .set_property("current-time", Value::String(time_str.clone().into()));
-                    let _ = instance
-                        .set_property("current-date", Value::String(date_str.clone().into()));
-                }
+            let time_str = cards::clock::current_time();
+            let date_str = cards::clock::current_date();
+            let greeting_str = cards::clock::user_greeting();
+            for surface in app_state.surfaces_by_name_mut(ISLAND) {
+                let instance = surface.component_instance();
+                let _ = instance
+                    .set_property("current-time", Value::String(time_str.clone().into()));
+                let _ = instance
+                    .set_property("current-date", Value::String(date_str.clone().into()));
+                let _ = instance
+                    .set_property("current-greeting", Value::String(greeting_str.clone().into()));
+            }
                 TimeoutAction::ToDuration(Duration::from_millis(1000))
             },
         )
@@ -173,6 +175,10 @@ fn main() -> layer_shika::Result<()> {
             let _ = instance.set_property(
                 "current-date",
                 Value::String(cards::clock::current_date().into()),
+            );
+            let _ = instance.set_property(
+                "current-greeting",
+                Value::String(cards::clock::user_greeting().into()),
             );
 
             {
