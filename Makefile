@@ -12,6 +12,9 @@ install: build
 	sudo install -Dm644 ui/cards/wallpaper.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/cards/wallpaper.slint
 	sudo install -Dm644 ui/cards/searchbar.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/cards/searchbar.slint
 	sudo install -Dm644 ui/cards/appgrid.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/cards/appgrid.slint
+	sudo install -Dm644 ui/cards/weather.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/cards/weather.slint
+	sudo install -Dm644 ui/weather/cloud.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/weather/cloud.slint
+	sudo install -Dm644 ui/sections/top_section.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/sections/top_section.slint
 	sudo install -Dm644 fonts/Monocraft.ttf $(DESTDIR)$(PREFIX)/share/sierra_launcher/fonts/Monocraft.ttf
 	sudo install -Dm644 fonts/ttyclock.ttf $(DESTDIR)$(PREFIX)/share/sierra_launcher/fonts/ttyclock.ttf
 uninstall:
