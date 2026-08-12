@@ -1,0 +1,30 @@
+import { Theme } from "../theme.slint";
+export component WeatherCloud inherits Rectangle {
+    width: 256px;
+    height: 256px;
+    property <length> pixel-size: 3px;
+
+    property <[{x: int, y: int}]> pixels: [
+        {x: 10, y: 9}, {x: 11, y: 9}, {x: 12, y: 9},
+        {x: 9, y: 10}, {x: 13, y: 10}, {x: 15, y: 10}, {x: 16, y: 10}, {x: 17, y: 10},
+        {x: 8, y: 11}, {x: 14, y: 11}, {x: 18, y: 11},
+        {x: 7, y: 12}, {x: 15, y: 12}, {x: 19, y: 12},
+        {x: 7, y: 13}, {x: 15, y: 13}, {x: 19, y: 13},
+        {x: 6, y: 14}, {x: 14, y: 14}, {x: 20, y: 14},
+        {x: 5, y: 15}, {x: 21, y: 15},
+        {x: 5, y: 16}, {x: 21, y: 16},
+        {x: 5, y: 17}, {x: 21, y: 17},
+        {x: 6, y: 18}, {x: 20, y: 18},
+        {x: 7, y: 19}, {x: 8, y: 19}, {x: 9, y: 19}, {x: 10, y: 19}, {x: 11, y: 19},
+        {x: 12, y: 19}, {x: 13, y: 19}, {x: 14, y: 19}, {x: 15, y: 19}, {x: 16, y: 19},
+        {x: 17, y: 19}, {x: 18, y: 19}, {x: 19, y: 19},
+    ];
+
+    for p in pixels: Rectangle {
+        x: p.x * pixel-size;
+        y: p.y * pixel-size;
+        width: pixel-size;
+        height: pixel-size;
+        background: Theme.foreground;
+    }
+}

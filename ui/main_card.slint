@@ -1,8 +1,6 @@
 import { Theme } from "theme.slint";
 export { Theme }
-import { WallpaperCarousel } from "cards/wallpaper.slint";
-import { SearchBar } from "cards/searchbar.slint";
-import { Clock } from "cards/clock.slint";
+import { TopSection } from "sections/top_section.slint";
 import { AppGrid, AppEntry } from "cards/appgrid.slint";
 export { AppEntry }
 
@@ -59,94 +57,31 @@ export component Island inherits Window {
                     spacing: 8px;
 
                     // TOP: wallpaper carousel + clock + search overlay (unchanged size/shape)
-                    Rectangle {
-                        height: 220px;
-                        border-width: 2px;
-                        border-color: Theme.color4.with_alpha(0.7);
-                        clip: true;
-                        carousel := WallpaperCarousel {
-                            width: 100%;
-                            height: 100%;
-                            wallpaper-image: root.wallpaper-image;
-                            wallpaper-prev-image: root.wallpaper-prev-image;
-                            wallpaper-next-image: root.wallpaper-next-image;
-                            wallpaper-prev-prev-image: root.wallpaper-prev-prev-image;
-                            wallpaper-next-next-image: root.wallpaper-next-next-image;
-                            wallpaper-image-blurred: root.wallpaper-image-blurred;
-                            wallpaper-current-index: root.wallpaper-current-index;
-                            wallpaper-total-count: root.wallpaper-total-count;
-                            can-select-prev: root.can-select-prev;
-                            can-select-next: root.can-select-next;
-                            select-prev => {
-                                root.request_select_prev();
-                            }
-                            select-next => {
-                                root.request_select_next();
-                            }
+                    top-section := TopSection {
+                        wallpaper-image: root.wallpaper-image;
+                        wallpaper-image-blurred: root.wallpaper-image-blurred;
+                        wallpaper-prev-image: root.wallpaper-prev-image;
+                        wallpaper-next-image: root.wallpaper-next-image;
+                        wallpaper-prev-prev-image: root.wallpaper-prev-prev-image;
+                        wallpaper-next-next-image: root.wallpaper-next-next-image;
+                        wallpaper-current-index: root.wallpaper-current-index;
+                        wallpaper-total-count: root.wallpaper-total-count;
+                        can-select-prev: root.can-select-prev;
+                        can-select-next: root.can-select-next;
+                        current-time: root.current-time;
+                        current-date: root.current-date;
+                        current-greeting: root.current-greeting;
+                        select-prev => {
+                            root.request_select_prev();
                         }
-
-                        Image {
-                            source: root.wallpaper-image-blurred;
-                            width: parent.width;
-                            height: parent.height;
-                            image-fit: cover;
-                            opacity: carousel.selection-mode ? 0 : (root.wallpaper-image-blurred.width > 0 ? 1.0 : 0.0);
-                            animate opacity {
-                                duration: 200ms;
-                                easing: ease-out;
-                            }
+                        select-next => {
+                            root.request_select_next();
                         }
-
-                        Rectangle {
-                            background: white.with_alpha(0.06);
-                            opacity: carousel.selection-mode ? 0 : 1;
-                            animate opacity {
-                                duration: 200ms;
-                                easing: ease-in-out;
-                            }
+                        search-edited(t) => {
+                            root.search_edited(t);
                         }
-
-                        VerticalLayout {
-                            y: 8px;
-                            padding-top: 10px;
-                            padding-bottom: 18px;
-                            width: parent.width;
-                            spacing: 4px;
-                            opacity: carousel.selection-mode ? 0 : 1;
-                            animate opacity {
-                                duration: 200ms;
-                                easing: ease-in-out;
-                            }
-
-                            HorizontalLayout {
-                                alignment: start;
-                                padding-top: 30px;
-                                padding-left: 24px;
-                                Clock {
-                                    time: root.current-time;
-                                    date: root.current-date;
-                                    greeting: root.current-greeting;
-                                    time-font-size: 56px;
-                                }
-                            }
-
-
-                            Rectangle {
-                                height: 18px;
-                            }
-
-                        SearchBar {
-                             x: 12px;
-                             width: parent.width - 24px;
-                             search-bar := SearchBar {
-                                 edited(t) => {
-                                     root.search_edited(t);
-                                 }
-                                 accepted(t) => {
-                                     root.search_accepted(t);
-                                 }
-                             }
-                         }
+                        search-accepted(t) => {
+                            root.search_accepted(t);
                         }
                     }
 
@@ -168,7 +103,7 @@ export component Island inherits Window {
             }
         }
     }
-    focus_search => { search-bar.focus(); }
+    focus_search => { top-section.focus-search(); }
 
     init => {
         scope.focus();

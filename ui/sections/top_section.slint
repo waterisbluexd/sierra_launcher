@@ -1,0 +1,117 @@
+import { Theme } from "../theme.slint";
+import { WallpaperCarousel } from "../cards/wallpaper.slint";
+import { SearchBar } from "../cards/searchbar.slint";
+import { Clock } from "../cards/clock.slint";
+import { Weather } from "../cards/weather.slint";
+
+export component TopSection inherits Rectangle {
+    height: 220px;
+    border-width: 2px;
+    border-color: Theme.color4.with_alpha(0.7);
+    clip: true;
+
+    in property <image> wallpaper-image;
+    in property <image> wallpaper-image-blurred;
+    in property <image> wallpaper-prev-image;
+    in property <image> wallpaper-next-image;
+    in property <image> wallpaper-prev-prev-image;
+    in property <image> wallpaper-next-next-image;
+    in property <int> wallpaper-current-index: 0;
+    in property <int> wallpaper-total-count: 1;
+    in property <bool> can-select-prev: true;
+    in property <bool> can-select-next: true;
+    in property <string> current-time: "00:00";
+    in property <string> current-date: "01 Jan, Monday";
+    in property <string> current-greeting: "Good evening, User!";
+
+    callback select-prev();
+    callback select-next();
+    callback search-edited(string);
+    callback search-accepted(string);
+    callback focus-search();
+
+    focus-search => { search-bar.focus(); }
+
+    carousel := WallpaperCarousel {
+        width: 100%;
+        height: 100%;
+        wallpaper-image: root.wallpaper-image;
+        wallpaper-prev-image: root.wallpaper-prev-image;
+        wallpaper-next-image: root.wallpaper-next-image;
+        wallpaper-prev-prev-image: root.wallpaper-prev-prev-image;
+        wallpaper-next-next-image: root.wallpaper-next-next-image;
+        wallpaper-image-blurred: root.wallpaper-image-blurred;
+        wallpaper-current-index: root.wallpaper-current-index;
+        wallpaper-total-count: root.wallpaper-total-count;
+        can-select-prev: root.can-select-prev;
+        can-select-next: root.can-select-next;
+        select-prev => { root.select-prev(); }
+        select-next => { root.select-next(); }
+    }
+
+    Image {
+        source: root.wallpaper-image-blurred;
+        width: parent.width;
+        height: parent.height;
+        image-fit: cover;
+        opacity: carousel.selection-mode ? 0 : (root.wallpaper-image-blurred.width > 0 ? 1.0 : 0.0);
+        animate opacity {
+            duration: 200ms;
+            easing: ease-out;
+        }
+    }
+
+    Rectangle {
+        background: white.with_alpha(0.06);
+        opacity: carousel.selection-mode ? 0 : 1;
+        animate opacity {
+            duration: 200ms;
+            easing: ease-in-out;
+        }
+    }
+
+    VerticalLayout {
+        y: 8px;
+        padding-top: 10px;
+        padding-bottom: 18px;
+        width: parent.width;
+        spacing: 4px;
+        opacity: carousel.selection-mode ? 0 : 1;
+        animate opacity {
+            duration: 200ms;
+            easing: ease-in-out;
+        }
+
+         HorizontalLayout {
+             alignment: start;
+             padding-top: 30px;
+             padding-left: 24px;
+             Clock {
+                 time: root.current-time;
+                 date: root.current-date;
+                 greeting: root.current-greeting;
+                 time-font-size: 56px;
+             }
+             Weather {
+                 icon-size: 30px;
+             }
+         }
+
+         Rectangle {
+             height: 18px;
+         }
+
+         SearchBar {
+              x: 12px;
+              width: parent.width - 24px;
+              search-bar := SearchBar {
+                  edited(t) => {
+                      root.search-edited(t);
+                  }
+                  accepted(t) => {
+                      root.search-accepted(t);
+                  }
+              }
+          }
+    }
+}

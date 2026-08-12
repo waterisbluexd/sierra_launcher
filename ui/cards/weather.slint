@@ -1,0 +1,12 @@
+import { Theme } from "../theme.slint";
+import { WeatherCloud } from "../weather/cloud.slint";
+
+export component Weather inherits Rectangle {
+    in property <length> icon-size: 100px;
+
+    WeatherCloud {
+        width: 200px;
+        height: 200px;
+        opacity: 0.9;
+    }
+}
