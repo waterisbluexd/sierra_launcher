@@ -1,0 +1,50 @@
+import { Theme } from "../theme.slint";
+
+export component SunWithCloudPosiiton inherits Rectangle {
+    in property <length> pixel-size: 2px;
+
+    width: 10 * pixel-size;
+    height: 10 * pixel-size;
+
+    property <[{x: int, y: int}]> pixels: [
+        {x: 4, y: 0},
+
+        {x: 0, y: 1},
+        {x: 4, y: 1},
+        {x: 8, y: 1},
+
+        {x: 1, y: 2},
+        {x: 3, y: 2},
+        {x: 4, y: 2},
+        {x: 5, y: 2},
+        {x: 7, y: 2},
+
+        {x: 2, y: 3},
+        {x: 6, y: 3},
+
+        {x: 1, y: 4},
+        {x: 7, y: 4},
+
+        {x: 1, y: 5},
+        {x: 7, y: 5},
+        {x: 8, y: 5},
+        {x: 9, y: 5},
+
+        {x: 7, y: 6},
+
+        {x: 6, y: 7},
+
+        {x: 5, y: 8},
+        {x: 7, y: 8},
+
+        {x: 8, y: 9},
+    ];
+
+    for p in pixels: Rectangle {
+        x: p.x * pixel-size;
+        y: p.y * pixel-size;
+        width: pixel-size;
+        height: pixel-size;
+        background:Theme.foreground.with-alpha(0.8);
+    }
+}

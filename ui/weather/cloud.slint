@@ -1,3 +1,4 @@
+import { Theme } from "../theme.slint";
 export component WeatherCloud inherits Rectangle {
     in property <length> pixel-size: 2px;
 
@@ -26,6 +27,6 @@ export component WeatherCloud inherits Rectangle {
         y: p.y * pixel-size;
         width: pixel-size;
         height: pixel-size;
-        background: #ffffff;
+        background:Theme.foreground.with-alpha(0.8);
     }
 }

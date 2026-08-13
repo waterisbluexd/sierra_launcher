@@ -1,3 +1,4 @@
+import { Theme } from "../theme.slint";
 export component RainDrop inherits Rectangle {
     in property <length> pixel-size: 2px;
     in property <duration> fall-duration: 1s;
@@ -12,6 +13,6 @@ export component RainDrop inherits Rectangle {
     y: start-y + progress * fall-distance;
     width: pixel-size;
     height: pixel-size * 2;
-    background: #ffffff;
+    background:Theme.foreground.with-alpha(0.8);
     opacity: 1.0 - progress;
 }

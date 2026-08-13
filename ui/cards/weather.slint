@@ -1,15 +1,17 @@
 import { Theme } from "../theme.slint";
 import { WeatherCloud } from "../weather/cloud.slint";
 import { RainDrop } from "../weather/raindrop.slint";
+import { MoonWithCloudPosition } from "../weather/moon_with_cloud_position.slint";
+import { SunWithCloudPosiiton } from "../weather/sun_with_cloud_position.slint";
 
 export component Weather inherits Rectangle {
     in property <length> icon-size: 50px;
-    in property <length> pixel-size: 2.2px;
-    
+    in property <length> pixel-size: 2px;
     in property <string> weather-condition: "rainy";
 
     width: root.icon-size;
     height: root.icon-size;
+
 
     rainy-container := Rectangle {
         x: (parent.width - self.width) / 2;
@@ -29,6 +31,25 @@ export component Weather inherits Rectangle {
             {x: 19, delay: 450ms},
         ];
 
+
+        // Moon behind the cloud
+        // MoonWithCloudPosition {
+        //     x: 18 * root.pixel-size;
+        //     y: 4 * root.pixel-size;
+        //     pixel-size: root.pixel-size;
+        //     opacity: 0.9;
+        // }
+
+        // Sun behind the cloud
+        SunWithCloudPosiiton {
+            x: 15 * root.pixel-size;
+            y: 4 * root.pixel-size;
+            pixel-size: root.pixel-size;
+            opacity: 0.9;
+        }
+
+
+        // Cloud in front of the moon
         WeatherCloud {
             x: 0px;
             y: 0px;
@@ -36,11 +57,13 @@ export component Weather inherits Rectangle {
             opacity: 0.9;
         }
 
+
+        // Rain falling below the cloud
         for d in drops: RainDrop {
             start-x: d.x;
             start-y: rain-start-y;
             fall-duration: fall-period;
-            fall-distance: 6 * root.pixel-size; 
+            fall-distance: 6 * root.pixel-size;
             delay: d.delay;
             pixel-size: root.pixel-size;
         }
