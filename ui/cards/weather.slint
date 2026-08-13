@@ -1,12 +1,48 @@
 import { Theme } from "../theme.slint";
 import { WeatherCloud } from "../weather/cloud.slint";
+import { RainDrop } from "../weather/raindrop.slint";
 
 export component Weather inherits Rectangle {
-    in property <length> icon-size: 100px;
+    in property <length> icon-size: 50px;
+    in property <length> pixel-size: 2.2px;
+    
+    in property <string> weather-condition: "rainy";
 
-    WeatherCloud {
-        width: 200px;
-        height: 200px;
-        opacity: 0.9;
+    width: root.icon-size;
+    height: root.icon-size;
+
+    rainy-container := Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: 22 * root.pixel-size;
+        height: 28 * root.pixel-size;
+
+        visible: root.weather-condition == "rainy";
+
+        property <length> rain-start-y: 20 * root.pixel-size;
+        property <duration> fall-period: 1s;
+
+        property <[{x: int, delay: duration}]> drops: [
+            {x: 8,  delay: 0ms},
+            {x: 12, delay: 300ms},
+            {x: 16, delay: 150ms},
+            {x: 19, delay: 450ms},
+        ];
+
+        WeatherCloud {
+            x: 0px;
+            y: 0px;
+            pixel-size: root.pixel-size;
+            opacity: 0.9;
+        }
+
+        for d in drops: RainDrop {
+            start-x: d.x;
+            start-y: rain-start-y;
+            fall-duration: fall-period;
+            fall-distance: 6 * root.pixel-size; 
+            delay: d.delay;
+            pixel-size: root.pixel-size;
+        }
     }
 }

@@ -1,0 +1,17 @@
+export component RainDrop inherits Rectangle {
+    in property <length> pixel-size: 2px;
+    in property <duration> fall-duration: 1s;
+    in property <int> start-x: 0;
+    in property <length> start-y: 0px;
+    in property <length> fall-distance: 20px;
+    in property <duration> delay: 0ms;
+
+    property <float> progress: Math.mod((animation-tick() + delay) / 1ms, fall-duration / 1ms) / (fall-duration / 1ms);
+
+    x: start-x * pixel-size;
+    y: start-y + progress * fall-distance;
+    width: pixel-size;
+    height: pixel-size * 2;
+    background: #ffffff;
+    opacity: 1.0 - progress;
+}
