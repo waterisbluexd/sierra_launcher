@@ -15,6 +15,8 @@ install: build
 	sudo install -Dm644 ui/cards/weather.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/cards/weather.slint
 	sudo install -Dm644 ui/weather/cloud.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/weather/cloud.slint
 	sudo install -Dm644 ui/weather/raindrop.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/weather/raindrop.slint
+	sudo install -Dm644 ui/weather/sun.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/weather/sun.slint
+	sudo install -Dm644 ui/weather/moon.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/weather/moon.slint
 	sudo install -Dm644 ui/sections/top_section.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/sections/top_section.slint
 	sudo install -Dm644 ui/weather/moon_with_cloud_position.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/weather/moon_with_cloud_position.slint
 	sudo install -Dm644 ui/weather/sun_with_cloud_position.slint $(DESTDIR)$(PREFIX)/share/sierra_launcher/ui/weather/sun_with_cloud_position.slint
