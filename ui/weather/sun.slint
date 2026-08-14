@@ -1,0 +1,108 @@
+import { Theme } from "../theme.slint";
+
+export component Sun inherits Rectangle {
+    in property <length> pixel-size: 2px;
+
+    width: 17 * pixel-size;
+    height: 17 * pixel-size;
+
+    property <[{x: int, y: int}]> pixels: [
+        // y = 0
+        {x: 9, y: 0},
+
+        // y = 1
+        {x: 9, y: 1},
+
+        // y = 2
+        {x: 2, y: 2},
+        {x: 9, y: 2},
+        {x: 16, y: 2},
+
+        // y = 3
+        {x: 3, y: 3},
+        {x: 15, y: 3},
+
+        // y = 4
+        {x: 4, y: 4},
+        {x: 8, y: 4},
+        {x: 9, y: 4},
+        {x: 10, y: 4},
+        {x: 14, y: 4},
+
+        // y = 5
+        {x: 6, y: 5},
+        {x: 7, y: 5},
+        {x: 11, y: 5},
+        {x: 12, y: 5},
+
+        // y = 6
+        {x: 5, y: 6},
+        {x: 13, y: 6},
+
+        // y = 7
+        {x: 5, y: 7},
+        {x: 13, y: 7},
+
+        // y = 8
+        {x: 4, y: 8},
+        {x: 14, y: 8},
+
+        // y = 9
+        {x: 0, y: 9},
+        {x: 1, y: 9},
+        {x: 2, y: 9},
+        {x: 4, y: 9},
+        {x: 14, y: 9},
+        {x: 16, y: 9},
+        {x: 17, y: 9},
+        {x: 18, y: 9},
+
+        // y = 10
+        {x: 4, y: 10},
+        {x: 14, y: 10},
+
+        // y = 11
+        {x: 5, y: 11},
+        {x: 13, y: 11},
+
+        // y = 12
+        {x: 5, y: 12},
+        {x: 13, y: 12},
+
+        // y = 13
+        {x: 6, y: 13},
+        {x: 7, y: 13},
+        {x: 11, y: 13},
+        {x: 12, y: 13},
+
+        // y = 14
+        {x: 4, y: 14},
+        {x: 8, y: 14},
+        {x: 9, y: 14},
+        {x: 10, y: 14},
+        {x: 14, y: 14},
+
+        // y = 15
+        {x: 3, y: 15},
+        {x: 15, y: 15},
+
+        // y = 16
+        {x: 2, y: 16},
+        {x: 9, y: 16},
+        {x: 16, y: 16},
+
+        // y = 17
+        {x: 9, y: 17},
+
+        // y = 18
+        {x: 9, y: 18},
+    ];
+
+    for p in pixels: Rectangle {
+        x: p.x * pixel-size;
+        y: p.y * pixel-size;
+        width: pixel-size;
+        height: pixel-size;
+        background: Theme.foreground.with-alpha(0.8);
+    }
+}

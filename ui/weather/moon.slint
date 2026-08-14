@@ -1,0 +1,77 @@
+import { Theme } from "../theme.slint";
+
+export component Moon inherits Rectangle {
+    in property <length> pixel-size: 2px;
+
+    width: 12 * pixel-size;
+    height: 12 * pixel-size;
+
+    property <[{x: int, y: int}]> pixels: [
+        // y = 0
+        {x: 6, y: 0},
+        {x: 7, y: 0},
+        {x: 8, y: 0},
+
+        // y = 1
+        {x: 6, y: 1},
+        {x: 9, y: 1},
+
+        // y = 2
+        {x: 6, y: 2},
+        {x: 10, y: 2},
+
+        // y = 3
+        {x: 7, y: 3},
+        {x: 11, y: 3},
+
+        // y = 4
+        {x: 7, y: 4},
+        {x: 11, y: 4},
+
+        // y = 5
+        {x: 7, y: 5},
+        {x: 11, y: 5},
+
+        // y = 6
+        {x: 0, y: 6},
+        {x: 1, y: 6},
+        {x: 2, y: 6},
+        {x: 6, y: 6},
+        {x: 11, y: 6},
+
+        // y = 7
+        {x: 0, y: 7},
+        {x: 3, y: 7},
+        {x: 4, y: 7},
+        {x: 5, y: 7},
+        {x: 11, y: 7},
+
+        // y = 8
+        {x: 0, y: 8},
+        {x: 11, y: 8},
+
+        // y = 9
+        {x: 1, y: 9},
+        {x: 10, y: 9},
+
+        // y = 10
+        {x: 2, y: 10},
+        {x: 9, y: 10},
+
+        // y = 11
+        {x: 3, y: 11},
+        {x: 4, y: 11},
+        {x: 5, y: 11},
+        {x: 6, y: 11},
+        {x: 7, y: 11},
+        {x: 8, y: 11},
+    ];
+
+    for p in pixels: Rectangle {
+        x: p.x * pixel-size;
+        y: p.y * pixel-size;
+        width: pixel-size;
+        height: pixel-size;
+        background: Theme.foreground.with-alpha(0.8);
+    }
+}

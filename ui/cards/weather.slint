@@ -4,10 +4,13 @@ import { RainDrop } from "../weather/raindrop.slint";
 import { MoonWithCloudPosition } from "../weather/moon_with_cloud_position.slint";
 import { SunWithCloudPosiiton } from "../weather/sun_with_cloud_position.slint";
 
+import { Sun } from "../weather/sun.slint";
+import { Moon } from "../weather/moon.slint";
+
 export component Weather inherits Rectangle {
     in property <length> icon-size: 50px;
     in property <length> pixel-size: 2px;
-    in property <string> weather-condition: "rainy";
+    in property <string> weather-condition: "sunny"; // "sunny", "clear", "rainy"
 
     width: root.icon-size;
     height: root.icon-size;
@@ -33,16 +36,8 @@ export component Weather inherits Rectangle {
 
 
         // Moon behind the cloud
-        // MoonWithCloudPosition {
-        //     x: 18 * root.pixel-size;
-        //     y: 4 * root.pixel-size;
-        //     pixel-size: root.pixel-size;
-        //     opacity: 0.9;
-        // }
-
-        // Sun behind the cloud
-        SunWithCloudPosiiton {
-            x: 15 * root.pixel-size;
+        MoonWithCloudPosition {
+            x: 18 * root.pixel-size;
             y: 4 * root.pixel-size;
             pixel-size: root.pixel-size;
             opacity: 0.9;
@@ -66,6 +61,84 @@ export component Weather inherits Rectangle {
             fall-distance: 6 * root.pixel-size;
             delay: d.delay;
             pixel-size: root.pixel-size;
+        }
+    }
+
+    sunny-container := Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: 11 * root.pixel-size;
+        height: 11 * root.pixel-size;
+
+        visible: root.weather-condition == "sunny";
+
+        Sun {
+            pixel-size: root.pixel-size;
+            opacity: 0.9;
+        }
+    }
+
+    clear-container := Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: 12 * root.pixel-size;
+        height: 12 * root.pixel-size;
+
+        visible: root.weather-condition == "clear";
+
+        Moon {
+            pixel-size: root.pixel-size;
+            opacity: 0.9;
+        }
+    }
+}
+
+export component WeatherGrid inherits Rectangle {
+    in property <length> icon-size: 50px;
+    in property <length> pixel-size: 2px;
+
+    width: 3 * root.icon-size + 2 * 10px;
+    height: root.icon-size + 40px;
+
+    VerticalLayout {
+        spacing: 10px;
+        padding: 10px;
+
+        Text {
+            text: "Weather Comparison";
+            font-size: 16px;
+            font-weight: 700;
+            horizontal-alignment: center;
+        }
+
+        HorizontalLayout {
+            spacing: 10px;
+
+            Weather {
+                icon-size: root.icon-size;
+                pixel-size: root.pixel-size;
+                weather-condition: "sunny";
+            }
+
+            Weather {
+                icon-size: root.icon-size;
+                pixel-size: root.pixel-size;
+                weather-condition: "clear";
+            }
+
+            Weather {
+                icon-size: root.icon-size;
+                pixel-size: root.pixel-size;
+                weather-condition: "rainy";
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 10px;
+
+            Text { text: "Sunny"; font-size: 12px; horizontal-alignment: center; }
+            Text { text: "Clear"; font-size: 12px; horizontal-alignment: center; }
+            Text { text: "Rainy"; font-size: 12px; horizontal-alignment: center; }
         }
     }
 }
