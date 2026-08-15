@@ -14,6 +14,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
@@ -26,6 +27,7 @@ pub enum DaemonMsg {
     Toggle,
     WallpaperLoaded,
     CommitWallpaper(u64),
+    WeatherUpdate,
 }
 
 fn main() -> layer_shika::Result<()> {
@@ -55,6 +57,7 @@ fn main() -> layer_shika::Result<()> {
     })));
 
     let commit_gen = Arc::new(AtomicU64::new(0));
+    let weather_state = Arc::new(Mutex::new(cards::weather::WeatherState::default()));
 
     {
         shell
@@ -62,6 +65,7 @@ fn main() -> layer_shika::Result<()> {
             .insert_source(rx, {
                 let manager_for_channel = manager.clone();
                 let commit_gen_for_channel = commit_gen.clone();
+                let weather_state_for_channel = weather_state.clone();
                 move |event, _, app_state: &mut AppState| {
                     let msg = match event {
                         Event::Msg(m) => m,
@@ -92,6 +96,26 @@ fn main() -> layer_shika::Result<()> {
                         DaemonMsg::CommitWallpaper(gen_id) => {
                             if commit_gen_for_channel.load(Ordering::SeqCst) == gen_id {
                                 manager_for_channel.borrow().set_current_as_wallpaper();
+                            }
+                        }
+                        DaemonMsg::WeatherUpdate => {
+                            let state = weather_state_for_channel.lock().unwrap();
+                            for surface in app_state.surfaces_by_name_mut(ISLAND) {
+                                let instance = surface.component_instance();
+                                for (name, val) in [
+                                    ("is-rainy", state.is_rainy),
+                                    ("is-cloudy", state.is_cloudy),
+                                    ("is-clear", state.is_clear),
+                                    ("is-day", state.is_day),
+                                ] {
+                                    if let Err(e) = instance.set_property(name, Value::Bool(val)) {
+                                        eprintln!("[ui] failed to set {name}: {e:?}");
+                                    }
+                                }
+                            }
+                            for surface in app_state.all_outputs() {
+                                let _ = surface.render_frame_if_dirty();
+                                surface.commit_surface();
                             }
                         }
                     }
@@ -249,6 +273,20 @@ fn main() -> layer_shika::Result<()> {
                 },
             )
             .expect("Failed to insert focus timer");
+    }
+
+    {
+        let sender = sender.clone();
+        let weather_state = weather_state.clone();
+        thread::spawn(move || {
+            cards::weather::update_weather(&mut weather_state.lock().unwrap());
+            let _ = sender.send(DaemonMsg::WeatherUpdate);
+            loop {
+                thread::sleep(Duration::from_secs(600));
+                cards::weather::update_weather(&mut weather_state.lock().unwrap());
+                let _ = sender.send(DaemonMsg::WeatherUpdate);
+            }
+        });
     }
 
     let sender_ipc = sender.clone();

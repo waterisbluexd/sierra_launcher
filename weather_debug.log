@@ -1,0 +1,71 @@
+   Compiling sierra_launcher v0.1.0 (/home/waterisblue/sierra_launcher)
+warning: struct `FreeIpLocation` is never constructed
+  --> src/cards/weather.rs:19:8
+   |
+19 | struct FreeIpLocation {
+   |        ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `try_ipwho` is never used
+  --> src/cards/weather.rs:35:10
+   |
+35 | async fn try_ipwho(client: &reqwest::Client) -> Option<IpLocation> {
+   |          ^^^^^^^^^
+
+warning: function `try_freeipapi` is never used
+  --> src/cards/weather.rs:44:10
+   |
+44 | async fn try_freeipapi(client: &reqwest::Client) -> Option<FreeIpLocation> {
+   |          ^^^^^^^^^^^^^
+
+warning: `sierra_launcher` (bin "sierra_launcher") generated 3 warnings
+    Finished `dev` profile [optimized + debuginfo] target(s) in 4.70s
+     Running `target/debug/sierra_launcher`
+[weather] starting update
+[weather] fetching ip location...
+[weather] ip location status: 200 OK
+[weather] ip location body: {
+    "ip": "103.159.168.152",
+    "success": true,
+    "type": "IPv4",
+    "continent": "Asia",
+    "continent_code": "AS",
+    "country": "India",
+    "country_code": "IN",
+    "region": "Madhya Pradesh",
+    "region_code": "MP",
+    "city": "Bhopal",
+    "latitude": 23.250458,
+    "longitude": 77.4065361,
+    "is_eu": false,
+    "postal": "462001",
+    "calling_code": "91",
+    "capital": "New Delhi",
+    "borders": "BD,BT,CN,MM,NP,PK",
+    "flag": {
+        "img": "https://cdn.ipwhois.io/flags/in.svg",
+        "emoji": "🇮🇳",
+        "emoji_unicode": "U+1F1EE U+1F1F3"
+    },
+    "connection": {
+        "asn": 132964,
+        "org": "Zip Infotainment Networks Opc Pvt Ltd",
+        "isp": "Fibernet Solutions opc Pvt. Ltd.",
+        "domain": "zipinfo.in"
+    },
+    "timezone": {
+        "id": "Asia/Kolkata",
+        "abbr": "IST",
+        "is_dst": false,
+        "offset": 19800,
+        "utc": "+05:30"
+    },
+    "readme": "https://ipwhois.io/docs"
+}
+[weather] got lat=23.250458 lon=77.4065361
+[weather] fetching meteo: https://api.open-meteo.com/v1/forecast?latitude=23.250458&longitude=77.4065361&current_weather=true
+[weather] meteo status: 200 OK
+[weather] meteo body: {"latitude":23.233742,"longitude":77.452835,"generationtime_ms":0.12934207916259766,"utc_offset_seconds":0,"timezone":"GMT","timezone_abbreviation":"GMT","elevation":501.0,"current_weather_units":{"time":"iso8601","interval":"seconds","temperature":"°C","windspeed":"km/h","winddirection":"°","is_day":"","weathercode":"wmo code"},"current_weather":{"time":"2026-08-14T15:30","interval":900,"temperature":24.5,"windspeed":8.8,"winddirection":265,"is_day":0,"weathercode":53}}
+[weather] code=53 is_day=false
+[weather] applying: rainy=true cloudy=false clear=false day=false

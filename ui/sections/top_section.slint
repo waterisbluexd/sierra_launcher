@@ -24,6 +24,11 @@ export component TopSection inherits Rectangle {
     in property <string> current-date: "01 Jan, Monday";
     in property <string> current-greeting: "Good evening, User!";
 
+    in property <bool> is-rainy: false;
+    in property <bool> is-cloudy: false;
+    in property <bool> is-clear: true;
+    in property <bool> is-day: true;
+
     callback select-prev();
     callback select-next();
     callback search-edited(string);
@@ -85,6 +90,7 @@ export component TopSection inherits Rectangle {
          HorizontalLayout {
              alignment: start;
              padding-top: 30px;
+             spacing: 60px;
              padding-left: 24px;
              Clock {
                  time: root.current-time;
@@ -93,8 +99,13 @@ export component TopSection inherits Rectangle {
                  time-font-size: 56px;
              }
              Weather {
-                 icon-size: 100px;
-             }
+                  icon-size: 100px;
+                  y: 100px;
+                  is-rainy: root.is-rainy;
+                  is-cloudy: root.is-cloudy;
+                  is-clear: root.is-clear;
+                  is-day: root.is-day;
+              }
          }
 
          Rectangle {
