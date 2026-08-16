@@ -33,6 +33,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 whoami = "2.1.2"
 reqwest = "0.13.4"
 tokio = "1.53.1"
+cacache = "13.1.0"
 
 [patch.crates-io]
 layer-shika = { path = "/home/waterisblue/dev/layer-shika" }
