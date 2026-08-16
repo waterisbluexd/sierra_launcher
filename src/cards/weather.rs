@@ -1,12 +1,19 @@
-use serde::Deserialize;
+use cacache;
+use serde::{Deserialize, Serialize};
 use serde_json;
+use std::time::SystemTime;
 
-#[derive(Debug, Clone, Copy, Default)]
+const WEATHER_CACHE_KEY: &str = "weather-current";
+const WEATHER_CACHE_TTL_MS: u128 = 30 * 60 * 1000;
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct WeatherState {
     pub is_rainy: bool,
     pub is_cloudy: bool,
     pub is_clear: bool,
     pub is_day: bool,
+    pub condition: String,
+    pub temperature: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -25,11 +32,35 @@ struct FreeIpLocation {
 struct MeteoCurrent {
     weathercode: i32,
     is_day: i32,
+    temperature: f64,
 }
 
 #[derive(Debug, Deserialize)]
 struct MeteoResponse {
     current_weather: MeteoCurrent,
+}
+
+fn condition_label(code: i32) -> &'static str {
+    match code {
+        0 => "Clear",
+        1 => "Mostly Clear",
+        2 => "Partly Cloudy",
+        3 => "Overcast",
+        45 | 48 => "Fog",
+        51 | 53 | 55 => "Drizzle",
+        56 | 57 => "Freezing Drizzle",
+        61 => "Light Rain",
+        63 => "Rain",
+        65 => "Heavy Rain",
+        66 | 67 => "Freezing Rain",
+        71 | 73 | 75 => "Snow",
+        77 => "Snow Grains",
+        80 | 81 | 82 => "Rain Showers",
+        85 | 86 => "Snow Showers",
+        95 => "Thunderstorm",
+        96 | 99 => "Thunderstorm + Hail",
+        _ => "UNKNOWN ERROR",
+    }
 }
 
 async fn try_ipwho(client: &reqwest::Client) -> Option<IpLocation> {
@@ -122,7 +153,9 @@ pub fn update_weather(state: &mut WeatherState) {
 
         let code = meteo.current_weather.weathercode;
         let is_day = meteo.current_weather.is_day == 1;
-        eprintln!("[weather] code={code} is_day={is_day}");
+        let temperature = meteo.current_weather.temperature;
+        let condition = condition_label(code).to_string();
+        eprintln!("[weather] code={code} is_day={is_day} temp={temperature} condition={condition}");
 
         let (is_rainy, is_cloudy, is_clear) = match code {
             0 => (false, false, true),
@@ -130,14 +163,60 @@ pub fn update_weather(state: &mut WeatherState) {
             _ => (true, false, false),
         };
 
-        Some((is_rainy, is_cloudy, is_clear, is_day))
+        Some((is_rainy, is_cloudy, is_clear, is_day, condition, temperature))
     });
 
     match result {
-        Some((is_rainy, is_cloudy, is_clear, is_day)) => {
-            eprintln!("[weather] applying: rainy={is_rainy} cloudy={is_cloudy} clear={is_clear} day={is_day}");
-            *state = WeatherState { is_rainy, is_cloudy, is_clear, is_day };
+        Some((is_rainy, is_cloudy, is_clear, is_day, condition, temperature)) => {
+            eprintln!("[weather] applying: rainy={is_rainy} cloudy={is_cloudy} clear={is_clear} day={is_day} temp={temperature} condition={condition}");
+            *state = WeatherState {
+                is_rainy,
+                is_cloudy,
+                is_clear,
+                is_day,
+                condition,
+                temperature,
+            };
+
+            ensure_cache_dir();
+            let dir = cache_dir();
+            let json = match serde_json::to_vec(state) {
+                Ok(j) => j,
+                Err(e) => { eprintln!("[weather] cache serialize failed: {e}"); return; }
+            };
+            if let Err(e) = cacache::write_sync(&dir, WEATHER_CACHE_KEY, &json) {
+                eprintln!("[weather] cache write failed: {e}");
+            }
         }
         None => eprintln!("[weather] fetch failed, keeping old state: {state:?}"),
     }
+}
+
+fn cache_dir() -> String {
+    std::env::var("HOME")
+        .map(|home| format!("{}/.local/share/sierra-launcher/cache", home))
+        .unwrap_or_else(|_| "/tmp/sierra-launcher-cache".to_string())
+}
+
+fn ensure_cache_dir() {
+    let dir = cache_dir();
+    let _ = std::fs::create_dir_all(&dir);
+}
+
+pub fn load_weather_from_cache() -> Option<WeatherState> {
+    let dir = cache_dir();
+    let bytes = cacache::read_sync(&dir, WEATHER_CACHE_KEY).ok()?;
+
+    let meta = cacache::metadata_sync(&dir, WEATHER_CACHE_KEY).ok()??;
+    let now = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .ok()?
+        .as_millis();
+
+    if now.saturating_sub(meta.time) > WEATHER_CACHE_TTL_MS {
+        eprintln!("[weather] cache stale, ignoring");
+        return None;
+    }
+
+    serde_json::from_slice(&bytes).ok()
 }

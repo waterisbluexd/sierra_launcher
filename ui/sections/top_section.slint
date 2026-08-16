@@ -6,7 +6,7 @@ import { Weather } from "../cards/weather.slint";
 
 export component TopSection inherits Rectangle {
     height: 220px;
-    border-width: 2px;
+    border-width: 0px;
     border-color: Theme.color4.with_alpha(0.7);
     clip: true;
 
@@ -26,8 +26,10 @@ export component TopSection inherits Rectangle {
 
     in property <bool> is-rainy: false;
     in property <bool> is-cloudy: false;
-    in property <bool> is-clear: true;
+    in property <bool> is-clear: false;
     in property <bool> is-day: true;
+    in property <string> temperature: "";
+    in property <string> condition: "";
 
     callback select-prev();
     callback select-next();
@@ -67,6 +69,21 @@ export component TopSection inherits Rectangle {
     }
 
     Rectangle {
+        width: parent.width;
+        height: parent.height;
+        background: @linear-gradient(180deg,
+            transparent 0%,
+            transparent 45%,
+            rgba(0, 0, 0, 0.55) 80%,
+            black 100%);
+        opacity: carousel.selection-mode ? 0 : 1;
+        animate opacity {
+            duration: 200ms;
+            easing: ease-in-out;
+        }
+    }
+
+    Rectangle {
         background: white.with_alpha(0.06);
         opacity: carousel.selection-mode ? 0 : 1;
         animate opacity {
@@ -98,23 +115,25 @@ export component TopSection inherits Rectangle {
                  greeting: root.current-greeting;
                  time-font-size: 56px;
              }
-             Weather {
-                  icon-size: 100px;
-                  y: 100px;
-                  is-rainy: root.is-rainy;
-                  is-cloudy: root.is-cloudy;
-                  is-clear: root.is-clear;
-                  is-day: root.is-day;
-              }
+               Weather {
+                    icon-size: 100px;
+                    y: 100px;
+                    is-rainy: root.is-rainy;
+                    is-cloudy: root.is-cloudy;
+                    is-clear: root.is-clear;
+                    is-day: root.is-day;
+                    temperature: root.temperature;
+                    condition: root.condition;
+                }
          }
 
          Rectangle {
-             height: 18px;
+             height: 90px;
          }
 
          SearchBar {
-              x: 12px;
-              width: parent.width - 24px;
+              x: 0px;
+              width: parent.width;
               search-bar := SearchBar {
                   edited(t) => {
                       root.search-edited(t);

@@ -3,7 +3,6 @@ import { WeatherCloud } from "../weather/cloud.slint";
 import { RainDrop } from "../weather/raindrop.slint";
 import { MoonWithCloudPosition } from "../weather/moon_with_cloud_position.slint";
 import { SunWithCloudPosiiton } from "../weather/sun_with_cloud_position.slint";
-
 import { Sun } from "../weather/sun.slint";
 import { Moon } from "../weather/moon.slint";
 
@@ -13,110 +12,108 @@ export component Weather inherits Rectangle {
 
     in property <bool> is-rainy: false;
     in property <bool> is-cloudy: false;
-    in property <bool> is-clear: true;
+    in property <bool> is-clear: false;
     in property <bool> is-day: true;
+    in property <string> temperature: "";
+    in property <string> condition: "";
+    property <length> content-width: 100px;
 
-    width: root.icon-size;
-    height: root.icon-size;
+    width: root.content-width;
+    height: root.icon-size + 18px;
 
-    clear-container := Rectangle {
-        x: (parent.width - self.width) / 2;
-        y: (parent.height - self.height) / 2 - 4px;
+    header-row := HorizontalLayout {
+        x: 0;
+        y: 0;
+        width: root.content-width;
+        height: root.icon-size;
+        alignment: end;
+        spacing: 10px;
 
-        width: 10 * root.pixel-size;
-        height: 10 * root.pixel-size;
+        icon-stack := Rectangle {
+            width: 24 * root.pixel-size;
+            height: root.icon-size;
 
-        visible: root.is-clear;
+            clear-container := Rectangle {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2 - 4px;
+                width: 10 * root.pixel-size;
+                height: 10 * root.pixel-size;
+                visible: root.is-clear;
 
-        if root.is-day: Sun {
-            pixel-size: root.pixel-size;
-            opacity: 0.9;
+                if root.is-day: Sun { pixel-size: root.pixel-size; opacity: 0.9; }
+                if !root.is-day: Moon { pixel-size: root.pixel-size; opacity: 0.9; }
+            }
+
+            cloudy-container := Rectangle {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2 - 6px;
+                width: 22 * root.pixel-size;
+                height: 20 * root.pixel-size;
+                visible: root.is-cloudy;
+
+                if root.is-day: SunWithCloudPosiiton {
+                    x: 18 * root.pixel-size; y: -4 * root.pixel-size;
+                    pixel-size: root.pixel-size; opacity: 0.9;
+                }
+                if !root.is-day: MoonWithCloudPosition {
+                    x: 18 * root.pixel-size; y: -4 * root.pixel-size;
+                    pixel-size: root.pixel-size; opacity: 0.9;
+                }
+                WeatherCloud { x: 0px; y: -20px; pixel-size: root.pixel-size; opacity: 0.9; }
+            }
+
+            rainy-container := Rectangle {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2 - 6px;
+                width: 22 * root.pixel-size;
+                height: 28 * root.pixel-size;
+                visible: root.is-rainy;
+
+                property <length> rain-start-y: 11 * root.pixel-size;
+                property <duration> fall-period: 1s;
+                property <[{x: int, delay: duration}]> drops: [
+                    {x: 8,  delay: 0ms}, {x: 12, delay: 300ms},
+                    {x: 16, delay: 150ms}, {x: 19, delay: 450ms},
+                ];
+
+                if root.is-day: SunWithCloudPosiiton {
+                    x: 15 * root.pixel-size; y: -7 * root.pixel-size;
+                    pixel-size: root.pixel-size; opacity: 0.9;
+                }
+                if !root.is-day: MoonWithCloudPosition {
+                    x: 18 * root.pixel-size; y: -5 * root.pixel-size;
+                    pixel-size: root.pixel-size; opacity: 0.9;
+                }
+                WeatherCloud { x: 0px; y: -22px; pixel-size: root.pixel-size; opacity: 0.9; }
+
+                for d in drops: RainDrop {
+                    start-x: d.x; start-y: rain-start-y;
+                    fall-duration: fall-period; fall-distance: 6 * root.pixel-size;
+                    delay: d.delay; pixel-size: root.pixel-size;
+                }
+            }
         }
 
-        if !root.is-day: Moon {
-            pixel-size: root.pixel-size;
-            opacity: 0.9;
-        }
-    }
-
-    cloudy-container := Rectangle {
-        x: (parent.width - self.width) / 2;
-        y: (parent.height - self.height) / 2 - 6px;
-
-        width: 22 * root.pixel-size;
-        height: 20 * root.pixel-size;
-
-        visible: root.is-cloudy;
-
-        if root.is-day: SunWithCloudPosiiton {
-            x: 18 * root.pixel-size;
-            y: -4 * root.pixel-size;
-            pixel-size: root.pixel-size;
-            opacity: 0.9;
-        }
-
-        if !root.is-day: MoonWithCloudPosition {
-            x: 18 * root.pixel-size;
-            y: -4 * root.pixel-size;
-            pixel-size: root.pixel-size;
-            opacity: 0.9;
-        }
-
-        WeatherCloud {
-            x: 0px;
-            y: -20px;
-            pixel-size: root.pixel-size;
-            opacity: 0.9;
-        }
-    }
-
-    rainy-container := Rectangle {
-        x: (parent.width - self.width) / 2;
-        y: (parent.height - self.height) / 2 - 6px;
-
-        width: 22 * root.pixel-size;
-        height: 28 * root.pixel-size;
-
-        visible: root.is-rainy;
-
-        property <length> rain-start-y: 11 * root.pixel-size;
-        property <duration> fall-period: 1s;
-
-        property <[{x: int, delay: duration}]> drops: [
-            {x: 8,  delay: 0ms},
-            {x: 12, delay: 300ms},
-            {x: 16, delay: 150ms},
-            {x: 19, delay: 450ms},
-        ];
-
-        if root.is-day: SunWithCloudPosiiton {
-            x: 18 * root.pixel-size;
-            y: -4 * root.pixel-size;
-            pixel-size: root.pixel-size;
-            opacity: 0.9;
-        }
-
-        if !root.is-day: MoonWithCloudPosition {
-            x: 18 * root.pixel-size;
-            y: -5 * root.pixel-size;
-            pixel-size: root.pixel-size;
-            opacity: 0.9;
-        }
-
-        WeatherCloud {
-            x: 0px;
-            y: -22px;
-            pixel-size: root.pixel-size;
-            opacity: 0.9;
-        }
-
-        for d in drops: RainDrop {
-            start-x: d.x;
-            start-y: rain-start-y;
-            fall-duration: fall-period;
-            fall-distance: 6 * root.pixel-size;
-            delay: d.delay;
-            pixel-size: root.pixel-size;
+        temperature-text := Text {
+            y: (parent.height - self.height) / 1 + 14px;
+            text: root.temperature;
+            font-family: "Monocraft";
+            font-size: 20px;
+            color: Theme.foreground.with-alpha(1.0);
+            vertical-alignment: top;
         }
     }
+
+    condition-text := Text {
+    x: 15px;
+    y: root.icon-size - 43px;
+    width: root.content-width;
+    height: 14px;
+    text: root.condition;
+    font-family: "Monocraft";
+    font-size: 13px;
+    color: Theme.foreground.with-alpha(0.8);
+    horizontal-alignment: left;
+    vertical-alignment: top;
+}
 }

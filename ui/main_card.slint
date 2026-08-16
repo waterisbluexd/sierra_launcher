@@ -25,6 +25,8 @@ export component Island inherits Window {
     in property <bool> is-cloudy: false;
     in property <bool> is-clear: true;
     in property <bool> is-day: true;
+    in property <string> temperature: "";
+    in property <string> condition: "";
     in property <[AppEntry]> apps: [];
 
     callback request_hide();
@@ -79,6 +81,8 @@ export component Island inherits Window {
                         is-cloudy: root.is-cloudy;
                         is-clear: root.is-clear;
                         is-day: root.is-day;
+                        temperature: root.temperature;
+                        condition: root.condition;
                         select-prev => {
                             root.request_select_prev();
                         }

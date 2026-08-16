@@ -59,6 +59,13 @@ fn main() -> layer_shika::Result<()> {
     let commit_gen = Arc::new(AtomicU64::new(0));
     let weather_state = Arc::new(Mutex::new(cards::weather::WeatherState::default()));
 
+    let weather_loaded_from_cache = cards::weather::load_weather_from_cache().map(|cached| {
+        let mut state = weather_state.lock().unwrap();
+        *state = cached;
+        eprintln!("[weather] initialized from cache");
+        true
+    }).unwrap_or(false);
+
     {
         shell
             .event_loop_handle()
@@ -103,12 +110,14 @@ fn main() -> layer_shika::Result<()> {
                             for surface in app_state.surfaces_by_name_mut(ISLAND) {
                                 let instance = surface.component_instance();
                                 for (name, val) in [
-                                    ("is-rainy", state.is_rainy),
-                                    ("is-cloudy", state.is_cloudy),
-                                    ("is-clear", state.is_clear),
-                                    ("is-day", state.is_day),
+                                    ("is-rainy", Value::Bool(state.is_rainy)),
+                                    ("is-cloudy", Value::Bool(state.is_cloudy)),
+                                    ("is-clear", Value::Bool(state.is_clear)),
+                                    ("is-day", Value::Bool(state.is_day)),
+                                    ("temperature", Value::String(format!("{:.0}°", state.temperature).into())), //C or F ? dont want it now
+                                    ("condition", Value::String(state.condition.clone().into())),
                                 ] {
-                                    if let Err(e) = instance.set_property(name, Value::Bool(val)) {
+                                    if let Err(e) = instance.set_property(name, val) {
                                         eprintln!("[ui] failed to set {name}: {e:?}");
                                     }
                                 }
@@ -179,6 +188,7 @@ fn main() -> layer_shika::Result<()> {
         let esc_sender = sender.clone();
         let manager_init = manager.clone();
         let commit_gen_inner = commit_gen.clone();
+        let weather_state_init = weather_state.clone();
         shell.with_component(ISLAND, move |instance| {
             themer::notify::apply_theme(instance, &theme);
 
@@ -196,6 +206,21 @@ fn main() -> layer_shika::Result<()> {
                 "current-greeting",
                 Value::String(greeting_str.clone().into()),
             );
+
+            let init_state = weather_state_init.lock().unwrap();
+            let _ = instance.set_property("is-rainy", Value::Bool(init_state.is_rainy));
+            let _ = instance.set_property("is-cloudy", Value::Bool(init_state.is_cloudy));
+            let _ = instance.set_property("is-clear", Value::Bool(init_state.is_clear));
+            let _ = instance.set_property("is-day", Value::Bool(init_state.is_day));
+            let _ = instance.set_property(
+                "temperature",
+                Value::String(format!("{:.0}°", init_state.temperature).into()),
+            );
+            let _ = instance.set_property(
+                "condition",
+                Value::String(init_state.condition.clone().into()),
+            );
+            drop(init_state);
 
             {
                 let sender_inner = esc_sender.clone();
@@ -278,9 +303,12 @@ fn main() -> layer_shika::Result<()> {
     {
         let sender = sender.clone();
         let weather_state = weather_state.clone();
+        let skip_initial_fetch = weather_loaded_from_cache;
         thread::spawn(move || {
-            cards::weather::update_weather(&mut weather_state.lock().unwrap());
-            let _ = sender.send(DaemonMsg::WeatherUpdate);
+            if !skip_initial_fetch {
+                cards::weather::update_weather(&mut weather_state.lock().unwrap());
+                let _ = sender.send(DaemonMsg::WeatherUpdate);
+            }
             loop {
                 thread::sleep(Duration::from_secs(600));
                 cards::weather::update_weather(&mut weather_state.lock().unwrap());
